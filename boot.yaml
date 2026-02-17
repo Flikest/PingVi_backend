@@ -1,0 +1,17 @@
+gin:
+  - name: sso
+    port: 8080
+    enabled: true
+    sw:
+      enabled: true
+    docs:
+      enabled: true
+    prom:
+      enabled: true
+    middleware:
+      logging:
+        enabled: true
+      prom:
+        enabled: true
+      meta:
+        enabled: true
