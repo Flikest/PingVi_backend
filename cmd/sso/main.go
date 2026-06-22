@@ -2,12 +2,22 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
-	"net/http"
+	"os"
 
-	"github.com/gin-gonic/gin"
+	"github.com/Flikest/PingVi_backend/internal/config"
+	"github.com/Flikest/PingVi_backend/internal/database/postgres"
+	deliverygrpc "github.com/Flikest/PingVi_backend/internal/delivery/grpc"
+	deliveryhttp "github.com/Flikest/PingVi_backend/internal/delivery/http"
+	"github.com/Flikest/PingVi_backend/internal/repository"
+	servicegrpc "github.com/Flikest/PingVi_backend/internal/services/grpc"
+	servicehttp "github.com/Flikest/PingVi_backend/internal/services/http"
+	"github.com/Flikest/PingVi_backend/pkg/logger"
+	"github.com/joho/godotenv"
 	rkboot "github.com/rookie-ninja/rk-boot/v2"
 	rkgin "github.com/rookie-ninja/rk-gin/v2/boot"
+	rkgrpc "github.com/rookie-ninja/rk-grpc/v2/boot"
 )
 
 // @title PingVi is a broker who will take care of you.
@@ -24,12 +34,47 @@ import (
 // @license.name Apache 2.0
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 func main() {
-	// Create a new boot instance.
+	env := flag.String("env", "local", "enviroment variable")
+	flag.Parse()
+
+	log := logger.NewLogger(*env)
+
+	_, err := config.ParseConfig(log, fmt.Sprintf("./config/sso/sso.config.%s.yaml", *env))
+	if err != nil {
+		log.Error("error with parsing yaml config: ", "error", err)
+		panic("failed to get records from config file")
+	}
+
+	if err := godotenv.Load(); err != nil {
+		log.Error("error loading environment: ", "error", err)
+	}
+
 	boot := rkboot.NewBoot()
 
-	// Register handler
-	entry := rkgin.GetGinEntry("sso")
-	entry.Router.GET("/v1/greeter", Greeter)
+	ginEntry := rkgin.GetGinEntry("sso")
+	grpcEntry := rkgrpc.GetGrpcEntry("user_info")
+
+	dbCtx := context.Background()
+
+	db := postgres.MustPostgresDBOpen(&postgres.PostgresConig{
+		Ctx:      dbCtx,
+		ConnPath: os.Getenv("POSTGRES_CONNECTION_PATH"),
+	})
+
+	ssoRepository := repository.NewRepositorySSO(&repository.RepositorySSO{
+		Log: log,
+		DB:  db,
+	})
+
+	ssoService := servicehttp.NewSSOService(&servicehttp.ServiceSSO{
+		Log:        log,
+		Repository: ssoRepository,
+	})
+
+	_ = deliveryhttp.RegisterSSORouter(&deliveryhttp.HandlerSSO{
+		Router:  ginEntry.Router,
+		Service: ssoService,
+	})
 
 	boot.AddShutdownHookFunc("close-db-connection", func() {
 		fmt.Println("closing connections to the database")
@@ -37,26 +82,13 @@ func main() {
 		// TODO: Logic for closing connections to the database
 	})
 
+	var userInfoRepository servicegrpc.UserInfoRepository = ssoRepository
+
+	userInfoService := servicegrpc.NewServiceUserInfo(log, userInfoRepository)
+
+	deliverygrpc.RegisterUserInfoServer(grpcEntry.Server, userInfoService, log)
+
 	boot.Bootstrap(context.Background())
 
-	boot.WaitForShutdownSig(context.TODO())
-}
-
-// Greeter handler
-// @Summary Greeter
-// @Id 1
-// @Tags Hello
-// @version 1.0
-// @Param name query string true "name"
-// @produce application/json
-// @Success 200 {object} GreeterResponse
-// @Router /v1/greeter [get]
-func Greeter(ctx *gin.Context) {
-	ctx.JSON(http.StatusOK, &GreeterResponse{
-		Message: fmt.Sprintf("Hello %s!", ctx.Query("name")),
-	})
-}
-
-type GreeterResponse struct {
-	Message string
+	boot.WaitForShutdownSig(context.Background())
 }
