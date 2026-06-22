@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package user_info;
+
+option go_package = "./gen/go/user_info";
+
+service UserInfo {
+    rpc GetUserNameByID (GetUserNameByIdRequest) returns (GetUserNameByIdResponse);
+}
+
+message GetUserNameByIdRequest {
+    string user_id = 1;
+}
+
+message GetUserNameByIdResponse {
+    string name = 1;
+}

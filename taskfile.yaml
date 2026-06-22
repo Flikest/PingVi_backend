@@ -1,0 +1,36 @@
+version: "3"  
+
+tasks:  
+  default:
+    cmds:  
+      - task: generate  
+
+  generate: 
+    aliases:
+      - gen
+    desc: "Generate code from proto files"  
+    cmds:
+      - protoc -I proto proto/permissions/*.proto --go_out=./gen/go/ --go_opt=paths=source_relative --go-grpc_out=./gen/go/ --go-grpc_opt=paths=source_relative
+
+  raise-sso:
+    cmds:
+      - go run cmd/sso/main.go
+
+  raise-sso-prod:
+    cmds:
+      - go run cmd/sso/main.go -env prod
+
+  raise-s3:
+    cmds:
+      - sudo docker compose -f minIO.docker-compose.yaml up -d
+      - sleap 3
+      - go run cmd/s3_gateway/main.go
+      
+  
+  raise-s3-prod:
+    cmds:
+      - sudo docker compose -f postgres.docker-compose.yaml up -d
+      - sleap 3
+      - go run cmd/s3_gateway/main.go -env prod
+
+  

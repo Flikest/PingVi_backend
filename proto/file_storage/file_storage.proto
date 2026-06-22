@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package file_storage;
+
+option go_package = "./gen/go/file_storage";
+
+service FileStorage {
+    rpc DownloadFile (DownloadFileRequest) returns (DownloadFileResponse);
+    rpc GenerationOfTemporaryLinks (GenerationOfTemporaryLinkRequest) returns (GenerationOfTemporaryLinkResponse);
+}
+
+message DownloadFileRequest {
+    file
+}
+
+message GenerationOfTemporaryLinkRequest {
+    string link = 1;
+}
+
+message GenerationOfTemporaryLinkResponse {
+    string accessLink = 1; 
+}

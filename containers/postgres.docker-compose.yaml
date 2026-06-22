@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres_container
+    environment:
+      POSTGRES_USER: ${POSTGRESS_SSO_USERNAME}
+      POSTGRES_PASSWORD: ${POSTGRES_SSO_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_SSO_DB_NAME}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${POSTGRES_SSO_PORT}:5432"
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data/pgdata
+    deploy:
+      resources:
+        limits:
+          cpus: .50
+          memory: 2GB
+        reservations:
+          cpus: .25
+          memory: 512M
+    command: >
+      postgres -c max_connections=1000
+               -c shared_buffers=256M
+               -c effective_cash_size=768MB
+               -c maintenance_work_mem=64MB
+               -c checkpoint_completion_target=0.7
+               -c wal_buffers=16MB
+               -c default_statistics_target=100
+
+volumes:
+  pgdata:
+    driver: local

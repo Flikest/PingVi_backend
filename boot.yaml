@@ -1,17 +1,81 @@
 gin:
   - name: sso
     port: 8080
+    <<: *default-gin
+
+  - name: messenger
+    port: 8082
+    <<: *x-default-gin
+
+  - name: hub
+    port: 8083
+    <<: *default-gin
+
+  - name: crypto_bridge
+    port: 8084
+    <<: *default-gin
+
+  - name: sfu
+    port: 8085
+    <<: *default-gin
+  
+  - name: notifications
+    port: 8086
+    <<: *default-gin
+
+  - name: p2p
+    port: 8087
+    <<: *default-gin
+
+  - name: s3_gateway
+    port: 8088
+    <<: *default-gin
+
+grpc:
+  - name: user_info
+    port: 50051
+    <<: *default-grpc
+
+  - name: messenger
+    port: 50052
+    <<: *default-grpc
+
+  - name: permissions
+    port: 50053
+    <<: *default-grpc
+
+x-default-gin: &default-gin
+  enabled: true
+  sw:
     enabled: true
-    sw:
-      enabled: true
-    docs:
+  docs:
+    enabled: true
+  prom:
+    enabled: true
+  middleware:
+    logging:
       enabled: true
     prom:
       enabled: true
-    middleware:
-      logging:
-        enabled: true
-      prom:
-        enabled: true
-      meta:
-        enabled: true
+    meta:
+      enabled: true
+
+x-default-grpc: &default-grpc
+  enabled: true
+  enableReflection: true
+  commonService:
+    enabled: false #после добавления k8s поменять на true!!!!!!!!!!!!!!!!!
+  sw:
+    enabled: true
+  docs:
+    enabled: true
+  prom:
+    enabled: true
+  middleware:
+    logging:
+      enabled: true
+    prom:
+      enabled: true
+    meta:
+      enabled: true
+
