@@ -20,13 +20,19 @@ type HandlerSFU struct {
 	Service *restapi.ServiceSFU
 }
 
+type HandlerFileStorage struct {
+	Router  *gin.Engine
+	Service *restapi.ServiceFileStorage
+}
+
 func RegisterSSORouter(h *HandlerSSO) *gin.Engine {
 	v1 := h.Router.Group("/v1")
 	{
 		userRouter := v1.Group("/users")
 		{
 			userRouter.GET("/:id", h.Service.SelectUserByID)
-			userRouter.GET("/sessions/:id", h.Service.SelectAllUserSession)
+			userRouter.GET("/sessions", h.Service.SelectUserSessions)
+			userRouter.POST("/refresh", h.Service.RefreshTokens)
 			userRouter.POST("/logup", h.Service.Logup)
 			userRouter.POST("/login", h.Service.Login)
 			userRouter.POST("/logout", h.Service.Logout)
@@ -49,7 +55,7 @@ func RegisterMessengerRouter(h *HandlerMessenger) *gin.Engine {
 	{
 		messageRouter := v1.Group("/ws")
 		{
-			messageRouter.GET("/", h.Service.Handshake)
+			messageRouter.GET("/:session_id", h.Service.Handshake)
 			messageRouter.GET("/:link", h.Service.LinkPreview)
 			messageRouter.GET("/:chat_id", h.Service.GetAllMessageFromChat)
 			messageRouter.DELETE("/clear", h.Service.ClearMesagesFromChat)
@@ -57,9 +63,9 @@ func RegisterMessengerRouter(h *HandlerMessenger) *gin.Engine {
 
 		channelRouter := v1.Group("/channels")
 		{
-			channelRouter.GET("/join/:channel_id/:user_id", h.Service.JoinChannel)
+			channelRouter.GET("/join/:channel_id/", h.Service.JoinChannel)
 			channelRouter.GET("/cick", h.Service.CickChannelMember)
-			channelRouter.GET("/leave/:channel_id/:user_id", h.Service.LeaveFromChannel)
+			channelRouter.GET("/leave/:channel_id/", h.Service.LeaveFromChannel)
 			channelRouter.GET("/:user_id", h.Service.GetChannels)
 			channelRouter.POST("/", h.Service.CreateChannel)
 			channelRouter.PUT("/", h.Service.UpdateChannel)
@@ -68,8 +74,8 @@ func RegisterMessengerRouter(h *HandlerMessenger) *gin.Engine {
 
 		groupRouter := v1.Group("/groups")
 		{
-			groupRouter.GET("/join/:group_id/:user_id", h.Service.JoinGroup)
-			groupRouter.GET("/leave/:group_id/:user_id", h.Service.LeaveGroup)
+			groupRouter.GET("/join/:group_id/", h.Service.JoinGroup)
+			groupRouter.GET("/leave/:group_id/", h.Service.LeaveGroup)
 			groupRouter.GET("/member/all/:group_id", h.Service.SelectAllMembersGroup)
 			groupRouter.GET("member/:group_id", h.Service.SelectMemberGroup)
 			groupRouter.GET("/", h.Service.SelectGroup)
@@ -87,7 +93,7 @@ func RegisterMessengerRouter(h *HandlerMessenger) *gin.Engine {
 
 		roleRouter := v1.Group("/roles")
 		{
-			roleRouter.GET("/permissions/:channel_id/:user_id", h.Service.CickChannelMember)
+			roleRouter.GET("/permissions/:channel_id/", h.Service.CickChannelMember)
 			roleRouter.POST("/", h.Service.CreateRole)
 			roleRouter.GET("/:channel_id", h.Service.GetAllRoles)
 			roleRouter.PUT("/", h.Service.UpdateRole)
@@ -122,5 +128,20 @@ func RegisterSFURouter(h *HandlerSFU) *gin.Engine {
 			roomRouter.POST("/create_join_token", h.Service.CreateJoinToken)
 		}
 	}
+	return h.Router
+}
+
+func RegisterFileStorageRouter(h *HandlerFileStorage) *gin.Engine {
+	v1 := h.Router.Group("/v1")
+	{
+		fileRouter := v1.Group("/files")
+		{
+			fileRouter.POST("/", h.Service.UpdateInFileStorage)
+			fileRouter.PUT("/", h.Service.UpdateInFileStorage)
+			fileRouter.POST("/temporary_url", h.Service.IssueTemporaryURL)
+			fileRouter.DELETE("/", h.Service.DeleteFromFileStorage)
+		}
+	}
+
 	return h.Router
 }

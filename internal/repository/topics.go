@@ -144,6 +144,28 @@ func (r *RepositoryMessenger) UpdateTopic(ctx context.Context, topic dto.UpdateT
 	}, nil
 }
 
+func (r *RepositoryMessenger) SelectTopicName(ctx context.Context, topicID, channelID uuid.UUID) (string, error) {
+	query := r.Session.ContextQuery(
+		ctx,
+		`SELECT name FROM messenger_keyspace.topics WHERE id=? AND channel_id=?`,
+		[]string{
+			":id",
+			":channel_id",
+		}).
+		BindMap(map[string]interface{}{
+			":id":         topicID,
+			":channel_id": channelID,
+		})
+
+	var name string
+	if err := query.SelectRelease(&name); err != nil {
+		r.Log.Error("error with selecting topic name by id and channel id: ", "error", err)
+		return "", err
+	}
+
+	return name, nil
+}
+
 func (r *RepositoryMessenger) DeleteTopic(ctx context.Context, topic dto.DeleteTopic) (uuid.UUID, error) {
 	permission, err := r.SelectPermissions(ctx, topic.UserId, topic.ChannelId)
 	if err != nil {

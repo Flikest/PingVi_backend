@@ -19,7 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UserInfo_GetUserNameByID_FullMethodName = "/user_info.UserInfo/GetUserNameByID"
+	UserInfo_GetUserNameByID_FullMethodName      = "/user_info.UserInfo/GetUserNameByID"
+	UserInfo_GetUserIDBySessionID_FullMethodName = "/user_info.UserInfo/GetUserIDBySessionID"
 )
 
 // UserInfoClient is the client API for UserInfo service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type UserInfoClient interface {
 	GetUserNameByID(ctx context.Context, in *GetUserNameByIdRequest, opts ...grpc.CallOption) (*GetUserNameByIdResponse, error)
+	GetUserIDBySessionID(ctx context.Context, in *GetUserIDBySessionIDRequest, opts ...grpc.CallOption) (*GetUserIDBySessionIDResponse, error)
 }
 
 type userInfoClient struct {
@@ -47,11 +49,22 @@ func (c *userInfoClient) GetUserNameByID(ctx context.Context, in *GetUserNameByI
 	return out, nil
 }
 
+func (c *userInfoClient) GetUserIDBySessionID(ctx context.Context, in *GetUserIDBySessionIDRequest, opts ...grpc.CallOption) (*GetUserIDBySessionIDResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserIDBySessionIDResponse)
+	err := c.cc.Invoke(ctx, UserInfo_GetUserIDBySessionID_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserInfoServer is the server API for UserInfo service.
 // All implementations must embed UnimplementedUserInfoServer
 // for forward compatibility.
 type UserInfoServer interface {
 	GetUserNameByID(context.Context, *GetUserNameByIdRequest) (*GetUserNameByIdResponse, error)
+	GetUserIDBySessionID(context.Context, *GetUserIDBySessionIDRequest) (*GetUserIDBySessionIDResponse, error)
 	mustEmbedUnimplementedUserInfoServer()
 }
 
@@ -64,6 +77,9 @@ type UnimplementedUserInfoServer struct{}
 
 func (UnimplementedUserInfoServer) GetUserNameByID(context.Context, *GetUserNameByIdRequest) (*GetUserNameByIdResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetUserNameByID not implemented")
+}
+func (UnimplementedUserInfoServer) GetUserIDBySessionID(context.Context, *GetUserIDBySessionIDRequest) (*GetUserIDBySessionIDResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserIDBySessionID not implemented")
 }
 func (UnimplementedUserInfoServer) mustEmbedUnimplementedUserInfoServer() {}
 func (UnimplementedUserInfoServer) testEmbeddedByValue()                  {}
@@ -104,6 +120,24 @@ func _UserInfo_GetUserNameByID_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserInfo_GetUserIDBySessionID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserIDBySessionIDRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserInfoServer).GetUserIDBySessionID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserInfo_GetUserIDBySessionID_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserInfoServer).GetUserIDBySessionID(ctx, req.(*GetUserIDBySessionIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserInfo_ServiceDesc is the grpc.ServiceDesc for UserInfo service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -114,6 +148,10 @@ var UserInfo_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUserNameByID",
 			Handler:    _UserInfo_GetUserNameByID_Handler,
+		},
+		{
+			MethodName: "GetUserIDBySessionID",
+			Handler:    _UserInfo_GetUserIDBySessionID_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

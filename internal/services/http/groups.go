@@ -2,15 +2,33 @@ package servicehttp
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
+	"os"
 	"time"
 
+	pb "github.com/Flikest/PingVi_backend/gen/go/user_info"
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
+	"github.com/Flikest/PingVi_backend/pkg/tokens"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
 func (s *ServiceMessenger) CreateGroup(ctx *gin.Context) {
+	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		s.Log.Error("error with verify jwt user token: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID, err := uuid.Parse(payload.ID.String())
+	if err != nil {
+		s.Log.Error("error with parsing jwt token from header: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	var body dto.CreateGroup
 	if err := ctx.BindJSON(&body); err != nil {
 		s.Log.Error("invalid body: ", "error", err)
@@ -18,7 +36,8 @@ func (s *ServiceMessenger) CreateGroup(ctx *gin.Context) {
 		return
 	}
 
-	// Бизнес-логика: генерация ID и времени
+	body.OwnerID = userID
+
 	groupID, err := uuid.NewV7()
 	if err != nil {
 		s.Log.Error("error with generating group id: ", "error", err)
@@ -44,12 +63,40 @@ func (s *ServiceMessenger) CreateGroup(ctx *gin.Context) {
 		return
 	}
 
-	// TODO добавить рассылку сообщения о том что группа была создана
+	response, err := s.Client.GetUserNameByID(ctx.Request.Context(), &pb.GetUserNameByIdRequest{
+		UserId: userID.String(),
+	})
+	if err != nil {
+		s.Log.Error("error with getting user name: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	s.Hub.onSendMessage(dto.AddMessage{
+		ChatID:      groupID,
+		SenderID:    uuid.Nil,
+		Message:     fmt.Sprintf("User %s create this group", response.GetName()),
+		MessageType: "system",
+	})
 
 	ctx.JSON(http.StatusCreated, group)
 }
 
 func (s *ServiceMessenger) JoinGroup(ctx *gin.Context) {
+	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		s.Log.Error("error with verify jwt user token: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID, err := uuid.Parse(payload.ID.String())
+	if err != nil {
+		s.Log.Error("error with parsing jwt token from header: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	groupID, err := uuid.Parse(ctx.Param("group_id"))
 	if err != nil {
 		s.Log.Error("error with parsing group id uuid", "error", err)
@@ -57,14 +104,6 @@ func (s *ServiceMessenger) JoinGroup(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(ctx.Param("user_id"))
-	if err != nil {
-		s.Log.Error("error with parse user id uuid: ", "error", err)
-		ctx.JSON(http.StatusBadRequest, err)
-		return
-	}
-
-	// Добавление участника в группу
 	member := dto.GroupMember{
 		GroupID:  groupID,
 		UserID:   userID,
@@ -78,7 +117,21 @@ func (s *ServiceMessenger) JoinGroup(ctx *gin.Context) {
 		return
 	}
 
-	// TODO добавить отправку сообщения в группу о входе пользователя
+	response, err := s.Client.GetUserNameByID(ctx.Request.Context(), &pb.GetUserNameByIdRequest{
+		UserId: userID.String(),
+	})
+	if err != nil {
+		s.Log.Error("error with getting user name: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	s.Hub.onSendMessage(dto.AddMessage{
+		ChatID:      groupID,
+		SenderID:    uuid.Nil,
+		Message:     fmt.Sprintf("User %s joined the channel", response.GetName()),
+		MessageType: "system",
+	})
 
 	ctx.JSON(http.StatusOK, groupID)
 }
@@ -91,14 +144,20 @@ func (s *ServiceMessenger) LeaveGroup(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(ctx.Param("user_id"))
+	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
-		s.Log.Error("error with parse user id uuid: ", "error", err)
-		ctx.JSON(http.StatusBadRequest, err)
+		s.Log.Error("error with verify jwt user token: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Бизнес-логика: проверка прав
+	userID, err := uuid.Parse(payload.ID.String())
+	if err != nil {
+		s.Log.Error("error with parsing jwt token from header: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	ownerID, err := s.Repository.SelectGroupOwnerID(ctx.Request.Context(), groupID)
 	if err != nil {
 		s.Log.Error("error with checking owner: ", "error", err)
@@ -107,34 +166,58 @@ func (s *ServiceMessenger) LeaveGroup(ctx *gin.Context) {
 	}
 
 	if ownerID == userID {
-		// Владелец удаляет группу полностью
-		// Удаление всех участников
 		if err := s.Repository.DeleteGroupMembersByGroupID(ctx.Request.Context(), groupID); err != nil {
 			s.Log.Error("error with deleting members", "error", err)
 			ctx.JSON(http.StatusInternalServerError, err)
 			return
 		}
 
-		// Удаление группы
 		if err := s.Repository.DeleteGroupByID(ctx.Request.Context(), groupID); err != nil {
 			s.Log.Error("error with deleting group", "error", err)
 			ctx.JSON(http.StatusInternalServerError, err)
 			return
 		}
 
-		// TODO добавить рассылку о том что группа была удалена
+		groupName, err := s.Repository.SelectGroupNameByID(ctx.Request.Context(), groupID)
+		if err != nil {
+			s.Log.Error("error with getting group name: ", "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		s.Hub.onSendMessage(dto.AddMessage{
+			ChatID:      groupID,
+			SenderID:    uuid.Nil,
+			Message:     fmt.Sprintf("channel %s was deleted", groupName),
+			MessageType: "system",
+		})
+
 		ctx.JSON(http.StatusOK, groupID)
 		return
 	}
 
-	// Обычный участник просто выходит
 	if err := s.Repository.DeleteGroupMember(ctx.Request.Context(), groupID, userID); err != nil {
 		s.Log.Error("error when user leaves group: ", "error", err)
 		ctx.JSON(http.StatusInternalServerError, err)
 		return
 	}
 
-	// TODO добавить рассылку сообщен��й в группу о выходе пользователя из группы
+	response, err := s.Client.GetUserNameByID(ctx.Request.Context(), &pb.GetUserNameByIdRequest{
+		UserId: userID.String(),
+	})
+	if err != nil {
+		s.Log.Error("error with getting user name: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	s.Hub.onSendMessage(dto.AddMessage{
+		ChatID:      groupID,
+		SenderID:    uuid.Nil,
+		Message:     fmt.Sprintf("User %s has left the channel", response.GetName()),
+		MessageType: "system",
+	})
+
 	ctx.JSON(http.StatusOK, userID)
 }
 
@@ -182,6 +265,20 @@ func (s *ServiceMessenger) SelectMemberGroup(ctx *gin.Context) {
 }
 
 func (s *ServiceMessenger) KickMemberFromGroup(ctx *gin.Context) {
+	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		s.Log.Error("error with verify jwt user token: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID, err := uuid.Parse(payload.ID.String())
+	if err != nil {
+		s.Log.Error("error with parsing jwt token from header: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	var body dto.CickGroupMember
 	if err := ctx.BindJSON(&body); err != nil {
 		s.Log.Error("invalid body: ", "error", err)
@@ -189,7 +286,8 @@ func (s *ServiceMessenger) KickMemberFromGroup(ctx *gin.Context) {
 		return
 	}
 
-	// Бизнес-логика: проверка прав
+	body.MemberID = userID
+
 	kickerIsAdmin, err := s.Repository.SelectGroupMemberIsAdmin(ctx.Request.Context(), body.GroupID, body.MemberID)
 	if err != nil {
 		s.Log.Error("error checking permissions: ", "error", err)
@@ -227,10 +325,17 @@ func (s *ServiceMessenger) KickMemberFromGroup(ctx *gin.Context) {
 }
 
 func (s *ServiceMessenger) SelectGroup(ctx *gin.Context) {
-	userID, err := uuid.Parse(ctx.Param("user_id"))
+	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
-		s.Log.Error("error with parse user id uuid: ", "error", err)
-		ctx.JSON(http.StatusBadRequest, err)
+		s.Log.Error("error with verify jwt user token: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID, err := uuid.Parse(payload.ID.String())
+	if err != nil {
+		s.Log.Error("error with parsing jwt token from header: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -245,6 +350,20 @@ func (s *ServiceMessenger) SelectGroup(ctx *gin.Context) {
 }
 
 func (s *ServiceMessenger) UpdateGroup(ctx *gin.Context) {
+	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		s.Log.Error("error with verify jwt user token: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID, err := uuid.Parse(payload.ID.String())
+	if err != nil {
+		s.Log.Error("error with parsing jwt token from header: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	var body dto.UpdateGroup
 	if err := ctx.BindJSON(&body); err != nil {
 		s.Log.Error("invalid body: ", "error", err)
@@ -252,7 +371,8 @@ func (s *ServiceMessenger) UpdateGroup(ctx *gin.Context) {
 		return
 	}
 
-	// Бизнес-логика: проверка прав
+	body.UserID = userID
+
 	isAdmin, err := s.Repository.SelectGroupMemberIsAdmin(ctx.Request.Context(), body.ID, body.UserID)
 	if err != nil {
 		s.Log.Error("error with checking permissions: ", "error", err)
@@ -273,7 +393,6 @@ func (s *ServiceMessenger) UpdateGroup(ctx *gin.Context) {
 		return
 	}
 
-	// Проверка существования группы
 	exists, err := s.Repository.SelectGroupExists(ctx.Request.Context(), body.ID)
 	if err != nil {
 		s.Log.Error("error with selecting group: ", "error", err)
@@ -288,7 +407,6 @@ func (s *ServiceMessenger) UpdateGroup(ctx *gin.Context) {
 
 	now := time.Now()
 
-	// Обновление группы
 	group := dto.Group{
 		ID:          body.ID,
 		Name:        body.Name,
@@ -305,7 +423,21 @@ func (s *ServiceMessenger) UpdateGroup(ctx *gin.Context) {
 		return
 	}
 
-	// TODO добавить рассылку в группу о том что пользователь изменил группу
+	response, err := s.Client.GetUserNameByID(ctx.Request.Context(), &pb.GetUserNameByIdRequest{
+		UserId: userID.String(),
+	})
+	if err != nil {
+		s.Log.Error("error with getting user name: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	s.Hub.onSendMessage(dto.AddMessage{
+		ChatID:      group.ID,
+		SenderID:    uuid.Nil,
+		Message:     fmt.Sprintf("User %s changed the group", response.GetName()),
+		MessageType: "system",
+	})
 
 	ctx.JSON(http.StatusOK, group)
 }
@@ -318,7 +450,6 @@ func (s *ServiceMessenger) DeleteGroup(ctx *gin.Context) {
 		return
 	}
 
-	// Бизнес-логика: проверка прав
 	isAdmin, err := s.Repository.SelectGroupMemberIsAdmin(ctx.Request.Context(), body.ID, body.UserID)
 	if err != nil {
 		s.Log.Error("error with checking permissions: ", "error", err)
@@ -339,21 +470,31 @@ func (s *ServiceMessenger) DeleteGroup(ctx *gin.Context) {
 		return
 	}
 
-	// Удаление всех участников
 	if err := s.Repository.DeleteGroupMembersByGroupID(ctx.Request.Context(), body.ID); err != nil {
 		s.Log.Error("error with deleting members: ", "error", err)
 		ctx.JSON(http.StatusInternalServerError, err)
 		return
 	}
 
-	// Удаление группы
 	if err := s.Repository.DeleteGroupByID(ctx.Request.Context(), body.ID); err != nil {
 		s.Log.Error("error with deleting group", "error", err)
 		ctx.JSON(http.StatusInternalServerError, err)
 		return
 	}
 
-	// TODO добавить рассылку о том что группа была удалена
+	groupName, err := s.Repository.SelectGroupNameByID(ctx.Request.Context(), body.ID)
+	if err != nil {
+		s.Log.Error("error with selecting channel name: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	s.Hub.onSendMessage(dto.AddMessage{
+		ChatID:      body.ID,
+		SenderID:    uuid.Nil,
+		Message:     fmt.Sprintf("channel %s was deleted", groupName),
+		MessageType: "system",
+	})
 
 	ctx.JSON(http.StatusOK, body.ID)
 }

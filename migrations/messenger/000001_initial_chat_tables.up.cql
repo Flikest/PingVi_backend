@@ -3,9 +3,6 @@ WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
 
 USE messenger_keyspace;
 
--- ============================================
--- 2. КАНАЛЫ (сервера как в Discord)
--- ============================================
 CREATE TABLE IF NOT EXISTS channels (
     id UUID PRIMARY KEY,
     name TEXT,
@@ -25,53 +22,43 @@ CREATE TABLE IF NOT EXISTS directory (
     updated_at TIMESTAMP
 );
 
--- ============================================
--- 3. ТОПИКИ (текстовые/голосовые каналы внутри сервера)
--- ============================================
 CREATE TABLE IF NOT EXISTS topics (
     id UUID PRIMARY KEY,
-    channel_id UUID,                -- В каком канале (сервере) находится топик
+    channel_id UUID,
     directory_id UUID,
-    name TEXT,                      -- Название топика (например, "general", "offtopic")
-    topic_type TEXT,                -- 'text', 'voice', 'announcement'
-    position INT,                   -- Позиция в списке (для сортировки)
-    is_private BOOLEAN,             -- Приватный канал (видят только участники с ролью)
+    name TEXT,
+    topic_type TEXT,
+    position INT,
+    is_private BOOLEAN,
     created_at TIMESTAMP,
     updated_at TIMESTAMP
 );
 
--- ============================================
--- 4. РОЛИ В КАНАЛЕ (привилегии на весь канал/сервер)
--- ============================================
+
 CREATE TABLE IF NOT EXISTS channel_roles (
     id UUID PRIMARY KEY,
     channel_id UUID,                
-    name TEXT,                      -- '@everyone', '@Admin', '@Moderator', '@Member'
-    color INT,                      -- Цвет роли (HEX)
+    name TEXT,
+    color INT,
     permissions varchar(7) is_default '0000000',             -- БИТОВАЯ МАСКА (разрешения на весь канал) 000000 [1] - взаимодействие с пользователями(удалить\добавить) [2] - выдават\забирать роли [3] - взаимодействие с каналом (обновить\удалить) [4] - писать сообщения в канал  [5] - создавать\удалять\обновлять роли, а так же содовать вложенности [6] - взаимодействие с топиками [7] - учавствовать в топиках
     is_mentionable BOOLEAN,
-    is_default BOOLEAN,             -- true для роли @everyone
+    is_default BOOLEAN,
     created_at TIMESTAMP,
     updated_at TIMESTAMP
 );
 
--- ============================================
--- 5. УЧАСТНИКИ КАНАЛА (с их ролями)
--- Привилегии распространяются на ВЕСЬ канал и все топики внутри него
--- ============================================
+
 CREATE TABLE IF NOT EXISTS channel_members (
     channel_id UUID,
     user_id UUID,
     is_muted BOOLEAN,
-    role_id UUID,                   -- Основная роль (ссылка на channel_roles)
-    nickname TEXT,                  -- Ник в рамках канала (сервера)
+    role_id UUID,
+    nickname TEXT,
     joined_at TIMESTAMP,
     PRIMARY KEY (channel_id, user_id)
 );
 
--- ============================================
--- 7. ЛИЧНЫЕ ЧАТЫ (вне каналов, на 2 пользователя)
--- ============================================
+
 CREATE TABLE IF NOT EXISTS personal_chats (
     id UUID PRIMARY KEY,
     user1_id UUID,
@@ -80,9 +67,6 @@ CREATE TABLE IF NOT EXISTS personal_chats (
     updated_at TIMESTAMP,
 );
 
--- ============================================
--- 8. ГРУППЫ (большие чаты без каналов и привилегий)
--- ============================================
 CREATE TABLE IF NOT EXISTS groups (
     id UUID PRIMARY KEY,
     name TEXT,
@@ -93,9 +77,6 @@ CREATE TABLE IF NOT EXISTS groups (
     updated_at TIMESTAMP,
 );
 
--- ============================================
--- 9. УЧАСТНИКИ ГРУПП
--- ============================================
 CREATE TABLE IF NOT EXISTS group_members (
     group_id UUID,
     user_id UUID,
@@ -105,16 +86,13 @@ CREATE TABLE IF NOT EXISTS group_members (
     PRIMARY KEY (group_id, user_id)
 );
 
--- ============================================
--- 10. СООБЩЕНИЯ (универсальная)
--- chat_id может быть: topic_id, personal_chat_id, group_id
--- ============================================
+
 CREATE TABLE IF NOT EXISTS messages (
     id UUID,
     chat_id UUID,
     sender_id UUID,
     message TEXT,
-    message_type TEXT,              -- 'text', 'image', 'video', 'file', 'sticker'
+    message_type TEXT,
     is_edited BOOLEAN,
     reply_to_id TIMEUUID,
     attachments LIST<TEXT>,
@@ -124,9 +102,6 @@ CREATE TABLE IF NOT EXISTS messages (
     PRIMARY KEY ((chat_id, date_bucket), message_id)
 ) WITH CLUSTERING ORDER BY (id ASC);
 
--- ============================================
--- 12. ПРОЧИТАННЫЕ СООБЩЕНИЯ
--- ============================================
 CREATE TABLE IF NOT EXISTS user_read_positions (
     user_id UUID,
     chat_id UUID,
@@ -135,12 +110,9 @@ CREATE TABLE IF NOT EXISTS user_read_positions (
     PRIMARY KEY (user_id, chat_id)
 );
 
--- ============================================
--- 13. ПРИГЛАСИТЕЛЬНЫЕ ССЫЛКИ (для каналов и групп)
--- ============================================
 CREATE TABLE IF NOT EXISTS invitations (
     id UUID PRIMARY KEY,
-    target_type TEXT,               -- 'channel', 'group'
+    target_type TEXT,
     target_id UUID,
     invite_code TEXT UNIQUE,
     created_by UUID,

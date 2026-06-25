@@ -2,17 +2,34 @@ package servicehttp
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	pb "github.com/Flikest/PingVi_backend/gen/go/user_info"
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
+	"github.com/Flikest/PingVi_backend/pkg/tokens"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
 func (s *ServiceMessenger) CreateChannel(ctx *gin.Context) {
-	var body dto.CreateChannel
+	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		s.Log.Error("error with verify jwt user token: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID, err := uuid.Parse(payload.ID.String())
+	if err != nil {
+		s.Log.Error("error with parsing jwt token from header: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var body dto.CreateChannelRequest
 	if err := ctx.BindJSON(&body); err != nil {
 		s.Log.Error("invalid body: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, err)
@@ -39,11 +56,10 @@ func (s *ServiceMessenger) CreateChannel(ctx *gin.Context) {
 		ID:          channelID,
 		Name:        body.Name,
 		Description: body.Description,
-		OwnerID:     body.OwnerID,
+		OwnerID:     userID,
 		IconURL:     body.IconURL,
 		IsPublic:    body.IsPublic,
 		CreatedAt:   now,
-		UpdatedAt:   now,
 	}
 
 	if err := s.Repository.InsertChannel(ctx.Request.Context(), channel); err != nil {
@@ -72,7 +88,7 @@ func (s *ServiceMessenger) CreateChannel(ctx *gin.Context) {
 
 	ownerMember := dto.ChannelMember{
 		ChannelID: channelID,
-		UserID:    body.OwnerID,
+		UserID:    userID,
 		RoleID:    ownerRoleID,
 		JoinedAt:  now,
 	}
@@ -83,22 +99,58 @@ func (s *ServiceMessenger) CreateChannel(ctx *gin.Context) {
 		return
 	}
 
-	_, err = s.Client.GetUserNameByID(ctx.Request.Context(), &pb.GetUserNameByIdRequest{UserId: body.OwnerID.String()})
+	_, err = s.Client.GetUserNameByID(ctx.Request.Context(), &pb.GetUserNameByIdRequest{UserId: userID.String()})
 	if err != nil {
 		s.Log.Error("error getting user name: ", "error", err)
 	}
 
 	// TODO: создать топик и директорию по general
-	// TODO добавить рассылку о том что канал, топик и вкладка был создан
+
+	response, err := s.Client.GetUserNameByID(ctx.Request.Context(), &pb.GetUserNameByIdRequest{
+		UserId: userID.String(),
+	})
+	if err != nil {
+		s.Log.Error("error with getting user name: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	s.Hub.onSendMessage(dto.AddMessage{
+		ChatID:      channelID,
+		SenderID:    uuid.Nil,
+		Message:     fmt.Sprintf("User %s create this channel", response.GetName()),
+		MessageType: "system",
+	})
+
+	s.Hub.onSendMessage(dto.AddMessage{
+		ChatID:      channelID,
+		SenderID:    uuid.Nil,
+		Message:     "General topic was created",
+		MessageType: "system",
+	})
+
+	s.Hub.onSendMessage(dto.AddMessage{
+		ChatID:      channelID,
+		SenderID:    uuid.Nil,
+		Message:     "General directory was created",
+		MessageType: "system",
+	})
 
 	ctx.JSON(http.StatusCreated, channel)
 }
 
 func (s *ServiceMessenger) JoinChannel(ctx *gin.Context) {
-	userID, err := uuid.Parse(ctx.Param("user_id"))
+	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
-		s.Log.Error("error with parsing user id uuid: ", "error", err)
-		ctx.JSON(http.StatusBadRequest, err)
+		s.Log.Error("error with verify jwt user token: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID, err := uuid.Parse(payload.ID.String())
+	if err != nil {
+		s.Log.Error("error with parsing jwt token from header: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -129,19 +181,47 @@ func (s *ServiceMessenger) JoinChannel(ctx *gin.Context) {
 		return
 	}
 
-	// TODO добавить рассылку о том что пользователь зашел в канал
+	response, err := s.Client.GetUserNameByID(ctx.Request.Context(), &pb.GetUserNameByIdRequest{
+		UserId: userID.String(),
+	})
+	if err != nil {
+		s.Log.Error("error with getting user name: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	s.Hub.onSendMessage(dto.AddMessage{
+		ChatID:      channelID,
+		SenderID:    uuid.Nil,
+		Message:     fmt.Sprintf("User %s joined the channel", response.GetName()),
+		MessageType: "system",
+	})
 
 	ctx.JSON(http.StatusOK, channelID)
 }
 func (s *ServiceMessenger) CickChannelMember(ctx *gin.Context) {
-	var body dto.CickChannelMember
-	if err := ctx.BindJSON(&body); err != nil {
+	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		s.Log.Error("error with verify jwt user token: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID, err := uuid.Parse(payload.ID.String())
+	if err != nil {
+		s.Log.Error("error with parsing jwt token from header: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var bodyRequest dto.CickChannelMemberRequest
+	if err := ctx.BindJSON(&bodyRequest); err != nil {
 		s.Log.Error("invalid body: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, err)
 		return
 	}
 
-	permission, err := s.Repository.SelectPermissions(ctx.Request.Context(), body.MemberID, body.ChannelID)
+	permission, err := s.Repository.SelectPermissions(ctx.Request.Context(), userID, bodyRequest.ChannelID)
 	if err != nil {
 		s.Log.Error("error with selecting user permission from channel: ", "error", err)
 		ctx.JSON(http.StatusInternalServerError, err)
@@ -154,16 +234,29 @@ func (s *ServiceMessenger) CickChannelMember(ctx *gin.Context) {
 		return
 	}
 
-	// Удаление участника
-	if err := s.Repository.DeleteChannelMemberByUserID(ctx.Request.Context(), body.ChannelID, body.KickedMemberID); err != nil {
+	if err := s.Repository.DeleteChannelMemberByUserID(ctx.Request.Context(), bodyRequest.ChannelID, bodyRequest.KickedMemberID); err != nil {
 		s.Log.Error("error with deleting member from channel: ", "error", err)
 		ctx.JSON(http.StatusInternalServerError, err)
 		return
 	}
 
-	// TODO добавить рассылку о том что пользователь был кикнут
+	response, err := s.Client.GetUserNameByID(ctx.Request.Context(), &pb.GetUserNameByIdRequest{
+		UserId: userID.String(),
+	})
+	if err != nil {
+		s.Log.Error("error with getting user name: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
-	ctx.JSON(http.StatusOK, body.KickedMemberID)
+	s.Hub.onSendMessage(dto.AddMessage{
+		ChatID:      bodyRequest.ChannelID,
+		SenderID:    uuid.Nil,
+		Message:     fmt.Sprintf("User %s was kicked from the channel", response.GetName()),
+		MessageType: "system",
+	})
+
+	ctx.JSON(http.StatusOK, bodyRequest.KickedMemberID)
 }
 
 func (s *ServiceMessenger) LeaveFromChannel(ctx *gin.Context) {
@@ -174,10 +267,17 @@ func (s *ServiceMessenger) LeaveFromChannel(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(ctx.Param("user_id"))
+	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
-		s.Log.Error("error with parsing user id uuid: ", "error", err)
-		ctx.JSON(http.StatusBadRequest, err)
+		s.Log.Error("error with verify jwt user token: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID, err := uuid.Parse(payload.ID.String())
+	if err != nil {
+		s.Log.Error("error with parsing jwt token from header: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -226,7 +326,19 @@ func (s *ServiceMessenger) LeaveFromChannel(ctx *gin.Context) {
 			return
 		}
 
-		// TODO добавить рассылку о том что канал был удален
+		channelName, err := s.Repository.SelectChannelNameByID(ctx.Request.Context(), channelID)
+		if err != nil {
+			s.Log.Error("error with selecting channel name: ", "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		s.Hub.onSendMessage(dto.AddMessage{
+			ChatID:      channelID,
+			SenderID:    uuid.Nil,
+			Message:     fmt.Sprintf("channel %s was deleted", channelName),
+			MessageType: "system",
+		})
 
 		ctx.JSON(http.StatusOK, channelID)
 		return
@@ -238,20 +350,40 @@ func (s *ServiceMessenger) LeaveFromChannel(ctx *gin.Context) {
 		return
 	}
 
-	// TODO добавить рассылку о том что пользователь вышел из чата
+	response, err := s.Client.GetUserNameByID(ctx.Request.Context(), &pb.GetUserNameByIdRequest{
+		UserId: userID.String(),
+	})
+	if err != nil {
+		s.Log.Error("error with getting user name: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	s.Hub.onSendMessage(dto.AddMessage{
+		ChatID:      channelID,
+		SenderID:    uuid.Nil,
+		Message:     fmt.Sprintf("User %s has left the channel", response.GetName()),
+		MessageType: "system",
+	})
 
 	ctx.JSON(http.StatusOK, channelID)
 }
 
 func (s *ServiceMessenger) GetChannels(ctx *gin.Context) {
-	userID, err := uuid.Parse(ctx.Param("user_id"))
+	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
-		s.Log.Error("error with parsing user id uuid: ", "error", err)
-		ctx.JSON(http.StatusBadRequest, err)
+		s.Log.Error("error with verify jwt user token: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Получение каналов пользователя
+	userID, err := uuid.Parse(payload.ID.String())
+	if err != nil {
+		s.Log.Error("error with parsing jwt token from header: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	selectMembers := s.Repository.Session.ContextQuery(
 		ctx.Request.Context(),
 		`SELECT channel_id FROM messenger_keyspace.channel_members WHERE user_id IN ?`,
@@ -285,14 +417,28 @@ func (s *ServiceMessenger) GetChannels(ctx *gin.Context) {
 }
 
 func (s *ServiceMessenger) UpdateChannel(ctx *gin.Context) {
-	var body dto.UpdateChannel
+	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		s.Log.Error("error with verify jwt user token: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID, err := uuid.Parse(payload.ID.String())
+	if err != nil {
+		s.Log.Error("error with parsing jwt token from header: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var body dto.UpdateChannelRequest
 	if err := ctx.BindJSON(&body); err != nil {
 		s.Log.Error("invalid body: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, err)
 		return
 	}
 
-	permissions, err := s.Repository.SelectPermissions(ctx.Request.Context(), body.UserID, body.ID)
+	permissions, err := s.Repository.SelectPermissions(ctx.Request.Context(), userID, body.ID)
 	if err != nil {
 		s.Log.Error("error with selecting user permissions from channel: ", "error", err)
 		ctx.JSON(http.StatusInternalServerError, err)
@@ -324,20 +470,48 @@ func (s *ServiceMessenger) UpdateChannel(ctx *gin.Context) {
 		return
 	}
 
-	// TODO добавить рассылку в канал о том что пользователь изменил канал
+	response, err := s.Client.GetUserNameByID(ctx.Request.Context(), &pb.GetUserNameByIdRequest{
+		UserId: userID.String(),
+	})
+	if err != nil {
+		s.Log.Error("error with getting user name: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	s.Hub.onSendMessage(dto.AddMessage{
+		ChatID:      channel.ID,
+		SenderID:    uuid.Nil,
+		Message:     fmt.Sprintf("User %s changed the group", response.GetName()),
+		MessageType: "system",
+	})
 
 	ctx.JSON(http.StatusOK, channel)
 }
 
 func (s *ServiceMessenger) Deletechannel(ctx *gin.Context) {
-	var body dto.DeleteChannel
+	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		s.Log.Error("error with verify jwt user token: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID, err := uuid.Parse(payload.ID.String())
+	if err != nil {
+		s.Log.Error("error with parsing jwt token from header: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var body dto.DeleteChannelRequest
 	if err := ctx.BindJSON(&body); err != nil {
 		s.Log.Error("invalid body: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, err)
 		return
 	}
 
-	permissions, err := s.Repository.SelectPermissions(ctx.Request.Context(), body.UserID, body.ID)
+	permissions, err := s.Repository.SelectPermissions(ctx.Request.Context(), userID, body.ID)
 	if err != nil {
 		s.Log.Error("error with selecting user permissions from channel: ", "error", err)
 		ctx.JSON(http.StatusInternalServerError, err)
@@ -374,7 +548,19 @@ func (s *ServiceMessenger) Deletechannel(ctx *gin.Context) {
 		return
 	}
 
-	// TODO добавить рассылку о том что канал был удален
+	channelName, err := s.Repository.SelectChannelNameByID(ctx.Request.Context(), body.ID)
+	if err != nil {
+		s.Log.Error("error with selecting channel name: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	s.Hub.onSendMessage(dto.AddMessage{
+		ChatID:      body.ID,
+		SenderID:    uuid.Nil,
+		Message:     fmt.Sprintf("channel %s was deleted", channelName),
+		MessageType: "system",
+	})
 
 	ctx.JSON(http.StatusOK, body.ID)
 }

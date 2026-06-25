@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *ServiceMessenger) AddMessageService(ctx *gin.Context, message dto.AddMessage) (dto.Message, error) {
+func (s *ServiceMessenger) AddMessage(ctx *gin.Context, message dto.AddMessage) (dto.Message, error) {
 	// Бизнес-логика: генерация ID и времени
 	messageID, err := uuid.NewV7()
 	if err != nil {
@@ -40,7 +40,7 @@ func (s *ServiceMessenger) AddMessageService(ctx *gin.Context, message dto.AddMe
 	return msg, nil
 }
 
-func (s *ServiceMessenger) UpdateMessageService(ctx *gin.Context, message dto.UpdateMessage) (dto.Message, error) {
+func (s *ServiceMessenger) UpdateMessage(ctx *gin.Context, message dto.UpdateMessage) (dto.Message, error) {
 	// Проверка, что отправитель обновляет свое сообщение
 	// В реальном приложении нужно проверить права
 
@@ -69,7 +69,7 @@ func (s *ServiceMessenger) UpdateMessageService(ctx *gin.Context, message dto.Up
 	return msg, nil
 }
 
-func (s *ServiceMessenger) DeleteMessageService(ctx *gin.Context, message dto.DeleteMessage) error {
+func (s *ServiceMessenger) DeleteMessage(ctx *gin.Context, message dto.DeleteMessage) error {
 	// Проверка, что отправитель удаляет свое сообщение
 	// В реальном приложении нужно проверить права
 
@@ -81,7 +81,7 @@ func (s *ServiceMessenger) DeleteMessageService(ctx *gin.Context, message dto.De
 	return nil
 }
 
-func (s *ServiceMessenger) ClearMessagesFromCommunityService(ctx *gin.Context, clearMessage dto.ClearMessage) (uuid.UUID, error) {
+func (s *ServiceMessenger) ClearMessagesFromCommunity(ctx *gin.Context, clearMessage dto.ClearMessage) (uuid.UUID, error) {
 	switch clearMessage.CommunityType {
 	case "group":
 		// Бизнес-логика: проверка прав для группы

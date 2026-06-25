@@ -10,8 +10,10 @@ import (
 	"sync"
 	"time"
 
+	pb "github.com/Flikest/PingVi_backend/gen/go/user_info"
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
 	"github.com/Flikest/PingVi_backend/internal/repository"
+	mimetype "github.com/Flikest/PingVi_backend/pkg/mime_type"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -82,11 +84,17 @@ func (h *Hub) onSwitchChat(userID, swichedChatID uuid.UUID) {
 	}
 }
 
-func (h *Hub) onSendMessage(msg dto.AddMessage) {
-	// Создаем контекст для операции
+func (h *Hub) onRead(r dto.ReadMessage) {
 	ctx := context.Background()
 
-	// Бизнес-логика: генерация ID и времени
+	r.At = time.Now()
+
+	h.RepositoryMessenger.ReadMessage(ctx, r)
+}
+
+func (h *Hub) onSendMessage(msg dto.AddMessage) {
+	ctx := context.Background()
+
 	messageID, err := uuid.NewV7()
 	if err != nil {
 		h.Log.Error("error with generating message id: ", "error", err)
@@ -95,7 +103,6 @@ func (h *Hub) onSendMessage(msg dto.AddMessage) {
 
 	now := time.Now()
 
-	// Создание сообщения
 	message := dto.Message{
 		ID:          messageID,
 		ChatID:      msg.ChatID,
@@ -107,7 +114,6 @@ func (h *Hub) onSendMessage(msg dto.AddMessage) {
 		UpdatedAt:   now,
 	}
 
-	// Вставка в БД
 	if err := h.RepositoryMessenger.InsertMessage(ctx, message); err != nil {
 		h.Log.Error("error with inserting message: ", "error", err)
 		return
@@ -120,16 +126,14 @@ func (h *Hub) onSendMessage(msg dto.AddMessage) {
 }
 
 func (h *Hub) onUpdateMesage(msg dto.UpdateMessage) {
-	// Создаем контекст для операции
 	ctx := context.Background()
 
 	now := time.Now()
 
-	// Обновление сообщения
 	message := dto.Message{
 		ID:          msg.ID,
 		ChatID:      msg.ChatID,
-		SenderID:    msg.SenderID,
+		SenderID:    msg.UserID,
 		Message:     msg.Message,
 		MessageType: msg.MessageType,
 		IsEdited:    true,
@@ -152,7 +156,6 @@ func (h *Hub) onUpdateMesage(msg dto.UpdateMessage) {
 }
 
 func (h *Hub) onDeleteMessage(msg dto.DeleteMessage) {
-	// Создаем контекст для операции
 	ctx := context.Background()
 
 	if err := h.RepositoryMessenger.DeleteMessage(ctx, msg.ID, msg.ChatID, msg.SenderID); err != nil {
@@ -197,6 +200,8 @@ func (s *ServiceMessenger) ReadMessageFromClient(client *Client) {
 	for {
 		var msg Message
 
+		// TODO получить user id по session id
+
 		if err := client.Conn.ReadJSON(&msg); err != nil {
 			s.Hub.Log.Error("error with reading message: ", "error", err)
 			break
@@ -205,6 +210,13 @@ func (s *ServiceMessenger) ReadMessageFromClient(client *Client) {
 		switch msg.Operation {
 		case "switch_community":
 			s.Hub.onSwitchChat(msg.Message.SenderID, msg.CommunityID)
+		case "read":
+			s.Hub.onRead(dto.ReadMessage{
+				ChatID:    msg.Message.ChatID,
+				UserID:    msg.Message.SenderID,
+				MessageID: msg.Message.ID,
+				At:        time.Now(),
+			})
 		case "send":
 			s.Hub.onSendMessage(dto.AddMessage{
 				ChatID:      msg.Message.ChatID,
@@ -262,6 +274,10 @@ func (s *ServiceMessenger) Handshake(ctx *gin.Context) {
 
 	}
 
+	payload, err := s.Client.GetUserIDBySessionID(ctx.Request.Context(), &pb.GetUserIDBySessionIDRequest{
+		SessionId: ctx.Param("session_id"),
+	})
+
 	conn, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
 	if err != nil {
 		s.Log.Error("error with handshake to client: ", "error", err)
@@ -269,10 +285,8 @@ func (s *ServiceMessenger) Handshake(ctx *gin.Context) {
 		return
 	}
 
-	userID := ctx.Query("user_id")
-
 	client := Client{
-		ID:     userID,
+		ID:     payload.UserId,
 		Conn:   *conn,
 		Send:   make(chan Message, 256),
 		ChatID: "main",
@@ -282,14 +296,6 @@ func (s *ServiceMessenger) Handshake(ctx *gin.Context) {
 
 	go s.ReadMessageFromClient(&client)
 	go s.writeMessageToClient(&client)
-}
-
-var mimeToPreviewType = map[string]string{
-	"image/":       "image",
-	"video/":       "video",
-	"audio/":       "audio",
-	"text/":        "site",
-	"application/": "file",
 }
 
 func (s *ServiceMessenger) LinkPreview(ctx *gin.Context) {
@@ -338,13 +344,7 @@ func (s *ServiceMessenger) LinkPreview(ctx *gin.Context) {
 	contentType := strings.Split(response.Header.Get("Content-Type"), ";")[0]
 	contentType = strings.TrimSpace(strings.ToLower(contentType))
 
-	var previewType string
-	for prefix, pType := range mimeToPreviewType {
-		if strings.HasPrefix(contentType, prefix) {
-			previewType = pType
-			break
-		}
-	}
+	previewType := mimetype.GetMimeType(contentType)
 
 	if previewType == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "A file with this extension is not supported by PingVi"})
@@ -385,7 +385,7 @@ func (s *ServiceMessenger) ClearMesagesFromChat(ctx *gin.Context) {
 		return
 	}
 
-	chatID, err := s.ClearMessagesFromCommunityService(ctx, body)
+	chatID, err := s.ClearMessagesFromCommunity(ctx, body)
 	if err != nil {
 		s.Log.Error("error with clearing message from chat: ", "error", err)
 		ctx.JSON(http.StatusInternalServerError, err)

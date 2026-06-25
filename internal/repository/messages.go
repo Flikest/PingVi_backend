@@ -24,6 +24,31 @@ func (r *RepositoryMessenger) DeleteMessagesByChatID(ctx context.Context, chatID
 	return nil
 }
 
+func (r *RepositoryMessenger) ReadMessage(ctx context.Context, rm dto.ReadMessage) error {
+	readMesage := r.Session.ContextQuery(
+		ctx,
+		`INSERT INTO messenger_keyspace.user_read_positions (user_id, chat_id, last_read_message_id, last_read_time)
+		VALUES (?,?,?,?)`,
+		[]string{
+			":user_id",
+			":chat_id",
+			":last_read_message_id",
+			":last_read_time",
+		}).BindMap(
+		map[string]interface{}{
+			":chat_id":              rm.ChatID,
+			":last_read_message_id": rm.MessageID,
+			":last_read_time":       rm.At,
+		})
+
+	if err := readMesage.ExecRelease(); err != nil {
+		r.Log.Error("error with inserting last read mesage: ", "error", err)
+		return err
+	}
+
+	return nil
+}
+
 func (r *RepositoryMessenger) InsertMessage(ctx context.Context, message dto.Message) error {
 	addMessage := r.Session.ContextQuery(
 		ctx,

@@ -50,6 +50,7 @@ require (
 	github.com/nats-io/nats.go v1.48.0 // indirect
 	github.com/nats-io/nkeys v0.4.15 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
+	github.com/pariz/gountries v0.1.6 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pion/datachannel v1.6.0 // indirect
 	github.com/pion/dtls/v3 v3.1.4 // indirect
@@ -68,7 +69,7 @@ require (
 	github.com/pion/turn/v5 v5.0.9 // indirect
 	github.com/pion/webrtc/v4 v4.2.15 // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
-	github.com/redis/go-redis/v9 v9.17.2 // indirect
+	github.com/redis/go-redis/v9 v9.21.0 // indirect
 	github.com/rookie-ninja/rk-grpc v1.2.25 // indirect
 	github.com/rookie-ninja/rk-grpc/v2 v2.2.22 // indirect
 	github.com/rs/cors v1.7.0 // indirect

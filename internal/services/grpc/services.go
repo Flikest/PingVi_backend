@@ -9,9 +9,9 @@ type ServiceUserInfo struct {
 	Repository UserInfoRepository
 }
 
-type FileStorage struct {
+type ServiceS3 struct {
 	Log        *slog.Logger
-	Repository FileStorageRepository
+	Repository RepositoryS3
 }
 
 type ServicePermissions struct {
@@ -21,6 +21,13 @@ type ServicePermissions struct {
 
 func NewServiceUserInfo(log *slog.Logger, repository UserInfoRepository) *ServiceUserInfo {
 	return &ServiceUserInfo{
+		Log:        log,
+		Repository: repository,
+	}
+}
+
+func NewServiceS3(log *slog.Logger, repository RepositoryS3) *ServiceS3 {
+	return &ServiceS3{
 		Log:        log,
 		Repository: repository,
 	}

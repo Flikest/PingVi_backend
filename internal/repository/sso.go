@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
@@ -16,28 +17,28 @@ import (
 	verificationcode "github.com/Flikest/PingVi_backend/pkg/verification_code"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/pariz/gountries"
+	"github.com/redis/go-redis/v9"
 )
 
-// FIXME: переписать все на слоеную архитектуру, сейчас слой овечает и за бизнес логику и за рабуту с бд
-
-func (r *RepositorySSO) createSession(ctx context.Context, tx pgx.Tx, userID uuid.UUID, device string, locale string) (response dto.LogInResponse, status int, err error) {
-	session := dto.Session{}
+func (r *RepositorySSO) insertUserTokens(ctx context.Context, tx pgx.Tx, userID uuid.UUID, now time.Time) (response dto.LogInResponse, status int, err error) {
+	session := dto.UserTokens{}
 
 	var isUserNotSession bool
 
 	selectedSessionDataQuery := `
 		SELECT id, access_token, refresh_token, created_at, access_expires_at, refresh_expires_at, locale
-	 	FROM sessions 
-	 	WHERE user_id=$1 AND user_device=$2
+	 	FROM user_tokens 
+	 	WHERE user_id=$1
 	`
-	if err := tx.QueryRow(ctx, selectedSessionDataQuery, userID, device).Scan(
+	if err := tx.QueryRow(ctx, selectedSessionDataQuery, userID).Scan(
 		&session.ID,
 		&session.AccessToken,
 		&session.RefreshToken,
 		&session.CreatedAt,
 		&session.AccessExpiresAt,
 		&session.RefreshExpiresAt,
-		&session.Locale); err != nil && err != pgx.ErrNoRows {
+	); err != nil && err != pgx.ErrNoRows {
 		r.Log.Error("error with scanning session data: ", "error", err)
 		return dto.LogInResponse{}, http.StatusInternalServerError, err
 	} else if err == pgx.ErrNoRows {
@@ -56,13 +57,11 @@ func (r *RepositorySSO) createSession(ctx context.Context, tx pgx.Tx, userID uui
 		return dto.LogInResponse{}, http.StatusInternalServerError, err
 	}
 
-	now := time.Now()
-
 	if isUserNotSession == true {
 		insertSessionQuery := `
 			INSERT INTO
-			sessions (id, user_id, access_token, refresh_token, user_device, created_at, access_expires_at, refresh_expires_at, locale)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+			sessions (id, user_id, access_token, refresh_token, created_at, access_expires_at, refresh_expires_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)
 		`
 
 		uuid, err := uuid.NewV7()
@@ -76,11 +75,10 @@ func (r *RepositorySSO) createSession(ctx context.Context, tx pgx.Tx, userID uui
 			userID,
 			accessToken,
 			refreshToken,
-			device,
 			now,
 			now.Add(time.Minute*15),
 			now.AddDate(0, 2, 0),
-			locale)
+		)
 		if err != nil {
 			r.Log.Error("error with creating user session: ", "error", err)
 			return dto.LogInResponse{}, http.StatusInternalServerError, err
@@ -105,7 +103,7 @@ func (r *RepositorySSO) createSession(ctx context.Context, tx pgx.Tx, userID uui
 		now,
 		now.Add(time.Minute*15),
 		now.AddDate(0, 2, 0),
-		locale)
+	)
 	if err != nil {
 		r.Log.Error("error with updating user session: ", "error", err)
 		return dto.LogInResponse{}, http.StatusInternalServerError, err
@@ -120,6 +118,125 @@ func (r *RepositorySSO) createSession(ctx context.Context, tx pgx.Tx, userID uui
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}, http.StatusOK, nil
+}
+
+func (r *RepositorySSO) SelectUserIDBySessionID(ctx context.Context, sessionID string) (userID uuid.UUID, err error) {
+	userIDStr, err := r.RDB.HGet(ctx, sessionID, "user_id").Result()
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			r.Log.Error("session not found", "error", err)
+			return uuid.Nil, errors.New("session not found")
+		} else {
+			r.Log.Error("error with getting user id from redis: ", "error", err)
+			return uuid.Nil, err
+		}
+	}
+
+	userID, err = uuid.Parse(userIDStr)
+	if err != nil {
+		r.Log.Error("error with parsing user uuid: ", "error", err)
+		return uuid.Nil, err
+	}
+
+	return userID, nil
+
+}
+
+func (r *RepositorySSO) SaveSession(ctx context.Context, session dto.Session) error {
+	sessionKey := "session:" + session.ID.String()
+	userIndexKey := "user_sessions:" + session.UserID.String()
+
+	pipe := r.RDB.Pipeline()
+
+	pipe.HSet(ctx, sessionKey, session)
+
+	pipe.SAdd(ctx, userIndexKey, session.ID.String())
+
+	_, err := pipe.Exec(ctx)
+	if err != nil {
+		r.Log.Error("failed to save session and write index", "error", err)
+		return err
+	}
+
+	return nil
+}
+
+func (r *RepositorySSO) SelectAllSessionsByUserID(ctx context.Context, userID uuid.UUID) ([]dto.Session, error) {
+	userIndexKey := "user_sessions:" + userID.String()
+
+	sessionIDs, err := r.RDB.SMembers(ctx, userIndexKey).Result()
+	if err != nil {
+		r.Log.Error("error getting session IDs from index", "error", err)
+		return nil, err
+	}
+
+	if len(sessionIDs) == 0 {
+		return []dto.Session{}, nil
+	}
+
+	pipe := r.RDB.Pipeline()
+	cmds := make([]*redis.MapStringStringCmd, len(sessionIDs))
+
+	for i, id := range sessionIDs {
+		cmds[i] = pipe.HGetAll(ctx, "session:"+id)
+	}
+
+	_, err = pipe.Exec(ctx)
+	if err != nil && !errors.Is(err, redis.Nil) {
+		r.Log.Error("pipeline exec error while fetching sessions", "error", err)
+		return nil, err
+	}
+
+	var activeSessions []dto.Session
+	var expiredIDs []string
+
+	for i, cmd := range cmds {
+		var sess dto.Session
+		if err := cmd.Scan(&sess); err != nil {
+			continue
+		}
+
+		if sess.ID != uuid.Nil {
+			activeSessions = append(activeSessions, sess)
+		} else {
+			expiredIDs = append(expiredIDs, sessionIDs[i])
+		}
+	}
+
+	if len(expiredIDs) > 0 {
+		go func() {
+			r.RDB.SRem(context.Background(), userIndexKey, expiredIDs)
+		}()
+	}
+
+	return activeSessions, nil
+}
+
+func (r *RepositorySSO) DeleteSessionByID(ctx context.Context, sessionID string) error {
+	sessionKey := "session:" + sessionID
+
+	userIDStr, err := r.RDB.HGet(ctx, sessionKey, "user_id").Result()
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return nil
+		}
+		r.Log.Error("failed to get user_id for session deletion", "error", err)
+		return err
+	}
+
+	userIndexKey := "user_sessions:" + userIDStr
+
+	pipe := r.RDB.Pipeline()
+	pipe.Del(ctx, sessionKey)
+	pipe.SRem(ctx, userIndexKey, sessionID)
+
+	_, err = pipe.Exec(ctx)
+	if err != nil {
+		r.Log.Error("failed to delete session and update index", "error", err)
+		return err
+	}
+
+	return nil
 }
 
 func (r *RepositorySSO) CreateUser(ctx context.Context, u dto.CreateUserRequest) (user dto.User, err error) {
@@ -261,17 +378,50 @@ func (r *RepositorySSO) Login(ctx context.Context, lr dto.LogInRequest) (respons
 			Jwt2FAToken:  jwt2FAToken,
 		}, http.StatusCreated, nil
 	}
+	now := time.Now()
 
-	response, status, err := r.createSession(ctx, tx, userData.ID, lr.Device, fmt.Sprintf("%s %s", locale.Country, locale.City))
+	response, status, err := r.insertUserTokens(ctx, tx, userData.ID, now)
 	if err != nil {
 		r.Log.Error("error with create session: ", "error", err)
 		return dto.LogInResponse{}, status, err
+	}
+
+	sessionToken, err := tokens.CreateSessionToken(128)
+	if err != nil {
+		r.Log.Error("error with generate session token: ", "error", err)
+		return dto.LogInResponse{}, http.StatusInternalServerError, err
+	}
+
+	gountres := gountries.New()
+
+	alpha2Code, err := gountres.FindCountryByAlpha(locale.Country)
+
+	sessionID, err := uuid.NewV7()
+	if err != nil {
+		r.Log.Error("error with generate new session uuid: ", "error", err)
+		return dto.LogInResponse{}, http.StatusInternalServerError, err
+	}
+
+	err = r.SaveSession(ctx, dto.Session{
+		ID:           sessionID,
+		UserID:       userData.ID,
+		UserDevice:   lr.Device,
+		SessionToken: sessionToken,
+		CreatedAt:    now,
+		Locale:       locale.Country,
+		LocaleImgUrl: fmt.Sprintf("https://flagcdn.com/40x30/%s.png", strings.ToLower(alpha2Code.Alpha2)),
+	})
+	if err != nil {
+		r.Log.Error("error with inserting session: ", "error", err)
+		return dto.LogInResponse{}, http.StatusInternalServerError, err
 	}
 
 	if err := tx.Commit(ctx); err != nil {
 		r.Log.Error("error with committing transaction: ", "error", err)
 		return dto.LogInResponse{}, http.StatusInternalServerError, err
 	}
+
+	response.SessionID = sessionID
 
 	return response, status, err
 }
@@ -298,6 +448,12 @@ func (r *RepositorySSO) Logout(ctx context.Context, lr dto.LogoutRequest) (userI
 	rowsAffected := result.RowsAffected()
 	if rowsAffected == 0 {
 		r.Log.Warn("no session found to delete", "user_id", lr.UserID, "device", lr.Device)
+	}
+
+	err = r.DeleteSessionByID(ctx, lr.SessionID.String())
+	if err != nil {
+		r.Log.Error("error with deleting session by sessionID: ", "error", err)
+		return uuid.Nil, fmt.Errorf("failed to delete session by ID: %w", err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
@@ -528,7 +684,9 @@ func (r *RepositorySSO) Verify2FA(ctx context.Context, tfr dto.TwoFaRequest) (re
 		return dto.LogInResponse{}, http.StatusInternalServerError, err
 	}
 
-	response, status, err = r.createSession(ctx, tx, claims.ID, claims.Device, claims.Locale)
+	now := time.Now()
+
+	response, status, err = r.insertUserTokens(ctx, tx, claims.ID, now)
 	if err != nil {
 		r.Log.Error("error with create session: ", "error", err)
 		return dto.LogInResponse{}, status, err
@@ -809,55 +967,49 @@ func (r *RepositorySSO) SelectUserByID(ctx context.Context, userID uuid.UUID) (u
 	return user, nil
 }
 
-func (r *RepositorySSO) SelectAllUserSessions(ctx context.Context, userID uuid.UUID) (session []dto.Session, err error) {
-	if userID == uuid.Nil {
-		r.Log.Error("invalid input: user_id is required")
-		return nil, fmt.Errorf("invalid input: userid is required")
+func (r *RepositorySSO) SelectUserTokens(ctx context.Context, userID uuid.UUID) (dto.UserTokens, error) {
+	selectQuery := `
+		SELECT * FROM user_tokens WHERE user_id=$1
+	`
+
+	var userTokens dto.UserTokens
+
+	if err := r.DB.QueryRow(ctx, selectQuery, userID).Scan(&userTokens); err != nil {
+		r.Log.Error("error with selecting user tokens info: ", "error", err)
+		return dto.UserTokens{}, err
 	}
 
-	query := `
-        SELECT *
-        FROM sessions 
-        WHERE user_id = $1
-        ORDER BY created_at DESC
-    `
+	return userTokens, nil
+}
 
-	rows, err := r.DB.Query(ctx, query, userID)
+func (r *RepositorySSO) UpdateTokens(ctx context.Context, userID uuid.UUID, refreshToken, accessToken string, createdAT, expRefresh, expAccess time.Time) error {
+	updateQuery := `
+		UPDATE user_tokens
+		SET access_token=$2, refresh_token=$3, created_at=$4, access_expires_at=$5, refresh_expires_at=$6
+		WHERE user_id=$1
+	`
+
+	tx, err := r.DB.Begin(ctx)
+
 	if err != nil {
-		r.Log.Error("error with selecting all user sessions: ", "error", err)
-		return nil, fmt.Errorf("failed to query sessions: %w", err)
+		r.Log.Error("error with creating transaction: ", "error", err)
+		return err
 	}
-	defer rows.Close()
+	defer tx.Rollback(ctx)
 
-	var sessions []dto.Session
-
-	for rows.Next() {
-		var session dto.Session
-		err := rows.Scan(
-			&session.ID,
-			&session.UserID,
-			&session.UserDevice,
-			&session.AccessToken,
-			&session.RefreshToken,
-			&session.CreatedAt,
-			&session.AccessExpiresAt,
-			&session.RefreshExpiresAt,
-			&session.Locale,
-			&session.LocaleImgUrl,
-		)
-		if err != nil {
-			r.Log.Error("error with scanning session: ", "error", err)
-			return nil, fmt.Errorf("failed to scan session: %w", err)
-		}
-		sessions = append(sessions, session)
+	_, err = tx.Exec(ctx, updateQuery, userID, accessToken, refreshToken, createdAT, expAccess, expRefresh)
+	if err != nil {
+		r.Log.Error("error with updating tokens: ", "error", err)
+		return err
 	}
 
-	if err = rows.Err(); err != nil {
-		r.Log.Error("error after iterating rows: ", "error", err)
-		return nil, fmt.Errorf("rows iteration error: %w", err)
+	if err := tx.Commit(ctx); err != nil {
+		r.Log.Error("failed to commit transaction", "error", err)
+		return err
 	}
 
-	return sessions, nil
+	r.Log.Info("tokens updated successfully for user", "user_id", userID)
+	return nil
 }
 
 func (r *RepositorySSO) DeleteUser(ctx context.Context, userID uuid.UUID) (ID uuid.UUID, err error) {

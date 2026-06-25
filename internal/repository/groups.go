@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
+	"github.com/gocql/gocql"
 	"github.com/google/uuid"
 )
 
@@ -155,6 +157,47 @@ func (r *RepositoryMessenger) SelectAllMembersGroup(ctx context.Context, groupID
 	}
 
 	return members, nil
+}
+
+func (r *RepositoryMessenger) SelectGroupNameByID(ctx context.Context, groupID uuid.UUID) (string, error) {
+	query := r.Session.ContextQuery(
+		ctx,
+		`SELECT name FROM messenger_keyspace.groups WHERE id=?`,
+		[]string{":id"}).
+		BindMap(map[string]interface{}{
+			":id": groupID,
+		})
+
+	var name string
+	if err := query.SelectRelease(name); err != nil {
+		r.Log.Error("error with selecting group name by id: ", "error", err)
+		return "", err
+	}
+
+	return name, nil
+}
+
+func (r *RepositoryMessenger) IsBelongGroup(ctx context.Context, groupID, userID uuid.UUID) (bool, error) {
+	query := r.Session.ContextQuery(
+		ctx,
+		`SELECT user_id FROM messenger_keyspace.group_members WHERE group_id = ? AND user_id = ? LIMIT 1`,
+		[]string{":group_id", ":user_id"}).
+		BindMap(map[string]interface{}{
+			":group_id": groupID,
+			":user_id":  userID,
+		})
+
+	var scanUserID uuid.UUID
+	if err := query.SelectRelease(&scanUserID); err != nil {
+		if errors.Is(err, gocql.ErrNotFound) {
+			return false, nil
+		}
+
+		r.Log.Error("error with checking belonging to group: ", "error", err)
+		return false, err
+	}
+
+	return true, nil
 }
 
 func (r *RepositoryMessenger) SelectMemberGroup(ctx context.Context, groupID, userID uuid.UUID) (dto.GroupMember, error) {
