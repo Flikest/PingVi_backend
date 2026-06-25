@@ -1,0 +1,63 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis-session-store
+    restart: always
+
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --requirepass ${REDIS_PASSWORD:-secret}
+      --maxmemory 2gb
+      --maxmemory-policy allkeys-lru
+      --bind 0.0.0.0
+      --port 6379
+      --dir /data
+      --appendfilename appendonly.aof
+      --dbfilename dump.rdb
+      --auto-aof-rewrite-percentage 100
+      --auto-aof-rewrite-min-size 64mb
+      --aof-load-truncated yes
+      --aof-use-rdb-preamble yes
+    
+    ports:
+      - "6379:6379"
+    
+    volumes:
+      - redis-data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
+    
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-secret}
+      - REDIS_REPLICATION_MODE=master
+    
+    networks:
+      - microservices-network
+    
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+
+volumes:
+  redis-data:
+    driver: local
+
+networks:
+  microservices-network:
+    driver: bridge

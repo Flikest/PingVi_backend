@@ -2,19 +2,37 @@ package servicehttp
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
+	"github.com/Flikest/PingVi_backend/pkg/tokens"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
 func (s *ServiceMessenger) CreateDirectory(ctx *gin.Context) {
+	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		s.Log.Error("error with verify jwt user token: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID, err := uuid.Parse(payload.ID.String())
+	if err != nil {
+		s.Log.Error("error with parsing jwt token from header: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	var body dto.CreateDirectory
 	if err := ctx.BindJSON(&body); err != nil {
 		s.Log.Error("error with creating directory", "error", err)
 		ctx.JSON(http.StatusBadRequest, "invalid body")
 		return
 	}
+
+	body.UserID = userID
 
 	permision, err := s.Repository.SelectPermissions(ctx.Request.Context(), body.UserID, body.ChannelID)
 	if err != nil {
@@ -58,12 +76,28 @@ func (s *ServiceMessenger) SelectAllDirectorys(ctx *gin.Context) {
 }
 
 func (s *ServiceMessenger) UpdateDirectory(ctx *gin.Context) {
+	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		s.Log.Error("error with verify jwt user token: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID, err := uuid.Parse(payload.ID.String())
+	if err != nil {
+		s.Log.Error("error with parsing jwt token from header: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	var body dto.UpdateDirectory
 	if err := ctx.BindJSON(&body); err != nil {
 		s.Log.Error("invalid body: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, "invalid body")
 		return
 	}
+
+	body.UserID = userID
 
 	permision, err := s.Repository.SelectPermissions(ctx.Request.Context(), body.UserID, body.ChannelID)
 	if err != nil {
@@ -89,12 +123,28 @@ func (s *ServiceMessenger) UpdateDirectory(ctx *gin.Context) {
 }
 
 func (s *ServiceMessenger) DeleteDirectory(ctx *gin.Context) {
+	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		s.Log.Error("error with verify jwt user token: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID, err := uuid.Parse(payload.ID.String())
+	if err != nil {
+		s.Log.Error("error with parsing jwt token from header: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	var body dto.DeleteDirectory
 	if err := ctx.BindJSON(&body); err != nil {
 		s.Log.Error("invalid body: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, "invalid body")
 		return
 	}
+
+	body.UserID = userID
 
 	permision, err := s.Repository.SelectPermissions(ctx.Request.Context(), body.UserID, body.ChannelID)
 	if err != nil {

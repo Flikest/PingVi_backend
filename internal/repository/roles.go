@@ -91,6 +91,25 @@ func (r *RepositoryMessenger) SelectRoles(ctx context.Context, channelID uuid.UU
 	return roles, nil
 }
 
+func (r *RepositoryMessenger) SelectRoleName(ctx context.Context, roleID, channelID uuid.UUID) (string, error) {
+	selectRole := r.Session.ContextQuery(
+		ctx,
+		`SELECT name FROM messenger_keyspace.channel_roles WHERE id=? AND channel_id=?`,
+		[]string{":id", ":channel_id"}).
+		BindMap(map[string]interface{}{
+			":id":         channelID,
+			":channel_id": channelID,
+		})
+
+	var name string
+	if err := selectRole.SelectRelease(&name); err != nil {
+		r.Log.Error("error with selecting role name: ", "error", err)
+		return "", err
+	}
+
+	return name, nil
+}
+
 func (r *RepositoryMessenger) SelectMemberIDsByRoleID(ctx context.Context, channelID, roleID uuid.UUID) ([]uuid.UUID, error) {
 	selectUserIDs := r.Session.ContextQuery(
 		ctx,

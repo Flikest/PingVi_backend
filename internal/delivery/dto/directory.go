@@ -30,6 +30,6 @@ type UpdateDirectory struct {
 
 type DeleteDirectory struct {
 	UserID    uuid.UUID `json:"user_id"`
-	channelID uuid.UUID `json:"channel_id"`
+	ChannelID uuid.UUID `json:"channel_id"`
 	ID        uuid.UUID `json:"id"`
 }

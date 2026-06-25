@@ -5,12 +5,14 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/minio/minio-go/v7"
+	"github.com/redis/go-redis/v9"
 	"github.com/scylladb/gocqlx/v2"
 )
 
 type RepositorySSO struct {
 	Log *slog.Logger
 	DB  *pgxpool.Pool
+	RDB *redis.Client
 }
 
 type RepositoryMessenger struct {
@@ -18,7 +20,7 @@ type RepositoryMessenger struct {
 	Session *gocqlx.Session
 }
 
-type RepossitoryS3 struct {
+type RepositoryFileStorage struct {
 	Log         *slog.Logger
 	MinIOClient *minio.Client
 }
@@ -37,8 +39,8 @@ func NewRepositoryMessenger(s *RepositoryMessenger) *RepositoryMessenger {
 	}
 }
 
-func NewReposossoryS3(s *RepossoryS3) *RepossoryS3 {
-	return &RepossoryS3{
+func NewReposossoryS3(s *RepositoryFileStorage) *RepositoryFileStorage {
+	return &RepositoryFileStorage{
 		Log: s.Log,
 	}
 }

@@ -109,6 +109,94 @@ func (x *GetUserNameByIdResponse) GetName() string {
 	return ""
 }
 
+type GetUserIDBySessionIDRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserIDBySessionIDRequest) Reset() {
+	*x = GetUserIDBySessionIDRequest{}
+	mi := &file_user_info_user_info_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserIDBySessionIDRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserIDBySessionIDRequest) ProtoMessage() {}
+
+func (x *GetUserIDBySessionIDRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_info_user_info_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserIDBySessionIDRequest.ProtoReflect.Descriptor instead.
+func (*GetUserIDBySessionIDRequest) Descriptor() ([]byte, []int) {
+	return file_user_info_user_info_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *GetUserIDBySessionIDRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+type GetUserIDBySessionIDResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserIDBySessionIDResponse) Reset() {
+	*x = GetUserIDBySessionIDResponse{}
+	mi := &file_user_info_user_info_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserIDBySessionIDResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserIDBySessionIDResponse) ProtoMessage() {}
+
+func (x *GetUserIDBySessionIDResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_info_user_info_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserIDBySessionIDResponse.ProtoReflect.Descriptor instead.
+func (*GetUserIDBySessionIDResponse) Descriptor() ([]byte, []int) {
+	return file_user_info_user_info_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *GetUserIDBySessionIDResponse) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
 var File_user_info_user_info_proto protoreflect.FileDescriptor
 
 const file_user_info_user_info_proto_rawDesc = "" +
@@ -117,9 +205,15 @@ const file_user_info_user_info_proto_rawDesc = "" +
 	"\x16GetUserNameByIdRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\"-\n" +
 	"\x17GetUserNameByIdResponse\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name2d\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\"<\n" +
+	"\x1bGetUserIDBySessionIDRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\"7\n" +
+	"\x1cGetUserIDBySessionIDResponse\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId2\xcd\x01\n" +
 	"\bUserInfo\x12X\n" +
-	"\x0fGetUserNameByID\x12!.user_info.GetUserNameByIdRequest\x1a\".user_info.GetUserNameByIdResponseB\x14Z\x12./gen/go/user_infob\x06proto3"
+	"\x0fGetUserNameByID\x12!.user_info.GetUserNameByIdRequest\x1a\".user_info.GetUserNameByIdResponse\x12g\n" +
+	"\x14GetUserIDBySessionID\x12&.user_info.GetUserIDBySessionIDRequest\x1a'.user_info.GetUserIDBySessionIDResponseB\x14Z\x12./gen/go/user_infob\x06proto3"
 
 var (
 	file_user_info_user_info_proto_rawDescOnce sync.Once
@@ -133,16 +227,20 @@ func file_user_info_user_info_proto_rawDescGZIP() []byte {
 	return file_user_info_user_info_proto_rawDescData
 }
 
-var file_user_info_user_info_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_user_info_user_info_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_user_info_user_info_proto_goTypes = []any{
-	(*GetUserNameByIdRequest)(nil),  // 0: user_info.GetUserNameByIdRequest
-	(*GetUserNameByIdResponse)(nil), // 1: user_info.GetUserNameByIdResponse
+	(*GetUserNameByIdRequest)(nil),       // 0: user_info.GetUserNameByIdRequest
+	(*GetUserNameByIdResponse)(nil),      // 1: user_info.GetUserNameByIdResponse
+	(*GetUserIDBySessionIDRequest)(nil),  // 2: user_info.GetUserIDBySessionIDRequest
+	(*GetUserIDBySessionIDResponse)(nil), // 3: user_info.GetUserIDBySessionIDResponse
 }
 var file_user_info_user_info_proto_depIdxs = []int32{
 	0, // 0: user_info.UserInfo.GetUserNameByID:input_type -> user_info.GetUserNameByIdRequest
-	1, // 1: user_info.UserInfo.GetUserNameByID:output_type -> user_info.GetUserNameByIdResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
+	2, // 1: user_info.UserInfo.GetUserIDBySessionID:input_type -> user_info.GetUserIDBySessionIDRequest
+	1, // 2: user_info.UserInfo.GetUserNameByID:output_type -> user_info.GetUserNameByIdResponse
+	3, // 3: user_info.UserInfo.GetUserIDBySessionID:output_type -> user_info.GetUserIDBySessionIDResponse
+	2, // [2:4] is the sub-list for method output_type
+	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -159,7 +257,7 @@ func file_user_info_user_info_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_info_user_info_proto_rawDesc), len(file_user_info_user_info_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

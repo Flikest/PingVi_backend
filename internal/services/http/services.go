@@ -7,7 +7,6 @@ import (
 	pbUserPermissions "github.com/Flikest/PingVi_backend/gen/go/permissions"
 	pbUserInfo "github.com/Flikest/PingVi_backend/gen/go/user_info"
 	"github.com/Flikest/PingVi_backend/internal/repository"
-	"github.com/minio/minio-go/v7"
 )
 
 type ServiceSSO struct {
@@ -28,9 +27,9 @@ type ServiceSFU struct {
 	GrpcClient pbUserPermissions.PermissionsClient
 }
 
-type ServiceS3 struct {
-	Log         *slog.Logger
-	MinIOClient *minio.Client
+type ServiceFileStorage struct {
+	Log        *slog.Logger
+	Repository *repository.RepositoryFileStorage
 }
 
 func NewSSOService(s *ServiceSSO) *ServiceSSO {
@@ -55,9 +54,9 @@ func NewSFUService(s *ServiceSFU) *ServiceSFU {
 	}
 }
 
-func NewS3Service(s *ServiceS3) *ServiceS3 {
-	return &ServiceS3{
-		Log:         s.Log,
-		MinIOClient: s.MinIOClient,
+func NewS3Service(s *ServiceFileStorage) *ServiceFileStorage {
+	return &ServiceFileStorage{
+		Log:        s.Log,
+		Repository: s.Repository,
 	}
 }

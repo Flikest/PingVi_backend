@@ -2,10 +2,14 @@ package servicehttp
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
+	"os"
 	"time"
 
+	pb "github.com/Flikest/PingVi_backend/gen/go/user_info"
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
+	"github.com/Flikest/PingVi_backend/pkg/tokens"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -36,6 +40,20 @@ func (s *ServiceMessenger) GetPermissions(ctx *gin.Context) {
 }
 
 func (s *ServiceMessenger) CreateRole(ctx *gin.Context) {
+	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		s.Log.Error("error with verify jwt user token: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID, err := uuid.Parse(payload.ID.String())
+	if err != nil {
+		s.Log.Error("error with parsing jwt token from header: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	var body dto.CreateRole
 	if err := ctx.BindJSON(&body); err != nil {
 		s.Log.Error("invalid body: ", "error", err)
@@ -43,7 +61,8 @@ func (s *ServiceMessenger) CreateRole(ctx *gin.Context) {
 		return
 	}
 
-	// Бизнес-логика: проверка прав
+	body.UserID = userID
+
 	permissions, err := s.Repository.SelectPermissions(ctx.Request.Context(), body.UserID, body.ChannelID)
 	if err != nil {
 		s.Log.Error("error with selecting permissions: ", "error", err)
@@ -57,7 +76,6 @@ func (s *ServiceMessenger) CreateRole(ctx *gin.Context) {
 		return
 	}
 
-	// Бизнес-логика: генерация ID и времени
 	roleID, err := uuid.NewV7()
 	if err != nil {
 		s.Log.Error("error with generating role id: ", "error", err)
@@ -65,9 +83,17 @@ func (s *ServiceMessenger) CreateRole(ctx *gin.Context) {
 		return
 	}
 
+	response, err := s.Client.GetUserNameByID(ctx.Request.Context(), &pb.GetUserNameByIdRequest{
+		UserId: userID.String(),
+	})
+	if err != nil {
+		s.Log.Error("error with getting user name: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	now := time.Now()
 
-	// Создание роли
 	role := dto.Role{
 		ID:            roleID,
 		ChannelID:     body.ChannelID,
@@ -86,17 +112,42 @@ func (s *ServiceMessenger) CreateRole(ctx *gin.Context) {
 		return
 	}
 
-	// TODO добавить рассылку о том что пользователь создал роль
+	s.Hub.onSendMessage(dto.AddMessage{
+		ChatID:      body.ChannelID,
+		SenderID:    uuid.Nil,
+		Message:     fmt.Sprintf("User %s created the role %s", response.GetName(), role.Name),
+		MessageType: "system",
+	})
 
 	ctx.JSON(http.StatusCreated, role)
 }
 
 func (s *ServiceMessenger) GetAllRoles(ctx *gin.Context) {
+	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		s.Log.Error("error with verify jwt user token: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID, err := uuid.Parse(payload.ID.String())
+	if err != nil {
+		s.Log.Error("error with parsing jwt token from header: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	channelID, err := uuid.Parse(ctx.Param("channel_id"))
 	if err != nil {
 		s.Log.Error("error with parsing user id uuid: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, err)
 		return
+	}
+
+	isBelong, err := s.Repository.IsBelongGroup(ctx.Request.Context(), channelID, userID)
+
+	if !isBelong {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "the user does not belong to this group"})
 	}
 
 	roles, err := s.Repository.SelectRoles(ctx.Request.Context(), channelID)
@@ -110,6 +161,20 @@ func (s *ServiceMessenger) GetAllRoles(ctx *gin.Context) {
 }
 
 func (s *ServiceMessenger) UpdateRole(ctx *gin.Context) {
+	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		s.Log.Error("error with verify jwt user token: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID, err := uuid.Parse(payload.ID.String())
+	if err != nil {
+		s.Log.Error("error with parsing jwt token from header: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	var body dto.UpdateRole
 	if err := ctx.BindJSON(&body); err != nil {
 		s.Log.Error("invalid body: ", "error", err)
@@ -117,7 +182,8 @@ func (s *ServiceMessenger) UpdateRole(ctx *gin.Context) {
 		return
 	}
 
-	// Бизнес-логика: проверка прав
+	body.UserID = userID
+
 	permissions, err := s.Repository.SelectPermissions(ctx.Request.Context(), body.UserID, body.ChannelID)
 	if err != nil {
 		s.Log.Error("error with selecting permissions: ", "error", err)
@@ -143,6 +209,20 @@ func (s *ServiceMessenger) UpdateRole(ctx *gin.Context) {
 }
 
 func (s *ServiceMessenger) DeleteRole(ctx *gin.Context) {
+	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		s.Log.Error("error with verify jwt user token: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID, err := uuid.Parse(payload.ID.String())
+	if err != nil {
+		s.Log.Error("error with parsing jwt token from header: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	var body dto.DeleteRole
 	if err := ctx.BindJSON(&body); err != nil {
 		s.Log.Error("invalid body: ", "error", err)
@@ -150,7 +230,8 @@ func (s *ServiceMessenger) DeleteRole(ctx *gin.Context) {
 		return
 	}
 
-	// Бизнес-логика: проверка прав
+	body.UserID = userID
+
 	permissions, err := s.Repository.SelectPermissions(ctx.Request.Context(), body.UserID, body.ChannelID)
 	if err != nil {
 		s.Log.Error("error with selecting permissions: ", "error", err)
@@ -164,7 +245,13 @@ func (s *ServiceMessenger) DeleteRole(ctx *gin.Context) {
 		return
 	}
 
-	// Получение роли @everyone
+	roleName, err := s.Repository.SelectRoleName(ctx.Request.Context(), body.RoleID, body.ChannelID)
+	if err != nil {
+		s.Log.Error("error with getting role name: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	everyoneRoleID, err := s.Repository.SelectEveryoneRoleID(ctx.Request.Context(), body.ChannelID)
 	if err != nil {
 		s.Log.Error("error with selecting role id on everyone name: ", "error", err)
@@ -191,7 +278,21 @@ func (s *ServiceMessenger) DeleteRole(ctx *gin.Context) {
 		return
 	}
 
-	// TODO добавить рассылку о том что пользователь удалил роль канала
+	response, err := s.Client.GetUserNameByID(ctx.Request.Context(), &pb.GetUserNameByIdRequest{
+		UserId: userID.String(),
+	})
+	if err != nil {
+		s.Log.Error("error with getting user name: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	s.Hub.onSendMessage(dto.AddMessage{
+		ChatID:      body.ChannelID,
+		SenderID:    uuid.Nil,
+		Message:     fmt.Sprintf("User %s deleted the role %s", response.GetName(), roleName),
+		MessageType: "system",
+	})
 
 	ctx.JSON(http.StatusOK, body.RoleID)
 }

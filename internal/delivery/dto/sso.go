@@ -40,9 +40,10 @@ type LogInRequest struct {
 }
 
 type LogInResponse struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-	Jwt2FAToken  string `json:"jwt_2fa_token"`
+	AccessToken  string    `json:"access_token"`
+	RefreshToken string    `json:"refresh_token"`
+	SessionID    uuid.UUID `json:"session_id"`
+	Jwt2FAToken  string    `json:"jwt_2fa_token"`
 }
 
 type TwoFaRequest struct {
@@ -51,8 +52,9 @@ type TwoFaRequest struct {
 }
 
 type LogoutRequest struct {
-	UserID uuid.UUID `json:"user_id"`
-	Device string    `json:"device"`
+	UserID    uuid.UUID `json:"user_id"`
+	SessionID uuid.UUID `json:"session_id"`
+	Device    string    `json:"device"`
 }
 
 type RecoverPasswordRequest struct {
@@ -85,15 +87,22 @@ type User struct {
 	UpdatedAt        time.Time `json:"updated_at"`
 }
 
-type Session struct {
+type UserTokens struct {
 	ID               uuid.UUID `json:"id"`
 	UserID           uuid.UUID `json:"user_id"`
-	UserDevice       string    `json:"user_device"`
 	AccessToken      string    `json:"access_token"`
 	RefreshToken     string    `json:"refresh_token"`
 	CreatedAt        time.Time `json:"created_at"`
 	AccessExpiresAt  time.Time `json:"access_expires_at"`
 	RefreshExpiresAt time.Time `json:"refresh_expires_at"`
-	Locale           string    `json:"locale"`
-	LocaleImgUrl     string    `json:"country_img_url"`
+}
+
+type Session struct {
+	ID           uuid.UUID `json:"id" redis:"id"`
+	UserID       uuid.UUID `json:"user_id" redis:"user_id"`
+	UserDevice   string    `json:"user_device" redis:"user_device"`
+	SessionToken string    `json:"session_token" redis:"session_token"`
+	CreatedAt    time.Time `json:"created_at" redis:"created_at"`
+	Locale       string    `json:"locale" redis:"locale"`
+	LocaleImgUrl string    `json:"country_img_url" redis:"country_img_url"`
 }

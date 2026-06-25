@@ -26,6 +26,13 @@ type LinkPreviewResponse struct {
 	Message string `json:"message"`
 }
 
+type ReadMessage struct {
+	ChatID    uuid.UUID `json:"chat_id"`
+	UserID    uuid.UUID `json:"user_id"`
+	MessageID uuid.UUID `json:"message_id"`
+	At        time.Time `json:"at"`
+}
+
 type AddMessage struct {
 	ChatID      uuid.UUID `json:"chat_id"`
 	SenderID    uuid.UUID `json:"sender_id"`
@@ -36,6 +43,7 @@ type AddMessage struct {
 
 type UpdateMessage struct {
 	ID          uuid.UUID `json:"id"`
+	UserID      uuid.UUID `json:"user_id"`
 	ChatID      uuid.UUID `json:"chat_id"`
 	SenderID    uuid.UUID `json:"sender_id"`
 	Message     string    `json:"message"`

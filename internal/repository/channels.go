@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
+	"github.com/gocql/gocql"
 	"github.com/google/uuid"
 )
 
@@ -84,6 +86,47 @@ func (r *RepositoryMessenger) InsertChannelMember(ctx context.Context, member dt
 	}
 
 	return nil
+}
+
+func (r *RepositoryMessenger) IsBelongChannel(ctx context.Context, channelID, userID uuid.UUID) (bool, error) {
+	query := r.Session.ContextQuery(
+		ctx,
+		`SELECT user_id FROM messenger_keyspace.channel_members WHERE channel_id = ? AND user_id = ? LIMIT 1`,
+		[]string{":group_id", ":user_id"}).
+		BindMap(map[string]interface{}{
+			":channel_id": channelID,
+			":user_id":    userID,
+		})
+
+	var scanUserID uuid.UUID
+	if err := query.SelectRelease(&scanUserID); err != nil {
+		if errors.Is(err, gocql.ErrNotFound) {
+			return false, nil
+		}
+
+		r.Log.Error("error with checking belonging to channel: ", "error", err)
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (r *RepositoryMessenger) SelectChannelNameByID(ctx context.Context, channelID uuid.UUID) (string, error) {
+	query := r.Session.ContextQuery(
+		ctx,
+		`SELECT name FROM messenger_keyspace.channels WHERE id=?`,
+		[]string{":id"}).
+		BindMap(map[string]interface{}{
+			":id": channelID,
+		})
+
+	var name string
+	if err := query.SelectRelease(&name); err != nil {
+		r.Log.Error("error with selecting channel name: ", "error", err)
+		return "", err
+	}
+
+	return name, nil
 }
 
 func (r *RepositoryMessenger) SelectChannels(ctx context.Context, userID uuid.UUID) ([]dto.Channel, error) {

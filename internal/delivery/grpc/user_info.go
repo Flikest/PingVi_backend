@@ -53,3 +53,25 @@ func (h *HandlerUserInfo) GetUserNameByID(
 		Name: name,
 	}, nil
 }
+
+func (h *HandlerUserInfo) GetUserIDBySessionID(
+	ctx context.Context,
+	req *pb.GetUserIDBySessionIDRequest,
+) (*pb.GetUserIDBySessionIDResponse, error) {
+	sessionID := req.GetSessionId()
+
+	if sessionID == "" {
+		h.Log.Error("error with parsing session id")
+		return nil, status.Error(codes.InvalidArgument, "invalid session id")
+	}
+
+	userID, err := h.Service.GetUserIDBySessionID(ctx, sessionID)
+	if err != nil {
+		h.Log.Error("error with selecting user id: ", "error", err)
+		return nil, status.Error(codes.NotFound, "user not found")
+	}
+
+	return &pb.GetUserIDBySessionIDResponse{
+		UserId: userID.String(),
+	}, nil
+}

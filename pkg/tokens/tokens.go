@@ -41,6 +41,32 @@ func CreateAccessToken(userID uuid.UUID, secret []byte) (string, error) {
 	return tokenString, nil
 }
 
+func CreateRefreshToken(bytesLength uint) (string, error) {
+	tokenBytes := make([]byte, bytesLength)
+
+	_, err := rand.Read(tokenBytes)
+	if err != nil {
+		return "", fmt.Errorf("critical error generating random bytes: %w", err)
+	}
+
+	token := base64.RawURLEncoding.EncodeToString(tokenBytes)
+
+	return token, nil
+}
+
+func CreateSessionToken(bytesLength int) (string, error) {
+	tokenBytes := make([]byte, bytesLength)
+
+	_, err := rand.Read(tokenBytes)
+	if err != nil {
+		return "", fmt.Errorf("critical error generating random bytes: %w", err)
+	}
+
+	token := base64.RawURLEncoding.EncodeToString(tokenBytes)
+
+	return token, nil
+}
+
 func Create2FaToken(userID uuid.UUID, locale string, device string, secret []byte) (string, error) {
 	expTime := time.Now().Add(time.Minute * 5)
 
@@ -65,19 +91,6 @@ func Create2FaToken(userID uuid.UUID, locale string, device string, secret []byt
 
 func GenerateTemporaryToken() (string, error) {
 	tokenBytes := make([]byte, 32)
-
-	_, err := rand.Read(tokenBytes)
-	if err != nil {
-		return "", fmt.Errorf("critical error generating random bytes: %w", err)
-	}
-
-	token := base64.RawURLEncoding.EncodeToString(tokenBytes)
-
-	return token, nil
-}
-
-func CreateRefreshToken(bytesLength uint) (string, error) {
-	tokenBytes := make([]byte, bytesLength)
 
 	_, err := rand.Read(tokenBytes)
 	if err != nil {

@@ -5,18 +5,18 @@ package file_storage;
 option go_package = "./gen/go/file_storage";
 
 service FileStorage {
-    rpc DownloadFile (DownloadFileRequest) returns (DownloadFileResponse);
-    rpc GenerationOfTemporaryLinks (GenerationOfTemporaryLinkRequest) returns (GenerationOfTemporaryLinkResponse);
+    rpc IssueTemporaryURL (IssueTemporaryURLRequest) returns (IssueTemporaryURLResponse);
 }
 
-message DownloadFileRequest {
-    file
+message IssueTemporaryURLRequest {
+    repeated string links = 1;
 }
 
-message GenerationOfTemporaryLinkRequest {
-    string link = 1;
+message FileResult {
+    string temporaryLink = 1;
+    string error = 2;
 }
 
-message GenerationOfTemporaryLinkResponse {
-    string accessLink = 1; 
+message IssueTemporaryURLResponse {
+    repeated FileResult results = 1;
 }

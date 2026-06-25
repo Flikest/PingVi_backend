@@ -41,31 +41,6 @@ func (r *RepositoryMessenger) CreatePersonalChat(ctx context.Context, personalCh
 }
 
 func (r *RepositoryMessenger) DeletePersonalChat(ctx context.Context, personalChat dto.DeletePersonalChat) (uuid.UUID, error) {
-	selectUsersFromPersonalChat := r.Session.ContextQuery(
-		ctx,
-		`SELECT user1_id, user2_id FROM messenger_keyspace.personal_chats WHERE id=?`,
-		[]string{
-			":id",
-		}).
-		BindMap(map[string]interface{}{
-			":id": personalChat.ID,
-		})
-
-	selectResponse := struct {
-		user1ID uuid.UUID
-		user2ID uuid.UUID
-	}{}
-
-	if err := selectUsersFromPersonalChat.SelectRelease(selectResponse); err != nil {
-		r.Log.Error("error with selecting user1 and user2 from perosnal chat", "error", err)
-		return uuid.Nil, err
-	}
-
-	if personalChat.UserID != selectResponse.user1ID || personalChat.UserID != selectResponse.user2ID {
-		r.Log.Warn("not enough rights")
-		return uuid.Nil, errors.New("not enough rights")
-	}
-
 	deletePersonalChat := r.Session.ContextQuery(
 		ctx,
 		`DELETE FROM messenger_keyspace.personal_chats WHERE id=?`,
@@ -82,4 +57,33 @@ func (r *RepositoryMessenger) DeletePersonalChat(ctx context.Context, personalCh
 	}
 
 	return personalChat.ID, nil
+}
+
+func (r *RepositoryMessenger) IsBelongsToChat(ctx context.Context, userID, chatID uuid.UUID) (bool, error) {
+	selectUsersFromPersonalChat := r.Session.ContextQuery(
+		ctx,
+		`SELECT user1_id, user2_id FROM messenger_keyspace.personal_chats WHERE id=?`,
+		[]string{
+			":id",
+		}).
+		BindMap(map[string]interface{}{
+			":id": chatID,
+		})
+
+	selectResponse := struct {
+		user1ID uuid.UUID
+		user2ID uuid.UUID
+	}{}
+
+	if err := selectUsersFromPersonalChat.SelectRelease(selectResponse); err != nil {
+		r.Log.Error("error with selecting user1 and user2 from perosnal chat", "error", err)
+		return false, err
+	}
+
+	if userID != selectResponse.user1ID || userID != selectResponse.user2ID {
+		r.Log.Warn("not enough rights")
+		return false, errors.New("not enough rights")
+	}
+
+	return true, nil
 }

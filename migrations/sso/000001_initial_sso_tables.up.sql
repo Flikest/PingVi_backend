@@ -35,25 +35,20 @@ CREATE INDEX IF NOT EXISTS idx_verification_codes_user_id ON verification_codes(
 CREATE INDEX IF NOT EXISTS idx_verification_codes_code ON verification_codes(verification_code);
 CREATE INDEX IF NOT EXISTS idx_verification_codes_expires ON verification_codes(expires_at);
 
-CREATE TABLE IF NOT EXISTS sessions (
+CREATE TABLE IF NOT EXISTS user_tokens (
     id UUID PRIMARY KEY,
     user_id UUID NOT NULL,
-    user_device TEXT NOT NULL,
     access_token TEXT NOT NULL,
     refresh_token TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT NOW(),
     access_expires_at TIMESTAMP NOT NULL,
     refresh_expires_at TIMESTAMP NOT NULL,
-    locale TEXT NOT NULL,
-    locale_img_url VARCHAR(500) NOT NULL,
     
     CONSTRAINT fk_sessions_users
         FOREIGN KEY (user_id)
         REFERENCES users(id)
         ON DELETE CASCADE
 );
-
-
 CREATE INDEX IF NOT EXISTS idx_session_id ON sessions(id);
 CREATE INDEX IF NOT EXISTS idx_session_user_id ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_session_user_device ON sessions(user_device);
@@ -68,7 +63,6 @@ CREATE TABLE password_reset_tokens (
     used BOOLEAN DEFAULT FALSE,
     expires_at TIMESTAMP NOT NULL,
 );
-
 CREATE INDEX idx_password_reset_tokens_token_hash ON password_reset_tokens(token);
 CREATE INDEX idx_password_reset_tokens_expires_at ON password_reset_tokens(expires_at);
 
