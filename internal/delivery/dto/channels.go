@@ -31,7 +31,6 @@ type CreateChannelInput struct {
 	OwnerID     uuid.UUID `json:"owner_id"`
 	IconURL     string    `json:"icon_url"`
 	IsPublic    bool      `json:"is_public"`
-	CreatedAt   time.Time `json:"created_at"`
 }
 
 type UpdateChannelRequest struct {

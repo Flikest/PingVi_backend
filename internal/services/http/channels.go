@@ -199,7 +199,7 @@ func (s *ServiceMessenger) JoinChannel(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, channelID)
 }
-func (s *ServiceMessenger) CickChannelMember(ctx *gin.Context) {
+func (s *ServiceMessenger) KickChannelMember(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
 		s.Log.Error("error with verify jwt user token: ", "error", err)

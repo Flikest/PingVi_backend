@@ -39,7 +39,7 @@ func NewRepositoryMessenger(s *RepositoryMessenger) *RepositoryMessenger {
 	}
 }
 
-func NewReposossoryS3(s *RepositoryFileStorage) *RepositoryFileStorage {
+func NewReposossoryFileStorage(s *RepositoryFileStorage) *RepositoryFileStorage {
 	return &RepositoryFileStorage{
 		Log: s.Log,
 	}

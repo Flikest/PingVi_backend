@@ -56,15 +56,15 @@ func RegisterMessengerRouter(h *HandlerMessenger) *gin.Engine {
 		messageRouter := v1.Group("/ws")
 		{
 			messageRouter.GET("/:session_id", h.Service.Handshake)
-			messageRouter.GET("/:link", h.Service.LinkPreview)
-			messageRouter.GET("/:chat_id", h.Service.GetAllMessageFromChat)
-			messageRouter.DELETE("/clear", h.Service.ClearMesagesFromChat)
+			messageRouter.GET("/preview/:link", h.Service.LinkPreview)
+			messageRouter.GET("/messages/:chat_id", h.Service.GetAllMessageFromChat)
+			messageRouter.DELETE("/messages/clear", h.Service.ClearMesagesFromChat)
 		}
 
 		channelRouter := v1.Group("/channels")
 		{
 			channelRouter.GET("/join/:channel_id/", h.Service.JoinChannel)
-			channelRouter.GET("/cick", h.Service.CickChannelMember)
+			channelRouter.GET("/cick", h.Service.KickChannelMember)
 			channelRouter.GET("/leave/:channel_id/", h.Service.LeaveFromChannel)
 			channelRouter.GET("/:user_id", h.Service.GetChannels)
 			channelRouter.POST("/", h.Service.CreateChannel)
@@ -93,7 +93,7 @@ func RegisterMessengerRouter(h *HandlerMessenger) *gin.Engine {
 
 		roleRouter := v1.Group("/roles")
 		{
-			roleRouter.GET("/permissions/:channel_id/", h.Service.CickChannelMember)
+			roleRouter.GET("/permissions/:channel_id/:user_id", h.Service.GetPermissions)
 			roleRouter.POST("/", h.Service.CreateRole)
 			roleRouter.GET("/:channel_id", h.Service.GetAllRoles)
 			roleRouter.PUT("/", h.Service.UpdateRole)

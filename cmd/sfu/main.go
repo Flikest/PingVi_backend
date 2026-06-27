@@ -23,7 +23,7 @@ func main() {
 		log.Error("error loading environment: ", "error", err)
 	}
 
-	boot := rkboot.NewBoot()
+	boot := rkboot.NewBoot(rkboot.WithBootConfigPath("./configs/sfu/sfu.yaml", nil))
 
 	ginEntry := rkgin.GetGinEntry("sfu")
 
@@ -33,8 +33,8 @@ func main() {
 	}
 
 	sfuService := servicehttp.NewSFUService(&servicehttp.ServiceSFU{
-		Log:    log,
-		Client: client,
+		Log:        log,
+		GrpcClient: client,
 	})
 
 	_ = deliveryhttp.RegisterSFURouter(&deliveryhttp.HandlerSFU{

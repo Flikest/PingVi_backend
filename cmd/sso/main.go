@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/Flikest/PingVi_backend/internal/config"
 	"github.com/Flikest/PingVi_backend/internal/database/postgres"
+	"github.com/Flikest/PingVi_backend/internal/database/redis"
 	deliverygrpc "github.com/Flikest/PingVi_backend/internal/delivery/grpc"
 	deliveryhttp "github.com/Flikest/PingVi_backend/internal/delivery/http"
 	"github.com/Flikest/PingVi_backend/internal/repository"
@@ -18,52 +20,48 @@ import (
 	rkboot "github.com/rookie-ninja/rk-boot/v2"
 	rkgin "github.com/rookie-ninja/rk-gin/v2/boot"
 	rkgrpc "github.com/rookie-ninja/rk-grpc/v2/boot"
+	"google.golang.org/grpc"
 )
 
-// @title PingVi is a broker who will take care of you.
-// @version 1.0
-// @description This is an API for interacting with the PingVi broker.
-// @termsOfService http://swagger.io/terms/
-
-// @securityDefinitions.basic BasicAuth
-
-// @contact.name API Support
-// @contact.url http://www.swagger.io/support
-// @contact.email support@swagger.io
-
-// @license.name Apache 2.0
-// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 func main() {
-	env := flag.String("env", "local", "enviroment variable")
+	env := flag.String("env", "local", "environment variable")
 	flag.Parse()
 
 	log := logger.NewLogger(*env)
-
-	_, err := config.ParseConfig(log, fmt.Sprintf("./config/sso/sso.config.%s.yaml", *env))
-	if err != nil {
-		log.Error("error with parsing yaml config: ", "error", err)
-		panic("failed to get records from config file")
-	}
+	log.Info("Starting application", "env", *env)
 
 	if err := godotenv.Load(); err != nil {
-		log.Error("error loading environment: ", "error", err)
+		log.Warn("Error loading .env file", "error", err)
 	}
 
-	boot := rkboot.NewBoot()
+	_, err := config.ParseConfig(log, *env, "./configs/sso/sso.yaml")
+	if err != nil {
+		log.Error("Failed to parse config", "error", err)
+		os.Exit(1)
+	}
+	log.Info("Configuration loaded successfully")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	db := postgres.MustPostgresDBOpen(&postgres.PostgresConig{
+		Ctx:      ctx,
+		ConnPath: os.Getenv("POSTGRES_CONNECTION_PATH"),
+	})
+	defer db.Close()
+	log.Info("Database connection established")
+
+	boot := rkboot.NewBoot(rkboot.WithBootConfigPath("./configs/sso/sso.yaml", nil))
 
 	ginEntry := rkgin.GetGinEntry("sso")
 	grpcEntry := rkgrpc.GetGrpcEntry("user_info")
 
-	dbCtx := context.Background()
-
-	db := postgres.MustPostgresDBOpen(&postgres.PostgresConig{
-		Ctx:      dbCtx,
-		ConnPath: os.Getenv("POSTGRES_CONNECTION_PATH"),
-	})
+	redisClient := redis.NewRedisCleint()
 
 	ssoRepository := repository.NewRepositorySSO(&repository.RepositorySSO{
 		Log: log,
 		DB:  db,
+		RDB: redisClient,
 	})
 
 	ssoService := servicehttp.NewSSOService(&servicehttp.ServiceSSO{
@@ -71,24 +69,49 @@ func main() {
 		Repository: ssoRepository,
 	})
 
-	_ = deliveryhttp.RegisterSSORouter(&deliveryhttp.HandlerSSO{
+	userInfoRepository := ssoRepository
+
+	userInfoService := servicegrpc.NewServiceUserInfo(log, userInfoRepository)
+
+	grpcEntry.AddRegFuncGrpc(
+		func(s *grpc.Server) {
+			deliverygrpc.RegisterUserInfoServer(grpcEntry.Server, userInfoService, log)
+		},
+	)
+
+	deliveryhttp.RegisterSSORouter(&deliveryhttp.HandlerSSO{
 		Router:  ginEntry.Router,
 		Service: ssoService,
 	})
 
-	boot.AddShutdownHookFunc("close-db-connection", func() {
-		fmt.Println("closing connections to the database")
+	log.Info("HTTP routes registered")
 
-		// TODO: Logic for closing connections to the database
+	log.Info("gRPC service registered")
+
+	log.Info("All servers started successfully")
+
+	boot.Bootstrap(ctx)
+
+	boot.AddShutdownHookFunc("close-db-connection", func() {
+		log.Info("Closing database connection")
+		db.Close()
 	})
 
-	var userInfoRepository servicegrpc.UserInfoRepository = ssoRepository
+	log.Info("Application started successfully")
+	log.Info("HTTP server listening on http://localhost:8080")
+	log.Info("gRPC server listening on port 50051")
 
-	userInfoService := servicegrpc.NewServiceUserInfo(log, userInfoRepository)
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	deliverygrpc.RegisterUserInfoServer(grpcEntry.Server, userInfoService, log)
+	select {
+	case <-ctx.Done():
+		log.Info("Context cancelled")
+	case sig := <-sigChan:
+		log.Info("Received signal", "signal", sig)
+	}
 
-	boot.Bootstrap(context.Background())
-
-	boot.WaitForShutdownSig(context.Background())
+	log.Info("Shutting down application...")
+	boot.WaitForShutdownSig(ctx)
+	log.Info("Application stopped")
 }

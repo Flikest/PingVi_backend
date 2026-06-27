@@ -1,0 +1,44 @@
+gin:
+  - name: sso
+    port: 8080
+    enabled: true
+    sw:
+      enabled: true
+    docs:
+      enabled: true
+    prom:
+      enabled: true
+    middleware:
+      logging:
+        enabled: true
+      prom:
+        enabled: true
+      meta:
+        enabled: true
+    timeout:
+      enabled: true
+      timeoutMs: 5000
+
+grpc:
+  - name: user_info
+    port: 50051
+    enabled: true
+    enableReflection: true
+    commonService:
+      enabled: false #после добавления k8s поменять на true!!!!!!!!!!!!!!!!!
+    sw:
+      enabled: true
+    docs:
+      enabled: true
+    prom:
+      enabled: true
+    middleware:
+      logging:
+        enabled: true
+      prom:
+        enabled: true
+      meta:
+        enabled: true
+    timeout:
+      enabled: true
+      timeoutMs: 5000c

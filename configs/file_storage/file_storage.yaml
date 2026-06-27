@@ -1,0 +1,24 @@
+minio_client:
+  endpoint: "http://localhost:9000"
+  use_ssl: false
+
+gin:
+  - name: file_storage
+    port: 8088
+    enabled: true
+    sw:
+      enabled: true
+    docs:
+      enabled: true
+    prom:
+      enabled: true
+    middleware:
+      logging:
+        enabled: true
+      prom:
+        enabled: true
+      meta:
+        enabled: true
+    timeout:
+      enabled: true
+      timeoutMs: 60000

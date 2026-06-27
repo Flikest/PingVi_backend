@@ -1,7 +1,6 @@
 package servicehttp
 
 import (
-	"context"
 	"log/slog"
 
 	pbUserPermissions "github.com/Flikest/PingVi_backend/gen/go/permissions"
@@ -18,7 +17,6 @@ type ServiceMessenger struct {
 	Log        *slog.Logger
 	Hub        *Hub
 	Client     pbUserInfo.UserInfoClient
-	Ctx        context.Context
 	Repository *repository.RepositoryMessenger
 }
 
@@ -54,7 +52,7 @@ func NewSFUService(s *ServiceSFU) *ServiceSFU {
 	}
 }
 
-func NewS3Service(s *ServiceFileStorage) *ServiceFileStorage {
+func NewFileStorageService(s *ServiceFileStorage) *ServiceFileStorage {
 	return &ServiceFileStorage{
 		Log:        s.Log,
 		Repository: s.Repository,
