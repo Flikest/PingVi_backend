@@ -4,3 +4,4 @@ minIO.local.env
 
 containers/pgdata
 containers/redis.conf
+minio_storage
