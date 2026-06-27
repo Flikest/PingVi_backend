@@ -1,0 +1,13 @@
+  services:
+    scylladb:
+      image: scylladb/scylla:latest
+      container_name: scylla_node
+      command: --smp 1 --developer-mode 1 --authenticator PasswordAuthenticator --authorizer CassandraAuthorizer
+      ports:
+        - "${SCYLLADB_PORT}:9042"
+        - "7000:7000"
+      volumes:
+        - scylla_data:/var/lib/scylla
+      restart: always
+  volumes:
+    scylla_data:

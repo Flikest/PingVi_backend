@@ -1,125 +1,119 @@
-CREATE KEYSPACE IF NOT EXISTS messenger_keyspace
-WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
-
-USE messenger_keyspace;
-
 CREATE TABLE IF NOT EXISTS channels (
-    id UUID PRIMARY KEY,
-    name TEXT,
-    description TEXT,
-    owner_id UUID,
-    icon_urls LIST<TEXT>,
-    is_public BOOLEAN,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP
+    id uuid PRIMARY KEY,
+    name text,
+    description text,
+    owner_id uuid,
+    icon_urls list<text>,
+    is_public boolean,
+    created_at timestamp,
+    updated_at timestamp
 );
 
 CREATE TABLE IF NOT EXISTS directory (
-    id UUID NOT NULL,
-    channel_id UUID NOT NULL,
-    name TEXT NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP
+    id uuid PRIMARY KEY,
+    channel_id uuid,
+    name text,
+    created_at timestamp,
+    updated_at timestamp
 );
 
 CREATE TABLE IF NOT EXISTS topics (
-    id UUID PRIMARY KEY,
-    channel_id UUID,
-    directory_id UUID,
-    name TEXT,
-    topic_type TEXT,
-    position INT,
-    is_private BOOLEAN,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP
+    id uuid PRIMARY KEY,
+    channel_id uuid,
+    directory_id uuid,
+    name text,
+    topic_type text,
+    position int,
+    is_private boolean,
+    created_at timestamp,
+    updated_at timestamp
 );
-
 
 CREATE TABLE IF NOT EXISTS channel_roles (
-    id UUID PRIMARY KEY,
-    channel_id UUID,                
-    name TEXT,
-    color INT,
-    permissions varchar(7) is_default '0000000',             -- БИТОВАЯ МАСКА (разрешения на весь канал) 000000 [1] - взаимодействие с пользователями(удалить\добавить) [2] - выдават\забирать роли [3] - взаимодействие с каналом (обновить\удалить) [4] - писать сообщения в канал  [5] - создавать\удалять\обновлять роли, а так же содовать вложенности [6] - взаимодействие с топиками [7] - учавствовать в топиках
-    is_mentionable BOOLEAN,
-    is_default BOOLEAN,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP
+    id uuid PRIMARY KEY,
+    channel_id uuid,                
+    name text,
+    color int,
+    permissions text,   -- БИТОВАЯ МАСКА (разрешения на весь канал) 000000 [1] - взаимодействие с пользователями(удалить\добавить) [2] - выдават\забирать роли [3] - взаимодействие с каналом (обновить\удалить) [4] - писать сообщения в канал  [5] - создавать\удалять\обновлять роли, а так же содовать вложенности [6] - взаимодействие с топиками [7] - учавствовать в топиках
+    is_mentionable boolean,
+    is_default boolean,
+    created_at timestamp,
+    updated_at timestamp
 );
 
-
 CREATE TABLE IF NOT EXISTS channel_members (
-    channel_id UUID,
-    user_id UUID,
-    is_muted BOOLEAN,
-    role_id UUID,
-    nickname TEXT,
-    joined_at TIMESTAMP,
+    channel_id uuid,
+    user_id uuid,
+    is_muted boolean,
+    role_id uuid,
+    nickname text,
+    joined_at timestamp,
     PRIMARY KEY (channel_id, user_id)
 );
 
-
 CREATE TABLE IF NOT EXISTS personal_chats (
-    id UUID PRIMARY KEY,
-    user1_id UUID,
-    user2_id UUID,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
+    id uuid PRIMARY KEY,
+    user1_id uuid,
+    user2_id uuid,
+    created_at timestamp,
+    updated_at timestamp
 );
 
 CREATE TABLE IF NOT EXISTS groups (
-    id UUID PRIMARY KEY,
-    name TEXT,
-    avatar_links LIST<TEXT>,
-    owner_id UUID,
-    is_public BOOLEAN,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
+    id uuid PRIMARY KEY,
+    name text,
+    avatar_links list<text>,
+    owner_id uuid,
+    is_public boolean,
+    created_at timestamp,
+    updated_at timestamp
 );
 
 CREATE TABLE IF NOT EXISTS group_members (
-    group_id UUID,
-    user_id UUID,
-    is_muted BOOLEAN NOT NULL,
-    is_admin BOOLEAN NOT NULL,
-    joined_at TIMESTAMP NOT NULL,
+    group_id uuid,
+    user_id uuid,
+    is_muted boolean,
+    is_admin boolean,
+    joined_at timestamp,
     PRIMARY KEY (group_id, user_id)
 );
 
 
 CREATE TABLE IF NOT EXISTS messages (
-    id UUID,
-    chat_id UUID,
-    sender_id UUID,
-    message TEXT,
-    message_type TEXT,
-    is_edited BOOLEAN,
-    reply_to_id TIMEUUID,
-    attachments LIST<TEXT>,
-    reactions MAP<TEXT, LIST<UUID>>,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    PRIMARY KEY ((chat_id, date_bucket), message_id)
+    id uuid,
+    chat_id uuid,
+    date_bucket text, 
+    sender_id uuid,
+    message text,
+    message_type text,
+    is_edited boolean,
+    reply_to_id timeuuid,
+    attachments list<text>,
+    reactions map<text, frozen<list<uuid>>>,
+    created_at timestamp,
+    updated_at timestamp,
+    PRIMARY KEY ((chat_id, date_bucket), id)
 ) WITH CLUSTERING ORDER BY (id ASC);
 
 CREATE TABLE IF NOT EXISTS user_read_positions (
-    user_id UUID,
-    chat_id UUID,
-    last_read_message_id TIMEUUID,
-    last_read_time TIMESTAMP,
+    user_id uuid,
+    chat_id uuid,
+    last_read_message_id timeuuid,
+    last_read_time timestamp,
     PRIMARY KEY (user_id, chat_id)
 );
 
-CREATE TABLE IF NOT EXISTS invitations (
-    id UUID PRIMARY KEY,
-    target_type TEXT,
-    target_id UUID,
-    invite_code TEXT UNIQUE,
-    created_by UUID,
-    max_uses INT,
-    used_count INT,
-    expires_at TIMESTAMP,
-    created_at TIMESTAMP
+CREATE TABLE IF NOT EXISTS invitation_links (
+    id uuid PRIMARY KEY,
+    target_type text,
+    target_id uuid,
+    invite_code text, 
+    created_by uuid,
+    max_uses int,
+    used_count int,
+    expires_at timestamp,
+    created_at timestamp
 );
 
-CREATE INDEX IF NOT EXISTS idx_invite_code ON invitations (invite_code);
+CREATE INDEX IF NOT EXISTS idx_invite_code ON invitation_links (invite_code);
+

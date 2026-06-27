@@ -1,23 +1,40 @@
-package skilla
+package scylla
 
 import (
-	"log"
+	"fmt"
+	"os"
+	"time"
 
 	"github.com/gocql/gocql"
 	"github.com/scylladb/gocqlx/v2"
 )
 
-func MustSkyllaDBOpen() {
-	cluster := gocql.NewCluster("127.0.0.1:9042")
+func MustScyllaDBOpen() *gocqlx.Session {
+	cluster := gocql.NewCluster("127.0.0.1")
+	cluster.Port = 9042
 
-	rawSession, err := cluster.CreateSession()
-	if err != nil {
-		log.Fatalf("Ошибка подключения: %v", err)
+	cluster.Timeout = 10 * time.Second
+	cluster.ConnectTimeout = 5 * time.Second
+
+	username := os.Getenv("SCYLLADB_USERNAME")
+	password := os.Getenv("SCYLLADB_PASSWORD")
+
+	if username == "" || password == "" {
+		panic("SCYLLA_DB_USERNAME and SCYLLA_DB_PASSWORD must be set")
 	}
 
-	session := gocqlx.WrapSession(rawSession)
-	defer session.Close()
+	cluster.Authenticator = gocql.PasswordAuthenticator{
+		Username: username,
+		Password: password,
+	}
 
-	log.Println("Успешно подключено к ScyllaDB через localhost!")
+	cluster.Consistency = gocql.Quorum
+	cluster.ProtoVersion = 4
 
+	session, err := gocqlx.WrapSession(cluster.CreateSession())
+	if err != nil {
+		panic(fmt.Errorf("error with wrap session: %w", err))
+	}
+
+	return &session
 }

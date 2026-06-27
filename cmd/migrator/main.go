@@ -7,16 +7,20 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/cassandra"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
 )
 
 func main() {
-	env := flag.String("env", "sso.local.env", "environment")
+	env := flag.String("env", "./sso.local.env", "environment")
 	db := flag.String("db", "postgresql", "name of the database for driver generation")
 	flag.Parse()
 
@@ -37,19 +41,35 @@ func main() {
 }
 
 func migratePostgres() {
-	db, err := sql.Open("postgres", os.Getenv("POSTGRES_CONNECTION_PATH"))
+	db, err := sql.Open("pgx", os.Getenv("POSTGRES_CONNECTION_PATH"))
 	if err != nil {
 		panic(fmt.Sprintf("error with connect database: %v", err))
 	}
 	defer db.Close()
 
-	driver, err := postgres.WithInstance(db, &postgres.Config{})
-	if err != nil {
-		panic("error creating driver")
+	if err := db.Ping(); err != nil {
+		panic(fmt.Sprintf("error pinging database: %v", err))
 	}
 
+	driver, err := postgres.WithInstance(db, &postgres.Config{})
+	if err != nil {
+		panic(fmt.Sprintf("error creating driver: %v", err))
+	}
+
+	migrationsPath := os.Getenv("MIGRATIONS_PATH")
+	if migrationsPath == "" {
+		panic("MIGRATIONS_PATH is not set")
+	}
+
+	absPath, err := filepath.Abs(migrationsPath)
+	if err != nil {
+		panic(fmt.Sprintf("error getting absolute path: %v", err))
+	}
+
+	log.Printf("Migrations path: %s", absPath)
+
 	m, err := migrate.NewWithDatabaseInstance(
-		os.Getenv("MIGRATIONS_PATH"),
+		fmt.Sprintf("file://%s", absPath),
 		"postgres", driver)
 	if err != nil {
 		panic(fmt.Sprintf("error with creating migrations: %v 🐖🐖🐖", err))
@@ -79,9 +99,19 @@ func migrateScyllaDB() {
 	}
 
 	migrationsPath := os.Getenv("MIGRATIONS_PATH")
+	if migrationsPath == "" {
+		panic("MIGRATIONS_PATH is not set")
+	}
+
+	absPath, err := filepath.Abs(migrationsPath)
+	if err != nil {
+		panic(fmt.Sprintf("error getting absolute path: %v", err))
+	}
+
+	log.Printf("Migrations path: %s", absPath)
 
 	m, err := migrate.New(
-		migrationsPath,
+		fmt.Sprintf("file://%s", absPath),
 		connString,
 	)
 	if err != nil {

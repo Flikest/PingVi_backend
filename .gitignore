@@ -1,3 +1,6 @@
 sso.local.env
 messenger.local.env
 minIO.local.env
+
+containers/pgdata
+containers/redis.conf
