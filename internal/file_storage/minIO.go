@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -27,7 +29,7 @@ func NewMinIOClient(ctx context.Context, conf MinIOConfig) (*minio.Client, error
 	secretKey := os.Getenv("MINIO_ROOT_PASSWORD")
 
 	if accessKey == "" || secretKey == "" {
-		return nil, errors.New("MINIO_ROOT_USER and MINIO_ROOT_PASSWORD must be set")
+		return nil, errors.New("❌ MINIO_ROOT_USER and MINIO_ROOT_PASSWORD must be set")
 	}
 
 	client, err := minio.New(conf.Endpoint, &minio.Options{
@@ -48,6 +50,17 @@ func NewMinIOClient(ctx context.Context, conf MinIOConfig) (*minio.Client, error
 		return nil, err
 	}
 
+	ok, err := uploadLottieEmojisIfNotExists(ctx, client)
+	if err != nil {
+		return nil, err
+	}
+
+	if !ok {
+		conf.Logger.Info("⏭️ Lottie emojis already exist in the bucket")
+	} else {
+		conf.Logger.Info("✅ Lottie emojis loaded")
+	}
+
 	return client, nil
 }
 
@@ -57,8 +70,8 @@ func ensureBuckets(ctx context.Context, client *minio.Client, logger *slog.Logge
 	for _, bucket := range buckets {
 		exists, err := client.BucketExists(ctx, bucket)
 		if err != nil {
-			logger.Error("failed to check bucket existence", "bucket", bucket, "error", err)
-			return fmt.Errorf("check bucket %s: %w", bucket, err)
+			logger.Error("❌ failed to check bucket existence", "bucket", bucket, "error", err)
+			return fmt.Errorf("❌ check bucket %s: %w", bucket, err)
 		}
 
 		if !exists {
@@ -66,8 +79,8 @@ func ensureBuckets(ctx context.Context, client *minio.Client, logger *slog.Logge
 				Region: "us-east-1",
 			})
 			if err != nil {
-				logger.Error("failed to create bucket", "bucket", bucket, "error", err)
-				return fmt.Errorf("create bucket %s: %w", bucket, err)
+				logger.Error("❌ failed to create bucket", "bucket", bucket, "error", err)
+				return fmt.Errorf("❌ create bucket %s: %w", bucket, err)
 			}
 			logger.Info("Bucket created successfully", "bucket", bucket)
 		} else {
@@ -93,8 +106,8 @@ func setupPublicBucket(ctx context.Context, client *minio.Client, logger *slog.L
 
 	err := client.SetBucketPolicy(ctx, BucketPublic, publicPolicy)
 	if err != nil {
-		logger.Error("failed to set public bucket policy", "bucket", BucketPublic, "error", err)
-		return fmt.Errorf("set bucket policy: %w", err)
+		logger.Error("❌ failed to set public bucket policy", "bucket", BucketPublic, "error", err)
+		return fmt.Errorf("❌ set bucket policy: %w", err)
 	}
 
 	logger.Info("Public bucket configured successfully", "bucket", BucketPublic)
@@ -103,4 +116,64 @@ func setupPublicBucket(ctx context.Context, client *minio.Client, logger *slog.L
 
 func GetBucketPolicy(ctx context.Context, client *minio.Client, bucketName string) (string, error) {
 	return client.GetBucketPolicy(ctx, bucketName)
+}
+
+func uploadLottieEmojisIfNotExists(ctx context.Context, client *minio.Client) (bool, error) {
+	bucketName := "public"
+	objectPrefix := "emoji/standart"
+	rootPath := "./emoji_assets"
+
+	manifestPath := fmt.Sprintf("%s/manifest.json", objectPrefix)
+	_, err := client.StatObject(ctx, bucketName, manifestPath, minio.StatObjectOptions{})
+
+	if err == nil {
+		return false, nil
+	}
+
+	var errResponse minio.ErrorResponse
+	if errors.As(err, &errResponse) && (errResponse.Code == "NoSuchKey" || errResponse.Code == "ResourceNotFound") {
+
+		errWalk := filepath.WalkDir(rootPath, func(path string, d os.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() {
+				return nil
+			}
+
+			fileName := d.Name()
+			if fileName == "q1manifest.json" || fileName == "reform_manifest.py" {
+				return nil
+			}
+
+			relPath, err := filepath.Rel(rootPath, path)
+			if err != nil {
+				return fmt.Errorf("❌ error calculating relative path for %s: %w", path, err)
+			}
+
+			parts := strings.Split(filepath.ToSlash(relPath), "/")
+			isNested := len(parts) > 1
+			isRootManifest := len(parts) == 1 && fileName == "manifest.json"
+
+			if isNested || isRootManifest {
+				finalObjectName := objectPrefix + "/" + filepath.ToSlash(relPath)
+
+				_, err = client.FPutObject(ctx, bucketName, finalObjectName, path, minio.PutObjectOptions{
+					ContentType: "application/json",
+				})
+				if err != nil {
+					return fmt.Errorf("❌ failed to load %s in %s: %w", path, finalObjectName, err)
+				}
+			}
+			return nil
+		})
+
+		if errWalk != nil {
+			return false, fmt.Errorf("❌ error while traversing the directory: %w", errWalk)
+		}
+
+		return true, nil
+	}
+
+	return false, fmt.Errorf("❌ File verification error: %w", err)
 }
