@@ -261,6 +261,21 @@ func (s *ServiceMessenger) writeMessageToClient(client *Client) {
 	}
 }
 
+// Handshake godoc
+// @Summary      WebSocket connection for real-time messaging
+// @Description  Establishes a WebSocket connection for real-time messaging.
+// @Description  - Requires session_id for authentication
+// @Description  - Supports operations: switch_community, read, send, update, delete
+// @Description  - Messages are broadcasted to all members of the chat
+// @Tags         messenger-websocket
+// @Accept       json
+// @Produce      json
+// @Param        session_id  path  string  true  "Session ID for authentication"  example("abc123def456")
+// @Success      101  {object}  websocket.Conn  "WebSocket connection upgraded"
+// @Failure      400  {object}  map[string]interface{}  "Invalid session ID"  example({"error":"invalid session id"})
+// @Failure      415  {object}  map[string]interface{}  "Invalid content type"  example({"error":"Content-Type must be application/json"})
+// @Failure      500  {object}  map[string]interface{}  "WebSocket upgrade failed"  example({"error":"WebSocket upgrade failed"})
+// @Router       /ws/{session_id} [get]
 func (s *ServiceMessenger) Handshake(ctx *gin.Context) {
 	defer ctx.Request.Body.Close()
 
@@ -298,6 +313,21 @@ func (s *ServiceMessenger) Handshake(ctx *gin.Context) {
 	go s.writeMessageToClient(&client)
 }
 
+// LinkPreview godoc
+// @Summary      Get link preview
+// @Description  Fetches a preview for a given link. Supports internal PingVi links and external URLs.
+// @Description  - Internal links: returns type and message
+// @Description  - External links: fetches content type and returns preview
+// @Tags         messenger-websocket
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
+// @Param        link  path  string  true  "URL to preview"  example("https://example.com/image.jpg")
+// @Success      200  {object}  dto.LinkPreviewResponse  "Link preview data"  example({"type":"image","message":"https://s3.amazonaws.com/public/emoji/standart/1F600.json"})
+// @Failure      400  {object}  map[string]interface{}  "Invalid URL"  example({"error":"invalid url format"})
+// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to fetch preview"})
+// @Router       /ws/preview/{link} [get]
 func (s *ServiceMessenger) LinkPreview(ctx *gin.Context) {
 	link := ctx.Param("link")
 
@@ -351,14 +381,25 @@ func (s *ServiceMessenger) LinkPreview(ctx *gin.Context) {
 		return
 	}
 
-	// TODO: сделать запрос на скачивание в s3 бакет (передавая туда previewType)
-
 	ctx.JSON(http.StatusOK, dto.LinkPreviewResponse{
 		Type:    previewType,
-		Message: "линк который вернется из s3_gateway микросервиса",
+		Message: link,
 	})
 }
 
+// GetAllMessageFromChat godoc
+// @Summary      Get all messages from a chat
+// @Description  Retrieves all messages from a specific chat (channel, group, or personal chat).
+// @Tags         messenger-websocket
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
+// @Param        chat_id  path  string  true  "Chat ID"  example("123e4567-e89b-12d3-a456-426614174000")
+// @Success      200  {array}  dto.Message  "List of messages"
+// @Failure      400  {object}  map[string]interface{}  "Invalid chat ID"  example({"error":"invalid chat id"})
+// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to get messages"})
+// @Router       /ws/messages/{chat_id} [get]
 func (s *ServiceMessenger) GetAllMessageFromChat(ctx *gin.Context) {
 	chatID, err := uuid.Parse(ctx.Param("chat_id"))
 	if err != nil {
@@ -377,6 +418,19 @@ func (s *ServiceMessenger) GetAllMessageFromChat(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, messages)
 }
 
+// ClearMesagesFromChat godoc
+// @Summary      Clear all messages from a chat
+// @Description  Clears all messages from a specific chat. Requires appropriate permissions.
+// @Tags         messenger-websocket
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
+// @Param        request  body  dto.ClearMessage  true  "Chat ID"  example({"chat_id":"123e4567-e89b-12d3-a456-426614174000"})
+// @Success      200  {object}  map[string]interface{}  "Chat ID"  example({"chat_id":"123e4567-e89b-12d3-a456-426614174000"})
+// @Failure      400  {object}  map[string]interface{}  "Invalid request"  example({"error":"invalid body"})
+// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to clear messages"})
+// @Router       /ws/messages/clear [delete]
 func (s *ServiceMessenger) ClearMesagesFromChat(ctx *gin.Context) {
 	var body dto.ClearMessage
 	if err := ctx.BindJSON(&body); err != nil {

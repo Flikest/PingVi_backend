@@ -14,6 +14,18 @@ import (
 	rkgin "github.com/rookie-ninja/rk-gin/v2/boot"
 )
 
+// @title PingVi file storage
+// @version 1.0
+// @description This is PingVi file storage for storing large-scale data.
+// @termsOfService  http://swagger.io/terms/
+
+// @Host localhost:8088
+// @BasePath /v1/files
+
+// @securityDefinitions.basic  BasicAuth
+
+// @externalDocs.description  OpenAPI
+// @externalDocs.url          https://swagger.io/resources/open-api/
 func main() {
 	var env string
 

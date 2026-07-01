@@ -123,7 +123,7 @@ func RegisterMessengerRouter(h *HandlerMessenger) *gin.Engine {
 func RegisterSFURouter(h *HandlerSFU) *gin.Engine {
 	v1 := h.Router.Group("/v1")
 	{
-		roomRouter := v1.Group("/room")
+		roomRouter := v1.Group("/rooms")
 		{
 			roomRouter.POST("/create_join_token", h.Service.CreateJoinToken)
 		}

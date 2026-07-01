@@ -10,6 +10,20 @@ import (
 	"github.com/google/uuid"
 )
 
+// CreateDirectory godoc
+// @Summary      Create a new directory in a channel
+// @Description  Creates a new directory in a channel. Requires 'manage_directories' permission (permission[4] == '1').
+// @Tags         messenger-directories
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
+// @Param        request  body  dto.CreateDirectory  true  "Directory creation data"  example({"channel_id":"123e4567-e89b-12d3-a456-426614174000","name":"Documents"})
+// @Success      201  {object}  dto.Directory  "Created directory"
+// @Failure      400  {object}  map[string]interface{}  "Invalid request"  example({"error":"invalid body"})
+// @Failure      403  {object}  map[string]interface{}  "Insufficient permissions"  example({"error":"not enough rights"})
+// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to create directory"})
+// @Router       /directorys [post]
 func (s *ServiceMessenger) CreateDirectory(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
@@ -57,6 +71,19 @@ func (s *ServiceMessenger) CreateDirectory(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, directory)
 }
 
+// SelectAllDirectorys godoc
+// @Summary      Get all directories in a channel
+// @Description  Retrieves all directories from a specific channel.
+// @Tags         messenger-directories
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
+// @Param        channel_id  path  string  true  "Channel ID"  example("123e4567-e89b-12d3-a456-426614174000")
+// @Success      200  {array}  dto.Directory  "List of directories"
+// @Failure      400  {object}  map[string]interface{}  "Invalid channel ID"  example({"error":"invalid channel id"})
+// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to get directories"})
+// @Router       /directorys/{channel_id} [get]
 func (s *ServiceMessenger) SelectAllDirectorys(ctx *gin.Context) {
 	channelID, err := uuid.Parse(ctx.Param("channel_id"))
 	if err != nil {
@@ -75,6 +102,20 @@ func (s *ServiceMessenger) SelectAllDirectorys(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, dirs)
 }
 
+// UpdateDirectory godoc
+// @Summary      Update a directory
+// @Description  Updates an existing directory in a channel. Requires 'manage_directories' permission (permission[4] == '1').
+// @Tags         messenger-directories
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
+// @Param        request  body  dto.UpdateDirectory  true  "Directory update data"  example({"id":"123e4567-e89b-12d3-a456-426614174000","channel_id":"987fcdeb-51d2-12d3-a456-426614174000","name":"New Directory Name"})
+// @Success      200  {object}  dto.Directory  "Updated directory"
+// @Failure      400  {object}  map[string]interface{}  "Invalid request"  example({"error":"invalid body"})
+// @Failure      403  {object}  map[string]interface{}  "Insufficient permissions"  example({"error":"not enough rights"})
+// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to update directory"})
+// @Router       /directorys [put]
 func (s *ServiceMessenger) UpdateDirectory(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
@@ -122,6 +163,20 @@ func (s *ServiceMessenger) UpdateDirectory(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, directory)
 }
 
+// DeleteDirectory godoc
+// @Summary      Delete a directory
+// @Description  Permanently deletes a directory from a channel. Requires 'manage_directories' permission (permission[4] == '1').
+// @Tags         messenger-directories
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
+// @Param        request  body  dto.DeleteDirectory  true  "Directory deletion data"  example({"id":"123e4567-e89b-12d3-a456-426614174000","channel_id":"987fcdeb-51d2-12d3-a456-426614174000"})
+// @Success      200  {object}  map[string]interface{}  "Directory ID"  example({"directory_id":"123e4567-e89b-12d3-a456-426614174000"})
+// @Failure      400  {object}  map[string]interface{}  "Invalid request"  example({"error":"invalid body"})
+// @Failure      403  {object}  map[string]interface{}  "Insufficient permissions"  example({"error":"not enough rights"})
+// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to delete directory"})
+// @Router       /directorys [delete]
 func (s *ServiceMessenger) DeleteDirectory(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {

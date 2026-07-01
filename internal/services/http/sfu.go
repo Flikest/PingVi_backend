@@ -13,6 +13,21 @@ import (
 	"github.com/livekit/protocol/auth"
 )
 
+// CreateJoinToken godoc
+// @Summary      Create join token for room
+// @Description  Creates a JWT token for joining a specific room. The token is valid for 1 hour and includes video grant permissions.
+// @Description  Requires user authentication and the 'room_join' permission (permission[6] == '1').
+// @Tags         sfu
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
+// @Param        request  body  dto.CreateJoinToken  true  "Room join request"
+// @Success      201  {string}  string  "JWT token for joining the room"  example("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+// @Failure      400  {object}  map[string]interface{}  "Invalid request body or JWT token"  example("{\"error\":\"invalid body\"}")
+// @Failure      403  {object}  map[string]interface{}  "User doesn't have enough permissions"  example("{\"error\":\"not enough permissions\"}")
+// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example("{\"error\":\"failed to generate JWT token\"}")
+// @Router       /create_join_token [post]
 func (s *ServiceSFU) CreateJoinToken(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {

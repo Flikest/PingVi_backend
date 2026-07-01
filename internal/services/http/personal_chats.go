@@ -10,6 +10,21 @@ import (
 	"github.com/google/uuid"
 )
 
+// CreatePersonalChat godoc
+// @Summary      Create a personal chat
+// @Description  Creates a new direct message chat between two users.
+// @Description  - If chat already exists, returns existing chat
+// @Description  - Both users must be authenticated
+// @Tags         messenger-personal-chat
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
+// @Param        request  body  dto.PersonalChat  true  "Personal chat data"  example({"user2_id":"987fcdeb-51d2-12d3-a456-426614174000"})
+// @Success      201  {object}  dto.PersonalChat  "Created personal chat"
+// @Failure      400  {object}  map[string]interface{}  "Invalid request"  example({"error":"invalid body"})
+// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to create personal chat"})
+// @Router       /personal_chat [post]
 func (s *ServiceMessenger) CreatePersonalChat(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
@@ -44,6 +59,21 @@ func (s *ServiceMessenger) CreatePersonalChat(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, personalChat)
 }
 
+// DeletePersonalChat godoc
+// @Summary      Delete a personal chat
+// @Description  Permanently deletes a personal chat. User must be a participant.
+// @Description  - Only participants can delete the chat
+// @Tags         messenger-personal-chat
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
+// @Param        request  body  dto.DeletePersonalChat  true  "Personal chat ID"  example({"id":"123e4567-e89b-12d3-a456-426614174000"})
+// @Success      200  {object}  map[string]interface{}  "Chat ID"  example({"chat_id":"123e4567-e89b-12d3-a456-426614174000"})
+// @Failure      400  {object}  map[string]interface{}  "Invalid request"  example({"error":"invalid body"})
+// @Failure      403  {object}  map[string]interface{}  "Not a participant"  example({"error":"not belongs to chat"})
+// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to delete personal chat"})
+// @Router       /personal_chat [delete]
 func (s *ServiceMessenger) DeletePersonalChat(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {

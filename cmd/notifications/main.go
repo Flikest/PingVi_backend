@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/joho/godotenv"
 	rkboot "github.com/rookie-ninja/rk-boot/v2"
 	rkgin "github.com/rookie-ninja/rk-gin/v2/boot"
 )

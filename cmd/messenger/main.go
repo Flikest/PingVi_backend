@@ -16,6 +16,18 @@ import (
 	rkgin "github.com/rookie-ninja/rk-gin/v2/boot"
 )
 
+// @title PingVi messenger
+// @version 1.0
+// @description This is PingVi messenger.
+// @termsOfService  http://swagger.io/terms/
+
+// @Host localhost:8082
+// @BasePath /v1
+
+// @securityDefinitions.basic  BasicAuth
+
+// @externalDocs.description  OpenAPI
+// @externalDocs.url          https://swagger.io/resources/open-api/
 func main() {
 	env := flag.String("env", "local", "enviroment variable")
 	flag.Parse()
