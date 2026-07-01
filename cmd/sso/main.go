@@ -23,6 +23,18 @@ import (
 	"google.golang.org/grpc"
 )
 
+// @title PingVi selective forwarding unit
+// @version 1.0
+// @description This is PingVi selective forwarding unit.
+// @termsOfService  http://swagger.io/terms/
+
+// @Host localhost:8080
+// @BasePath /v1/users
+
+// @securityDefinitions.basic  BasicAuth
+
+// @externalDocs.description  OpenAPI
+// @externalDocs.url          https://swagger.io/resources/open-api/
 func main() {
 	env := flag.String("env", "local", "environment variable")
 	flag.Parse()
