@@ -15,3 +15,7 @@ type IssueTemporaryURLResponse struct {
 	TemporaryURL string `json:"filepath,omitempty"`
 	Error        string `json:"error,omitempty"`
 }
+
+type DeleteRequest struct {
+	Paths []string `json:"paths"`
+}

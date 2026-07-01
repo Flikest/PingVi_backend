@@ -13,20 +13,21 @@ import (
 )
 
 // CreateTopic godoc
-// @Summary      Create a new topic in a channel
-// @Description  Creates a new topic (text or voice) in a channel. Requires appropriate permissions.
-// @Description  - Topic types: "text" or "voice"
-// @Description  - System message will be sent to the channel
-// @Tags         messenger-topics
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Param        request  body  dto.CreateTopic  true  "Topic creation data"  example({"channel_id":"123e4567-e89b-12d3-a456-426614174000","name":"General Chat","topic_type":"text"})
-// @Success      201  {object}  dto.Topic  "Created topic"
-// @Failure      400  {object}  map[string]interface{}  "Invalid request"  example({"error":"invalid body"})
-// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to create topic"})
-// @Router       /topics [post]
+//
+//	@Summary		Create a new topic in a channel
+//	@Description	Creates a new topic (text or voice) in a channel. Requires appropriate permissions.
+//	@Description	- Topic types: "text" or "voice"
+//	@Description	- System message will be sent to the channel
+//	@Tags			messenger-topics
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			Authorization	header		string					true	"Bearer JWT token"		example("Bearer eyJhbGciOiJIUzI1NiIs...")
+//	@Param			request			body		dto.CreateTopic			true	"Topic creation data"	example({"channel_id":"123e4567-e89b-12d3-a456-426614174000","name":"General Chat","topic_type":"text"})
+//	@Success		201				{object}	dto.Topic				"Created topic"
+//	@Failure		400				{object}	map[string]interface{}	"Invalid request"		example({"error":"invalid body"})
+//	@Failure		500				{object}	map[string]interface{}	"Internal server error"	example({"error":"failed to create topic"})
+//	@Router			/topics [post]
 func (s *ServiceMessenger) CreateTopic(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
@@ -86,19 +87,20 @@ func (s *ServiceMessenger) CreateTopic(ctx *gin.Context) {
 }
 
 // GetAllTopics godoc
-// @Summary      Get all topics in a channel
-// @Description  Retrieves all topics from a specific channel. User must be a member of the channel.
-// @Tags         messenger-topics
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Param        channel_id  path  string  true  "Channel ID"  example("123e4567-e89b-12d3-a456-426614174000")
-// @Success      200  {array}  dto.Topic  "List of topics"
-// @Failure      400  {object}  map[string]interface{}  "Invalid channel ID"  example({"error":"invalid channel id"})
-// @Failure      403  {object}  map[string]interface{}  "Not a member"  example({"error":"the user does not belong to this group"})
-// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to get topics"})
-// @Router       /topics/{channel_id} [get]
+//
+//	@Summary		Get all topics in a channel
+//	@Description	Retrieves all topics from a specific channel. User must be a member of the channel.
+//	@Tags			messenger-topics
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			Authorization	header		string					true	"Bearer JWT token"	example("Bearer eyJhbGciOiJIUzI1NiIs...")
+//	@Param			channel_id		path		string					true	"Channel ID"		example("123e4567-e89b-12d3-a456-426614174000")
+//	@Success		200				{array}		dto.Topic				"List of topics"
+//	@Failure		400				{object}	map[string]interface{}	"Invalid channel ID"	example({"error":"invalid channel id"})
+//	@Failure		403				{object}	map[string]interface{}	"Not a member"			example({"error":"the user does not belong to this group"})
+//	@Failure		500				{object}	map[string]interface{}	"Internal server error"	example({"error":"failed to get topics"})
+//	@Router			/topics/{channel_id} [get]
 func (s *ServiceMessenger) GetAllTopics(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
@@ -138,19 +140,20 @@ func (s *ServiceMessenger) GetAllTopics(ctx *gin.Context) {
 }
 
 // UpdateTopic godoc
-// @Summary      Update a topic
-// @Description  Updates an existing topic in a channel. Requires appropriate permissions.
-// @Description  - Can update: name, topic type
-// @Tags         messenger-topics
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Param        request  body  dto.UpdateTopic  true  "Topic update data"  example({"id":"123e4567-e89b-12d3-a456-426614174000","channel_id":"987fcdeb-51d2-12d3-a456-426614174000","name":"New Topic Name"})
-// @Success      200  {object}  dto.Topic  "Updated topic"
-// @Failure      400  {object}  map[string]interface{}  "Invalid request"  example({"error":"invalid body"})
-// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to update topic"})
-// @Router       /topics [put]
+//
+//	@Summary		Update a topic
+//	@Description	Updates an existing topic in a channel. Requires appropriate permissions.
+//	@Description	- Can update: name, topic type
+//	@Tags			messenger-topics
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			Authorization	header		string					true	"Bearer JWT token"	example("Bearer eyJhbGciOiJIUzI1NiIs...")
+//	@Param			request			body		dto.UpdateTopic			true	"Topic update data"	example({"id":"123e4567-e89b-12d3-a456-426614174000","channel_id":"987fcdeb-51d2-12d3-a456-426614174000","name":"New Topic Name"})
+//	@Success		200				{object}	dto.Topic				"Updated topic"
+//	@Failure		400				{object}	map[string]interface{}	"Invalid request"		example({"error":"invalid body"})
+//	@Failure		500				{object}	map[string]interface{}	"Internal server error"	example({"error":"failed to update topic"})
+//	@Router			/topics [put]
 func (s *ServiceMessenger) UpdateTopic(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
@@ -186,19 +189,20 @@ func (s *ServiceMessenger) UpdateTopic(ctx *gin.Context) {
 }
 
 // DeleteTopic godoc
-// @Summary      Delete a topic
-// @Description  Permanently deletes a topic from a channel. Requires appropriate permissions.
-// @Description  - System message will be sent to the channel
-// @Tags         messenger-topics
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Param        request  body  dto.DeleteTopic  true  "Topic deletion data"  example({"id":"123e4567-e89b-12d3-a456-426614174000","channel_id":"987fcdeb-51d2-12d3-a456-426614174000"})
-// @Success      200  {object}  map[string]interface{}  "Topic ID"  example({"topic_id":"123e4567-e89b-12d3-a456-426614174000"})
-// @Failure      400  {object}  map[string]interface{}  "Invalid request"  example({"error":"invalid body"})
-// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to delete topic"})
-// @Router       /topics [delete]
+//
+//	@Summary		Delete a topic
+//	@Description	Permanently deletes a topic from a channel. Requires appropriate permissions.
+//	@Description	- System message will be sent to the channel
+//	@Tags			messenger-topics
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			Authorization	header		string					true					"Bearer JWT token"		example("Bearer eyJhbGciOiJIUzI1NiIs...")
+//	@Param			request			body		dto.DeleteTopic			true					"Topic deletion data"	example({"id":"123e4567-e89b-12d3-a456-426614174000","channel_id":"987fcdeb-51d2-12d3-a456-426614174000"})
+//	@Success		200				{object}	map[string]interface{}	"Topic ID"				example({"topic_id":"123e4567-e89b-12d3-a456-426614174000"})
+//	@Failure		400				{object}	map[string]interface{}	"Invalid request"		example({"error":"invalid body"})
+//	@Failure		500				{object}	map[string]interface{}	"Internal server error"	example({"error":"failed to delete topic"})
+//	@Router			/topics [delete]
 func (s *ServiceMessenger) DeleteTopic(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {

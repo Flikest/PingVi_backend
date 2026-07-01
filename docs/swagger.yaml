@@ -1,0 +1,2924 @@
+basePath: /v1/users
+definitions:
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.Channel:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      icon_url:
+        type: string
+      id:
+        type: string
+      is_public:
+        type: boolean
+      name:
+        type: string
+      owner_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.CickChannelMemberRequest:
+    properties:
+      channel_id:
+        type: string
+      kicked_user_id:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.CickGroupMember:
+    properties:
+      channel_id:
+        type: string
+      kicked_user_id:
+        type: string
+      user_id:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.ClearMessage:
+    properties:
+      chat_id:
+        type: string
+      community_type:
+        type: string
+      user_id:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.CreateChannelRequest:
+    properties:
+      description:
+        type: string
+      icon_url:
+        type: string
+      is_public:
+        type: boolean
+      name:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.CreateDirectory:
+    properties:
+      channel_id:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      user_id:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.CreateGroup:
+    properties:
+      avatar_links:
+        items:
+          type: string
+        type: array
+      is_publick:
+        type: boolean
+      name:
+        type: string
+      owner_id:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.CreateJoinToken:
+    properties:
+      name:
+        type: string
+      topic_id:
+        type: string
+      user_id:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.CreateRole:
+    properties:
+      channel_id:
+        type: string
+      color:
+        type: string
+      is_default:
+        type: boolean
+      is_mentionable:
+        type: boolean
+      name:
+        type: string
+      permissions:
+        type: string
+      user_id:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.CreateTopic:
+    properties:
+      channel_id:
+        type: string
+      is_private:
+        type: boolean
+      name:
+        type: string
+      position:
+        type: integer
+      topic_type:
+        type: string
+      user_id:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.CreateUserRequest:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      phone_number:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.DeleteChannelRequest:
+    properties:
+      id:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.DeleteDirectory:
+    properties:
+      channel_id:
+        type: string
+      id:
+        type: string
+      user_id:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.DeleteGroup:
+    properties:
+      id:
+        type: string
+      owner_id:
+        type: string
+      user_id:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.DeletePersonalChat:
+    properties:
+      id:
+        type: string
+      user_id:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.DeleteRequest:
+    properties:
+      paths:
+        items:
+          type: string
+        type: array
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.DeleteRole:
+    properties:
+      channel_id:
+        type: string
+      role_id:
+        type: string
+      user_id:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.DeleteTopic:
+    properties:
+      channel_id:
+        type: string
+      id:
+        type: string
+      user_id:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.Directory:
+    properties:
+      channel_id:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.Group:
+    properties:
+      avatar_links:
+        items:
+          type: string
+        type: array
+      created_at:
+        type: string
+      id:
+        type: string
+      invitation_link:
+        type: string
+      is_publick:
+        type: boolean
+      name:
+        type: string
+      owner_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.GroupMember:
+    properties:
+      group_id:
+        type: string
+      is_admin:
+        type: boolean
+      is_muted:
+        type: boolean
+      joined_at:
+        type: string
+      user_id:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.IssueTemporaryURLRequest:
+    properties:
+      filepath:
+        items:
+          type: string
+        type: array
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.LinkPreviewResponse:
+    properties:
+      message:
+        type: string
+      type:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.LogInRequest:
+    properties:
+      device:
+        type: string
+      email:
+        type: string
+      lat:
+        type: string
+      long:
+        type: string
+      password:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.LogInResponse:
+    properties:
+      access_token:
+        type: string
+      jwt_2fa_token:
+        type: string
+      refresh_token:
+        type: string
+      session_id:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.LogoutRequest:
+    properties:
+      device:
+        type: string
+      session_id:
+        type: string
+      user_id:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.Message:
+    properties:
+      attachments:
+        type: string
+      chat_id:
+        type: string
+      community_type:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      is_edited:
+        type: boolean
+      message:
+        type: string
+      message_type:
+        type: string
+      reactions:
+        items:
+          type: string
+        type: array
+      reply_to_id:
+        type: string
+      sender_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.PersonalChat:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      updated_at:
+        type: string
+      user1_id:
+        type: string
+      user2_id:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.RecoverPasswordRequest:
+    properties:
+      new_password:
+        type: string
+      token:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.RefreshTokens:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.Role:
+    properties:
+      channel_id:
+        type: string
+      color:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      is_default:
+        type: boolean
+      is_mentionable:
+        type: boolean
+      name:
+        type: string
+      permissions:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.Session:
+    properties:
+      country_img_url:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      locale:
+        type: string
+      session_token:
+        type: string
+      user_device:
+        type: string
+      user_id:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.Topic:
+    properties:
+      channel_id:
+        type: string
+      created_at:
+        type: string
+      directory_id:
+        type: string
+      id:
+        type: string
+      is_private:
+        type: boolean
+      name:
+        type: string
+      position:
+        type: integer
+      topic_type:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.TwoFaRequest:
+    properties:
+      code:
+        type: string
+      jwt_2fa_token:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.UpdateChannelRequest:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      icon_url:
+        type: string
+      id:
+        type: string
+      is_public:
+        type: boolean
+      name:
+        type: string
+      owner_id:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.UpdateDirectory:
+    properties:
+      channel_id:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      user_id:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.UpdateGroup:
+    properties:
+      avatar_links:
+        items:
+          type: string
+        type: array
+      created_at:
+        type: string
+      id:
+        type: string
+      is_publick:
+        type: boolean
+      name:
+        type: string
+      owner_id:
+        type: string
+      user_id:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.UpdatePasswordRequest:
+    properties:
+      new_password:
+        type: string
+      old_password:
+        type: string
+      user_id:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.UpdateRole:
+    properties:
+      channel_id:
+        type: string
+      color:
+        type: string
+      id:
+        type: string
+      is_default:
+        type: boolean
+      is_mentionable:
+        type: boolean
+      name:
+        type: string
+      permissions:
+        type: string
+      user_id:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.UpdateTopic:
+    properties:
+      channel_id:
+        type: string
+      id:
+        type: string
+      is_private:
+        type: boolean
+      name:
+        type: string
+      position:
+        type: integer
+      topic_type:
+        type: string
+      user_id:
+        type: string
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.UpdateUserRequest:
+    properties:
+      avatar:
+        items:
+          type: string
+        type: array
+      description:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      is_private:
+        type: boolean
+      name:
+        type: string
+      phone_number:
+        type: string
+      profile_status:
+        type: string
+      risk_profile:
+        type: integer
+    type: object
+  github_com_Flikest_PingVi_backend_internal_delivery_dto.User:
+    properties:
+      avatar:
+        items:
+          type: string
+        type: array
+      created_at:
+        type: string
+      description:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      is_activated:
+        type: boolean
+      is_private:
+        type: boolean
+      name:
+        type: string
+      password_hash:
+        type: string
+      phone_number:
+        type: string
+      profile_status:
+        type: string
+      risk_profile:
+        type: integer
+      two_factor_enabled:
+        type: boolean
+      updated_at:
+        type: string
+    type: object
+  github_com_gorilla_websocket.Conn:
+    type: object
+externalDocs:
+  description: OpenAPI
+  url: https://swagger.io/resources/open-api/
+host: localhost:8080
+info:
+  contact: {}
+  description: This is PingVi selective forwarding unit.
+  termsOfService: http://swagger.io/terms/
+  title: PingVi selective forwarding unit
+  version: "1.0"
+paths:
+  /:
+    delete:
+      consumes:
+      - application/json
+      description: |-
+        Permanently deletes the authenticated user's account.
+        - Requires authentication
+        - Deletes all user data (sessions, messages, etc.)
+        - This action cannot be undone
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User deleted successfully"  example({"user_id":"123e4567-e89b-12d3-a456-426614174000"})
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid token"  example({"error":"invalid token"})
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error"  example({"error":"failed to delete
+            user"})
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete user account
+      tags:
+      - sso
+    post:
+      consumes:
+      - multipart/form-data
+      description: |-
+        Upload one or multiple files to the file storage system. Files can be uploaded to public or private buckets based on category.
+        - Public buckets: avatar, emoji, sticker (accessible without authentication)
+        - Private buckets: default and other categories (require temporary URL for access)
+        - Maximum file size: 2GB per file
+        - Prohibited extensions: .exe, .bat, .sh (security reasons)
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - collectionFormat: multi
+        description: Files to upload (max 2GB per file)
+        in: formData
+        items:
+          type: file
+        name: files
+        required: true
+        type: array
+      - description: Category for file organization
+        enum:
+        - avatar
+        - emoji
+        - sticker
+        - default
+        example: '"avatar"'
+        in: formData
+        name: category
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: "Returns array of file statuses\"\t\t\texample({\"files\":[{\"filename\":\"profile.jpg\",\"status\":\"success\",\"bucket\":\"public/avatar/123e4567-e89b-12d3-a456-426614174000.jpg\"}]})"
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: "File too large or prohibited type\"\t\t\texample({\"files\":[{\"filename\":\"virus.exe\",\"status\":\"failed\",\"error\":\"This
+            type of file is prohibited for security reasons\"}]})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\t\t\t\t\t\texample({\"error\":\"failed
+            to generate file ID\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Upload files to storage
+      tags:
+      - file-storage
+    put:
+      consumes:
+      - application/json
+      description: |-
+        Updates the authenticated user's profile information.
+        - Can update: name, email, avatar, etc.
+        - Email update may require re-verification
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: User update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated user
+          schema:
+            $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.User'
+        "400":
+          description: Invalid request"  example({"error":"invalid email format"})
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error"  example({"error":"failed to update
+            user"})
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update user information
+      tags:
+      - sso
+  /{id}:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Retrieves user information by user ID.
+        - Returns public user information
+        - Does not return sensitive data (password hash, etc.)
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: User ID
+        example: '"123e4567-e89b-12d3-a456-426614174000"'
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User information
+          schema:
+            $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.User'
+        "400":
+          description: Invalid user ID"  example({"error":"invalid user id"})
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: User not found"  example({"error":"user not found"})
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error"  example({"error":"failed to get user"})
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get user by ID
+      tags:
+      - sso
+  /2fa:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Verifies a 2FA (Two-Factor Authentication) code for the user.
+        - Requires email and 2FA code
+        - Returns tokens upon successful verification
+      parameters:
+      - description: 2FA verification data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.TwoFaRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 2FA verified successfully with tokens
+          schema:
+            $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.LogInResponse'
+        "400":
+          description: Invalid code"  example({"error":"invalid 2FA code"})
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error"  example({"error":"failed to verify
+            2FA"})
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Verify 2FA code
+      tags:
+      - sso
+  /channels:
+    delete:
+      consumes:
+      - application/json
+      description: |-
+        Permanently deletes a channel and all associated data. Requires 'manage_channel' permission (permission[2] == '1').
+        - Deletes: roles, topics, members, messages and the channel itself
+        - System message will be sent to the channel
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Channel ID
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.DeleteChannelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: "Channel ID\"\t\t\t\texample({\"channel_id\":\"123e4567-e89b-12d3-a456-426614174000\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: "Invalid request\"\t\t\texample({\"error\":\"invalid body\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: "Insufficient permissions\"\texample({\"error\":\"the user
+            does not have enough rights\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\t\texample({\"error\":\"failed to
+            delete channel\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete a channel
+      tags:
+      - messenger-channels
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Creates a new channel with the authenticated user as owner. Automatically creates owner role, @everyone role, general topic and directory.
+        - Channel types: public (anyone can join) or private (invite only)
+        - Owner gets full permissions (111111)
+        - System messages will be sent to the channel
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Channel creation data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.CreateChannelRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created channel
+          schema:
+            $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.Channel'
+        "400":
+          description: "Invalid request body or JWT\"\texample({\"error\":\"invalid
+            body\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\t\t\texample({\"error\":\"failed to
+            insert channel\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new channel
+      tags:
+      - messenger-channels
+    put:
+      consumes:
+      - application/json
+      description: |-
+        Updates channel details. Requires 'manage_channel' permission (permission[2] == '1').
+        - Can update: name, description, icon, visibility
+        - System message will be sent to the channel
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Channel update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.UpdateChannelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated channel
+          schema:
+            $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.Channel'
+        "400":
+          description: "Invalid request\"\t\t\texample({\"error\":\"invalid body\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: "Insufficient permissions\"\texample({\"error\":\"the user
+            does not have enough rights\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\t\texample({\"error\":\"failed to
+            update channel\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update channel information
+      tags:
+      - messenger-channels
+  /channels/{user_id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all channels that the authenticated user is a member
+        of.
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: User ID
+        example: '"123e4567-e89b-12d3-a456-426614174000"'
+        in: path
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of channels
+          schema:
+            items:
+              $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.Channel'
+            type: array
+        "400":
+          description: "Invalid user ID\"\t\texample({\"error\":\"invalid user id\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\texample({\"error\":\"failed to get
+            channels\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get user's channels
+      tags:
+      - messenger-channels
+  /channels/cick:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Removes a member from the channel. Requires 'manage_roles' permission (permission[0] == '1').
+        - Only users with manage_roles permission can kick members
+        - System message will be sent to the channel
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Kick request data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.CickChannelMemberRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: "Kicked member ID\"\t\t\texample({\"kicked_member_id\":\"987fcdeb-51d2-12d3-a456-426614174000\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: "Invalid request\"\t\t\texample({\"error\":\"invalid body\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: "Insufficient permissions\"\texample({\"error\":\"the user
+            does not have enough rights\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\t\texample({\"error\":\"failed to
+            kick member\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Kick member from channel
+      tags:
+      - messenger-channels
+  /channels/join/{channel_id}:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Allows a user to join a public channel. Assigns the @everyone role to the user.
+        - User must be authenticated
+        - Only public channels can be joined directly
+        - System message will be sent to the channel
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Channel ID
+        example: '"123e4567-e89b-12d3-a456-426614174000"'
+        in: path
+        name: channel_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: "Channel ID\"\t\t\texample({\"channel_id\":\"123e4567-e89b-12d3-a456-426614174000\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: "Invalid channel ID\"\texample({\"error\":\"invalid channel
+            id\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\texample({\"error\":\"failed to join
+            channel\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Join a channel
+      tags:
+      - messenger-channels
+  /channels/leave/{channel_id}:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Allows a user to leave a channel. If the user is the owner and has delete_channel permission, the channel and all its data will be deleted.
+        - Owner deletion: Removes all roles, topics, members and the channel itself
+        - Regular member: Simply removes the member from the channel
+        - System message will be sent to the channel
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Channel ID
+        example: '"123e4567-e89b-12d3-a456-426614174000"'
+        in: path
+        name: channel_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: "Channel ID\"\t\t\t\texample({\"channel_id\":\"123e4567-e89b-12d3-a456-426614174000\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: "Invalid channel ID\"\t\texample({\"error\":\"invalid channel
+            id\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: "Insufficient permissions\"\texample({\"error\":\"the user
+            does not have enough rights\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\t\texample({\"error\":\"failed to
+            leave channel\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Leave a channel
+      tags:
+      - messenger-channels
+  /create_join_token:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Creates a JWT token for joining a specific room. The token is valid for 1 hour and includes video grant permissions.
+        Requires user authentication and the 'room_join' permission (permission[6] == '1').
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Room join request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.CreateJoinToken'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: "JWT token for joining the room\"\t\texample(\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\")"
+          schema:
+            type: string
+        "400":
+          description: "Invalid request body or JWT token\"\t\texample(\"{\\\"error\\\":\\\"invalid
+            body\\\"}\")"
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: "User doesn't have enough permissions\"\texample(\"{\\\"error\\\":\\\"not
+            enough permissions\\\"}\")"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\t\t\t\t\texample(\"{\\\"error\\\":\\\"failed
+            to generate JWT token\\\"}\")"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create join token for room
+      tags:
+      - sfu
+  /directorys:
+    delete:
+      consumes:
+      - application/json
+      description: Permanently deletes a directory from a channel. Requires 'manage_directories'
+        permission (permission[4] == '1').
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Directory deletion data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.DeleteDirectory'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: "Directory ID\"\t\t\t\texample({\"directory_id\":\"123e4567-e89b-12d3-a456-426614174000\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: "Invalid request\"\t\t\texample({\"error\":\"invalid body\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: "Insufficient permissions\"\texample({\"error\":\"not enough
+            rights\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\t\texample({\"error\":\"failed to
+            delete directory\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete a directory
+      tags:
+      - messenger-directories
+    post:
+      consumes:
+      - application/json
+      description: Creates a new directory in a channel. Requires 'manage_directories'
+        permission (permission[4] == '1').
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Directory creation data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.CreateDirectory'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created directory
+          schema:
+            $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.Directory'
+        "400":
+          description: "Invalid request\"\t\t\texample({\"error\":\"invalid body\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: "Insufficient permissions\"\texample({\"error\":\"not enough
+            rights\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\t\texample({\"error\":\"failed to
+            create directory\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new directory in a channel
+      tags:
+      - messenger-directories
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing directory in a channel. Requires 'manage_directories'
+        permission (permission[4] == '1').
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Directory update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.UpdateDirectory'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated directory
+          schema:
+            $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.Directory'
+        "400":
+          description: "Invalid request\"\t\t\texample({\"error\":\"invalid body\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: "Insufficient permissions\"\texample({\"error\":\"not enough
+            rights\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\t\texample({\"error\":\"failed to
+            update directory\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update a directory
+      tags:
+      - messenger-directories
+  /directorys/{channel_id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all directories from a specific channel.
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Channel ID
+        example: '"123e4567-e89b-12d3-a456-426614174000"'
+        in: path
+        name: channel_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of directories
+          schema:
+            items:
+              $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.Directory'
+            type: array
+        "400":
+          description: "Invalid channel ID\"\texample({\"error\":\"invalid channel
+            id\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\texample({\"error\":\"failed to get
+            directories\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all directories in a channel
+      tags:
+      - messenger-directories
+  /disable_2fa:
+    patch:
+      consumes:
+      - application/json
+      description: |-
+        Disables Two-Factor Authentication for the user.
+        - Requires user ID in request body
+        - Removes 2FA secret from user account
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: User ID
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 2FA disabled for user
+          schema:
+            $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.User'
+        "400":
+          description: Invalid request"  example({"error":"invalid user id"})
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error"  example({"error":"failed to disable
+            2FA"})
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Disable 2FA for user
+      tags:
+      - sso
+  /enable_2fa:
+    patch:
+      consumes:
+      - application/json
+      description: |-
+        Enables Two-Factor Authentication for the authenticated user.
+        - Returns a secret key for TOTP setup
+        - User must scan QR code with authenticator app
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 2FA enabled with secret key
+          schema:
+            $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.User'
+        "500":
+          description: Internal server error"  example({"error":"failed to enable
+            2FA"})
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Enable 2FA for user
+      tags:
+      - sso
+  /groups:
+    delete:
+      consumes:
+      - application/json
+      description: |-
+        Permanently deletes a group and all associated data. Requires being the group owner or admin.
+        - Deletes: members, messages and the group itself
+        - System message will be sent to the group
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Group ID
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.DeleteGroup'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: "Group ID\"\t\t\t\t\texample({\"group_id\":\"123e4567-e89b-12d3-a456-426614174000\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: "Invalid request\"\t\t\texample({\"error\":\"invalid body\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: "Insufficient permissions\"\texample({\"error\":\"not enough
+            rights\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\t\texample({\"error\":\"failed to
+            delete group\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete a group
+      tags:
+      - messenger-groups
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all groups that the authenticated user is a member of.
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of groups
+          schema:
+            items:
+              $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.Group'
+            type: array
+        "500":
+          description: "Internal server error\"\texample({\"error\":\"failed to get
+            groups\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get user's groups
+      tags:
+      - messenger-groups
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Creates a new group chat with the authenticated user as owner.
+        - Groups are simpler than channels (no roles, topics, or directories)
+        - System message will be sent to the group
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Group creation data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.CreateGroup'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created group
+          schema:
+            $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.Group'
+        "400":
+          description: "Invalid request\"\t\texample({\"error\":\"invalid body\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\texample({\"error\":\"failed to create
+            group\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new group
+      tags:
+      - messenger-groups
+    put:
+      consumes:
+      - application/json
+      description: |-
+        Updates group details. Requires being the group owner or admin.
+        - Can update: name, avatar, visibility
+        - System message will be sent to the group
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Group update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.UpdateGroup'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated group
+          schema:
+            $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.Group'
+        "400":
+          description: "Invalid request\"\t\t\texample({\"error\":\"invalid body\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: "Insufficient permissions\"\texample({\"error\":\"not enough
+            rights\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: "Group not found\"\t\t\texample({\"error\":\"such a group does
+            not exist\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\t\texample({\"error\":\"failed to
+            update group\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update group information
+      tags:
+      - messenger-groups
+  /groups/join/{group_id}:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Allows a user to join a public group.
+        - User must be authenticated
+        - System message will be sent to the group
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Group ID
+        example: '"123e4567-e89b-12d3-a456-426614174000"'
+        in: path
+        name: group_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: "Group ID\"\t\t\t\texample({\"group_id\":\"123e4567-e89b-12d3-a456-426614174000\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: "Invalid group ID\"\t\texample({\"error\":\"invalid group id\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\texample({\"error\":\"failed to join
+            group\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Join a group
+      tags:
+      - messenger-groups
+  /groups/kick:
+    delete:
+      consumes:
+      - application/json
+      description: |-
+        Removes a member from the group. Requires being the group owner or admin.
+        - Cannot kick the group owner
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Kick request data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.CickGroupMember'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: "Group ID\"\t\t\t\t\texample({\"group_id\":\"123e4567-e89b-12d3-a456-426614174000\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: "Invalid request\"\t\t\texample({\"error\":\"invalid body\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: "Insufficient permissions\"\texample({\"error\":\"not enough
+            rights\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\t\texample({\"error\":\"failed to
+            kick member\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Kick member from group
+      tags:
+      - messenger-groups
+  /groups/leave/{group_id}:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Allows a user to leave a group. If the user is the owner, the group and all members will be deleted.
+        - Owner deletion: Removes all members and the group itself
+        - Regular member: Simply removes the member from the group
+        - System message will be sent to the group
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Group ID
+        example: '"123e4567-e89b-12d3-a456-426614174000"'
+        in: path
+        name: group_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: "Group ID\"\t\t\t\texample({\"group_id\":\"123e4567-e89b-12d3-a456-426614174000\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: "Invalid group ID\"\t\texample({\"error\":\"invalid group id\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\texample({\"error\":\"failed to leave
+            group\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Leave a group
+      tags:
+      - messenger-groups
+  /groups/member/{group_id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a specific member from a group by user ID.
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Group ID
+        example: '"123e4567-e89b-12d3-a456-426614174000"'
+        in: path
+        name: group_id
+        required: true
+        type: string
+      - description: User ID
+        example: '"987fcdeb-51d2-12d3-a456-426614174000"'
+        in: path
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Group member details
+          schema:
+            $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.GroupMember'
+        "400":
+          description: "Invalid IDs\"\t\t\texample({\"error\":\"invalid group id\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\texample({\"error\":\"failed to get
+            member\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get a specific group member
+      tags:
+      - messenger-groups
+  /groups/member/all/{group_id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all members from a specific group.
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Group ID
+        example: '"123e4567-e89b-12d3-a456-426614174000"'
+        in: path
+        name: group_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of group members
+          schema:
+            items:
+              $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.GroupMember'
+            type: array
+        "400":
+          description: "Invalid group ID\"\t\texample({\"error\":\"invalid group id\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\texample({\"error\":\"failed to get
+            members\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all members of a group
+      tags:
+      - messenger-groups
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Logs in a user with email and password. Returns access and refresh tokens.
+        - Sets HTTP-only cookies for access_token (15min) and refresh_token (60 days)
+        - Supports 2FA if enabled on the account
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.LogInRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful with tokens
+          schema:
+            $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.LogInResponse'
+        "400":
+          description: Invalid credentials"  example({"error":"invalid email or password"})
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Authentication failed"  example({"error":"2FA required"})
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error"  example({"error":"failed to login"})
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Authenticate user
+      tags:
+      - sso
+  /logout:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Invalidates the user's refresh token and clears session.
+        - Requires authentication
+        - Deletes the refresh token from database
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Logout data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.LogoutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Logout successful"  example({"user_id":"123e4567-e89b-12d3-a456-426614174000"})
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request"  example({"error":"invalid refresh token"})
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error"  example({"error":"failed to logout"})
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Logout user
+      tags:
+      - sso
+  /logup:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Creates a new user account with the provided credentials.
+        - Validates email format and password strength
+        - Hashes password before storing
+        - Returns user data without sensitive information
+      parameters:
+      - description: User registration data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created user
+          schema:
+            $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.User'
+        "400":
+          description: Invalid request body"  example({"error":"invalid email format"})
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error"  example({"error":"failed to create
+            user"})
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Register a new user
+      tags:
+      - sso
+  /password:
+    patch:
+      consumes:
+      - application/json
+      description: |-
+        Updates the authenticated user's password. Requires current password verification.
+        - Validates password strength
+        - Hashes new password before storing
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Password update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.UpdatePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User with updated password
+          schema:
+            $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.User'
+        "400":
+          description: Invalid request"  example({"error":"current password is incorrect"})
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error"  example({"error":"failed to update
+            password"})
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update user password
+      tags:
+      - sso
+  /personal_chat:
+    delete:
+      consumes:
+      - application/json
+      description: |-
+        Permanently deletes a personal chat. User must be a participant.
+        - Only participants can delete the chat
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Personal chat ID
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.DeletePersonalChat'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: "Chat ID\"\t\t\t\texample({\"chat_id\":\"123e4567-e89b-12d3-a456-426614174000\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: "Invalid request\"\t\texample({\"error\":\"invalid body\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: "Not a participant\"\t\texample({\"error\":\"not belongs to
+            chat\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\texample({\"error\":\"failed to delete
+            personal chat\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete a personal chat
+      tags:
+      - messenger-personal-chat
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Creates a new direct message chat between two users.
+        - If chat already exists, returns existing chat
+        - Both users must be authenticated
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Personal chat data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.PersonalChat'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created personal chat
+          schema:
+            $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.PersonalChat'
+        "400":
+          description: "Invalid request\"\t\texample({\"error\":\"invalid body\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\texample({\"error\":\"failed to create
+            personal chat\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a personal chat
+      tags:
+      - messenger-personal-chat
+  /recover_password:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Resets the user's password using a temporary link token.
+        - Token must be valid and not expired
+        - Redirects to login page after successful reset
+      parameters:
+      - description: Password recovery data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.RecoverPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "307":
+          description: Redirect to login page"  example("Redirecting to https://pingvi.com/login")
+          schema:
+            type: string
+        "400":
+          description: Invalid token"  example({"error":"invalid or expired token"})
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error"  example({"error":"failed to recover
+            password"})
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Recover password
+      tags:
+      - sso
+  /refresh:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Refreshes the access token using a valid refresh token.
+        - Accepts tokens from headers or cookies
+        - Returns new access and refresh token pair
+        - Old refresh token is invalidated
+      parameters:
+      - description: Bearer access token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        type: string
+      - description: Refresh token
+        example: '"abc123def456"'
+        in: header
+        name: X-Refresh-Token
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: New token pair"  example({"access_token":"new_access_token","refresh_token":"new_refresh_token"})
+          schema:
+            $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.RefreshTokens'
+        "400":
+          description: Invalid tokens"  example({"error":"token mismatch"})
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error"  example({"error":"failed to refresh
+            tokens"})
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Refresh access token
+      tags:
+      - sso
+  /roles:
+    delete:
+      consumes:
+      - application/json
+      description: |-
+        Permanently deletes a role from a channel. Members with this role will be reassigned to @everyone role.
+        - Requires 'manage_roles' permission (permission[4] == '1')
+        - System message will be sent to the channel
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Role deletion data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.DeleteRole'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: "Role ID\"\t\t\t\t\texample({\"role_id\":\"123e4567-e89b-12d3-a456-426614174000\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: "Invalid request\"\t\t\texample({\"error\":\"invalid body\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: "Insufficient permissions\"\texample({\"error\":\"the user
+            does not have sufficient rights\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\t\texample({\"error\":\"failed to
+            delete role\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete a role
+      tags:
+      - messenger-roles
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Creates a new role in a channel. Requires 'manage_roles' permission (permission[4] == '1').
+        - Can set: name, color, permissions, mentionable flag
+        - System message will be sent to the channel
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Role creation data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.CreateRole'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created role
+          schema:
+            $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.Role'
+        "400":
+          description: "Invalid request\"\t\t\texample({\"error\":\"invalid body\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: "Insufficient permissions\"\texample({\"error\":\"the user
+            does not have sufficient rights\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\t\texample({\"error\":\"failed to
+            create role\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new role in a channel
+      tags:
+      - messenger-roles
+    put:
+      consumes:
+      - application/json
+      description: |-
+        Updates an existing role in a channel. Requires 'manage_roles' permission (permission[4] == '1').
+        - Can update: name, color, permissions, mentionable flag
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Role update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.UpdateRole'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated role
+          schema:
+            $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.Role'
+        "400":
+          description: "Invalid request\"\t\t\texample({\"error\":\"invalid body\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: "Insufficient permissions\"\texample({\"error\":\"the user
+            does not have sufficient rights\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\t\texample({\"error\":\"failed to
+            update role\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update a role
+      tags:
+      - messenger-roles
+  /roles/{channel_id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all roles from a specific channel. User must be a member
+        of the channel.
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Channel ID
+        example: '"123e4567-e89b-12d3-a456-426614174000"'
+        in: path
+        name: channel_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of roles
+          schema:
+            items:
+              $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.Role'
+            type: array
+        "400":
+          description: "Invalid channel ID\"\texample({\"error\":\"invalid channel
+            id\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: "Not a member\"\t\t\texample({\"error\":\"the user does not
+            belong to this group\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\texample({\"error\":\"failed to get
+            roles\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all roles in a channel
+      tags:
+      - messenger-roles
+  /roles/permissions/{channel_id}/{user_id}:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Retrieves the permission string for a user in a specific channel.
+        - Permission string format: 6 characters (e.g., "111111")
+        - Each position represents a different permission
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Channel ID
+        example: '"123e4567-e89b-12d3-a456-426614174000"'
+        in: path
+        name: channel_id
+        required: true
+        type: string
+      - description: User ID
+        example: '"987fcdeb-51d2-12d3-a456-426614174000"'
+        in: path
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: "Permission string\"\t\texample(\"111111\")"
+          schema:
+            type: string
+        "400":
+          description: "Invalid IDs\"\t\t\texample({\"error\":\"invalid user id\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\texample({\"error\":\"failed to get
+            permissions\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get user permissions in a channel
+      tags:
+      - messenger-roles
+  /sessions:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Retrieves all active sessions for the authenticated user.
+        - Returns session information (device, IP, last activity)
+        - Useful for managing active sessions
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of active sessions
+          schema:
+            items:
+              $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.Session'
+            type: array
+        "400":
+          description: Invalid token"  example({"error":"invalid token"})
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error"  example({"error":"failed to get sessions"})
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get user sessions
+      tags:
+      - sso
+  /temporary_link:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Sends a temporary link to the user's email for password recovery.
+        - Link expires after 15 minutes
+        - User must click the link to reset password
+      parameters:
+      - description: User email
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'Temporary link sent"  example({"message":"the link has been
+            sent to your email: user@example.com"})'
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid email"  example({"error":"email not found"})
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error"  example({"error":"failed to send email"})
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Send password recovery link
+      tags:
+      - sso
+  /temporary_url:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Generate temporary access URLs for private files (valid for 24 hours).
+        - Public files (public/) return original URL without expiration
+        - Private files (private/) generate signed temporary URLs
+        - Only private files can generate temporary URLs
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: List of file URLs to generate temporary access
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.IssueTemporaryURLRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: "Returns array of temporary URL responses\"\texample({\"result\":[{\"temporary_url\":\"https://s3.amazonaws.com/private/catalog/123e4567...?X-Amz-Expires=86400&X-Amz-Signature=...\"},{\"temporary_url\":\"public/avatar/user-avatar.jpg\"}]})"
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: "Invalid request body or no URLs provided\"\texample({\"error\":\"invalid
+            body\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\t\t\t\t\t\texample({\"result\":[{\"error\":\"failed
+            to generate temporary URL: invalid bucket\"}]})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Generate temporary URLs for files
+      tags:
+      - file-storage
+  /topics:
+    delete:
+      consumes:
+      - application/json
+      description: |-
+        Permanently deletes a topic from a channel. Requires appropriate permissions.
+        - System message will be sent to the channel
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Topic deletion data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.DeleteTopic'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: "Topic ID\"\t\t\t\texample({\"topic_id\":\"123e4567-e89b-12d3-a456-426614174000\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: "Invalid request\"\t\texample({\"error\":\"invalid body\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\texample({\"error\":\"failed to delete
+            topic\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete a topic
+      tags:
+      - messenger-topics
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Creates a new topic (text or voice) in a channel. Requires appropriate permissions.
+        - Topic types: "text" or "voice"
+        - System message will be sent to the channel
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Topic creation data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.CreateTopic'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created topic
+          schema:
+            $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.Topic'
+        "400":
+          description: "Invalid request\"\t\texample({\"error\":\"invalid body\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\texample({\"error\":\"failed to create
+            topic\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new topic in a channel
+      tags:
+      - messenger-topics
+    put:
+      consumes:
+      - application/json
+      description: |-
+        Updates an existing topic in a channel. Requires appropriate permissions.
+        - Can update: name, topic type
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Topic update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.UpdateTopic'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated topic
+          schema:
+            $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.Topic'
+        "400":
+          description: "Invalid request\"\t\texample({\"error\":\"invalid body\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\texample({\"error\":\"failed to update
+            topic\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update a topic
+      tags:
+      - messenger-topics
+  /topics/{channel_id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all topics from a specific channel. User must be a member
+        of the channel.
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Channel ID
+        example: '"123e4567-e89b-12d3-a456-426614174000"'
+        in: path
+        name: channel_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of topics
+          schema:
+            items:
+              $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.Topic'
+            type: array
+        "400":
+          description: "Invalid channel ID\"\texample({\"error\":\"invalid channel
+            id\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: "Not a member\"\t\t\texample({\"error\":\"the user does not
+            belong to this group\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\texample({\"error\":\"failed to get
+            topics\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all topics in a channel
+      tags:
+      - messenger-topics
+  /ws/{session_id}:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Establishes a WebSocket connection for real-time messaging.
+        - Requires session_id for authentication
+        - Supports operations: switch_community, read, send, update, delete
+        - Messages are broadcasted to all members of the chat
+      parameters:
+      - description: Session ID for authentication
+        example: '"abc123def456"'
+        in: path
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "101":
+          description: WebSocket connection upgraded
+          schema:
+            $ref: '#/definitions/github_com_gorilla_websocket.Conn'
+        "400":
+          description: "Invalid session ID\"\t\texample({\"error\":\"invalid session
+            id\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "415":
+          description: "Invalid content type\"\t\texample({\"error\":\"Content-Type
+            must be application/json\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "WebSocket upgrade failed\"\texample({\"error\":\"WebSocket
+            upgrade failed\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      summary: WebSocket connection for real-time messaging
+      tags:
+      - messenger-websocket
+  /ws/messages/{chat_id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all messages from a specific chat (channel, group, or
+        personal chat).
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Chat ID
+        example: '"123e4567-e89b-12d3-a456-426614174000"'
+        in: path
+        name: chat_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of messages
+          schema:
+            items:
+              $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.Message'
+            type: array
+        "400":
+          description: "Invalid chat ID\"\t\texample({\"error\":\"invalid chat id\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\texample({\"error\":\"failed to get
+            messages\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all messages from a chat
+      tags:
+      - messenger-websocket
+  /ws/messages/clear:
+    delete:
+      consumes:
+      - application/json
+      description: Clears all messages from a specific chat. Requires appropriate
+        permissions.
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Chat ID
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.ClearMessage'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: "Chat ID\"\t\t\t\texample({\"chat_id\":\"123e4567-e89b-12d3-a456-426614174000\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: "Invalid request\"\t\texample({\"error\":\"invalid body\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\texample({\"error\":\"failed to clear
+            messages\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Clear all messages from a chat
+      tags:
+      - messenger-websocket
+  /ws/preview/{link}:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Fetches a preview for a given link. Supports internal PingVi links and external URLs.
+        - Internal links: returns type and message
+        - External links: fetches content type and returns preview
+      parameters:
+      - description: Bearer JWT token
+        example: '"Bearer eyJhbGciOiJIUzI1NiIs..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: URL to preview
+        example: '"https://example.com/image.jpg"'
+        in: path
+        name: link
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: "Link preview data\"\t\texample({\"type\":\"image\",\"message\":\"https://s3.amazonaws.com/public/emoji/standart/1F600.json\"})"
+          schema:
+            $ref: '#/definitions/github_com_Flikest_PingVi_backend_internal_delivery_dto.LinkPreviewResponse'
+        "400":
+          description: "Invalid URL\"\t\t\texample({\"error\":\"invalid url format\"})"
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: "Internal server error\"\texample({\"error\":\"failed to fetch
+            preview\"})"
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get link preview
+      tags:
+      - messenger-websocket
+securityDefinitions:
+  BasicAuth:
+    type: basic
+swagger: "2.0"

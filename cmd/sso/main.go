@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	_ "github.com/Flikest/PingVi_backend/cmd/sso/docs"
 	"github.com/Flikest/PingVi_backend/internal/config"
 	"github.com/Flikest/PingVi_backend/internal/database/postgres"
 	"github.com/Flikest/PingVi_backend/internal/database/redis"
@@ -23,18 +24,18 @@ import (
 	"google.golang.org/grpc"
 )
 
-// @title PingVi selective forwarding unit
-// @version 1.0
-// @description This is PingVi selective forwarding unit.
-// @termsOfService  http://swagger.io/terms/
+//	@title			PingVi selective forwarding unit
+//	@version		1.0
+//	@description	This is PingVi selective forwarding unit.
+//	@termsOfService	http://swagger.io/terms/
 
-// @Host localhost:8080
-// @BasePath /v1/users
+//	@Host		localhost:8080
+//	@BasePath	/v1/users
 
-// @securityDefinitions.basic  BasicAuth
+//	@securityDefinitions.basic	BasicAuth
 
-// @externalDocs.description  OpenAPI
-// @externalDocs.url          https://swagger.io/resources/open-api/
+// @externalDocs.description	OpenAPI
+// @externalDocs.url			https://swagger.io/resources/open-api/
 func main() {
 	env := flag.String("env", "local", "environment variable")
 	flag.Parse()

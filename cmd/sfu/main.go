@@ -14,18 +14,18 @@ import (
 	rkgin "github.com/rookie-ninja/rk-gin/v2/boot"
 )
 
-// @title PingVi selective forwarding unit
-// @version 1.0
-// @description This is PingVi selective forwarding unit.
-// @termsOfService  http://swagger.io/terms/
+//	@title			PingVi selective forwarding unit
+//	@version		1.0
+//	@description	This is PingVi selective forwarding unit.
+//	@termsOfService	http://swagger.io/terms/
 
-// @Host localhost:8085
-// @BasePath /v1/rooms
+//	@Host		localhost:8085
+//	@BasePath	/v1/rooms
 
-// @securityDefinitions.basic  BasicAuth
+//	@securityDefinitions.basic	BasicAuth
 
-// @externalDocs.description  OpenAPI
-// @externalDocs.url          https://swagger.io/resources/open-api/
+// @externalDocs.description	OpenAPI
+// @externalDocs.url			https://swagger.io/resources/open-api/
 func main() {
 	env := flag.String("env", "local", "enviroment variable")
 

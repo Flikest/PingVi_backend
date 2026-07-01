@@ -22,7 +22,7 @@ import (
 // @Accept       json
 // @Produce      json
 // @Param        request  body  dto.CreateUserRequest  true  "User registration data"  example({"email":"user@example.com","password":"SecurePass123!","name":"John Doe"})
-// @Success      201  {object}  dto.UserResponse  "Created user"
+// @Success      201  {object}  dto.User  "Created user"
 // @Failure      400  {object}  map[string]interface{}  "Invalid request body"  example({"error":"invalid email format"})
 // @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to create user"})
 // @Router       /logup [post]
@@ -54,7 +54,7 @@ func (s *ServiceSSO) Logup(ctx *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Param        request  body  dto.LogInRequest  true  "Login credentials"  example({"email":"user@example.com","password":"SecurePass123!"})
-// @Success      200  {object}  dto.LoginResponse  "Login successful with tokens"
+// @Success      200  {object}  dto.LogInResponse  "Login successful with tokens"
 // @Failure      400  {object}  map[string]interface{}  "Invalid credentials"  example({"error":"invalid email or password"})
 // @Failure      401  {object}  map[string]interface{}  "Authentication failed"  example({"error":"2FA required"})
 // @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to login"})
@@ -157,7 +157,7 @@ func (s *ServiceSSO) Logout(ctx *gin.Context) {
 // @Security     BearerAuth
 // @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
 // @Param        request  body  dto.UpdateUserRequest  true  "User update data"  example({"name":"John Updated","email":"newemail@example.com"})
-// @Success      200  {object}  dto.UserResponse  "Updated user"
+// @Success      200  {object}  dto.User  "Updated user"
 // @Failure      400  {object}  map[string]interface{}  "Invalid request"  example({"error":"invalid email format"})
 // @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to update user"})
 // @Router       / [put]
@@ -206,7 +206,7 @@ func (s *ServiceSSO) UpdateUser(ctx *gin.Context) {
 // @Security     BearerAuth
 // @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
 // @Param        request  body  dto.UpdatePasswordRequest  true  "Password update data"  example({"current_password":"OldPass123!","new_password":"NewPass456!"})
-// @Success      200  {object}  dto.UserResponse  "User with updated password"
+// @Success      200  {object}  dto.User  "User with updated password"
 // @Failure      400  {object}  map[string]interface{}  "Invalid request"  example({"error":"current password is incorrect"})
 // @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to update password"})
 // @Router       /password [patch]
@@ -253,7 +253,7 @@ func (s *ServiceSSO) UpdatePassword(ctx *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Param        request  body  dto.TwoFaRequest  true  "2FA verification data"  example({"email":"user@example.com","code":"123456"})
-// @Success      200  {object}  dto.LoginResponse  "2FA verified successfully with tokens"
+// @Success      200  {object}  dto.LogInResponse  "2FA verified successfully with tokens"
 // @Failure      400  {object}  map[string]interface{}  "Invalid code"  example({"error":"invalid 2FA code"})
 // @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to verify 2FA"})
 // @Router       /2fa [post]
@@ -286,7 +286,7 @@ func (s *ServiceSSO) Verify2FA(ctx *gin.Context) {
 // @Produce      json
 // @Security     BearerAuth
 // @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Success      200  {object}  dto.TwoFactorAuthResponse  "2FA enabled with secret key"
+// @Success      200  {object}  dto.User  "2FA enabled with secret key"
 // @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to enable 2FA"})
 // @Router       /enable_2fa [patch]
 func (s *ServiceSSO) EnableTwoFactorAuth(ctx *gin.Context) {
@@ -325,11 +325,10 @@ func (s *ServiceSSO) EnableTwoFactorAuth(ctx *gin.Context) {
 // @Security     BearerAuth
 // @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
 // @Param        request  body  object  true  "User ID"  example({"user_id":"123e4567-e89b-12d3-a456-426614174000"})
-// @Success      200  {object}  dto.UserResponse  "2FA disabled for user"
+// @Success      200  {object}  dto.User  "2FA disabled for user"
 // @Failure      400  {object}  map[string]interface{}  "Invalid request"  example({"error":"invalid user id"})
 // @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to disable 2FA"})
 // @Router       /disable_2fa [patch]
-
 func (s *ServiceSSO) DisableTwoFactorAuth(ctx *gin.Context) {
 	body := struct {
 		UserID uuid.UUID `json:"user_id"`
@@ -427,7 +426,7 @@ func (s *ServiceSSO) RecoverPassword(ctx *gin.Context) {
 // @Security     BearerAuth
 // @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
 // @Param        id  path  string  true  "User ID"  example("123e4567-e89b-12d3-a456-426614174000")
-// @Success      200  {object}  dto.UserResponse  "User information"
+// @Success      200  {object}  dto.User  "User information"
 // @Failure      400  {object}  map[string]interface{}  "Invalid user ID"  example({"error":"invalid user id"})
 // @Failure      404  {object}  map[string]interface{}  "User not found"  example({"error":"user not found"})
 // @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to get user"})
@@ -460,7 +459,7 @@ func (s *ServiceSSO) SelectUserByID(ctx *gin.Context) {
 // @Produce      json
 // @Security     BearerAuth
 // @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Success      200  {array}  dto.SessionResponse  "List of active sessions"
+// @Success      200  {array}  dto.Session  "List of active sessions"
 // @Failure      400  {object}  map[string]interface{}  "Invalid token"  example({"error":"invalid token"})
 // @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to get sessions"})
 // @Router       /sessions [get]
@@ -508,7 +507,7 @@ func (s *ServiceSSO) SelectUserSessions(ctx *gin.Context) {
 // @Security     BearerAuth
 // @Param        Authorization  header  string  false  "Bearer access token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
 // @Param        X-Refresh-Token  header  string  false  "Refresh token"  example("abc123def456")
-// @Success      200  {object}  dto.TokenResponse  "New token pair"  example({"access_token":"new_access_token","refresh_token":"new_refresh_token"})
+// @Success      200  {object}  dto.RefreshTokens  "New token pair"  example({"access_token":"new_access_token","refresh_token":"new_refresh_token"})
 // @Failure      400  {object}  map[string]interface{}  "Invalid tokens"  example({"error":"token mismatch"})
 // @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to refresh tokens"})
 // @Router       /refresh [post]
@@ -590,9 +589,9 @@ func (s *ServiceSSO) RefreshTokens(ctx *gin.Context) {
 		true,
 	)
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"access_token":  accessToken,
-		"refresh_token": refreshToken,
+	ctx.JSON(http.StatusOK, dto.RefreshTokens{
+		AccessToken:   accessToken,
+		RefreshTokens: refreshToken,
 	})
 }
 

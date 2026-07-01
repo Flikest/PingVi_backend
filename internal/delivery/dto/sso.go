@@ -51,6 +51,11 @@ type TwoFaRequest struct {
 	Code        string `json:"code"`
 }
 
+type RefreshTokens struct {
+	AccessToken   string `json:"access_token"`
+	RefreshTokens string `json:"refresh_token"`
+}
+
 type LogoutRequest struct {
 	UserID    uuid.UUID `json:"user_id"`
 	SessionID uuid.UUID `json:"session_id"`

@@ -15,21 +15,22 @@ import (
 )
 
 // CreateChannel godoc
-// @Summary      Create a new channel
-// @Description  Creates a new channel with the authenticated user as owner. Automatically creates owner role, @everyone role, general topic and directory.
-// @Description  - Channel types: public (anyone can join) or private (invite only)
-// @Description  - Owner gets full permissions (111111)
-// @Description  - System messages will be sent to the channel
-// @Tags         messenger-channels
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Param        request  body  dto.CreateChannelRequest  true  "Channel creation data"  example({"name":"Gaming","description":"Channel for gamers","icon_url":"https://example.com/icon.png","is_public":true})
-// @Success      201  {object}  dto.Channel  "Created channel"
-// @Failure      400  {object}  map[string]interface{}  "Invalid request body or JWT"  example({"error":"invalid body"})
-// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to insert channel"})
-// @Router       /channels [post]
+//
+//	@Summary		Create a new channel
+//	@Description	Creates a new channel with the authenticated user as owner. Automatically creates owner role, @everyone role, general topic and directory.
+//	@Description	- Channel types: public (anyone can join) or private (invite only)
+//	@Description	- Owner gets full permissions (111111)
+//	@Description	- System messages will be sent to the channel
+//	@Tags			messenger-channels
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			Authorization	header		string						true	"Bearer JWT token"		example("Bearer eyJhbGciOiJIUzI1NiIs...")
+//	@Param			request			body		dto.CreateChannelRequest	true	"Channel creation data"	example({"name":"Gaming","description":"Channel for gamers","icon_url":"https://example.com/icon.png","is_public":true})
+//	@Success		201				{object}	dto.Channel					"Created channel"
+//	@Failure		400				{object}	map[string]interface{}		"Invalid request body or JWT"	example({"error":"invalid body"})
+//	@Failure		500				{object}	map[string]interface{}		"Internal server error"			example({"error":"failed to insert channel"})
+//	@Router			/channels [post]
 func (s *ServiceMessenger) CreateChannel(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
@@ -156,21 +157,22 @@ func (s *ServiceMessenger) CreateChannel(ctx *gin.Context) {
 }
 
 // JoinChannel godoc
-// @Summary      Join a channel
-// @Description  Allows a user to join a public channel. Assigns the @everyone role to the user.
-// @Description  - User must be authenticated
-// @Description  - Only public channels can be joined directly
-// @Description  - System message will be sent to the channel
-// @Tags         messenger-channels
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Param        channel_id  path  string  true  "Channel ID"  example("123e4567-e89b-12d3-a456-426614174000")
-// @Success      200  {object}  map[string]interface{}  "Channel ID"  example({"channel_id":"123e4567-e89b-12d3-a456-426614174000"})
-// @Failure      400  {object}  map[string]interface{}  "Invalid channel ID"  example({"error":"invalid channel id"})
-// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to join channel"})
-// @Router       /channels/join/{channel_id} [get]
+//
+//	@Summary		Join a channel
+//	@Description	Allows a user to join a public channel. Assigns the @everyone role to the user.
+//	@Description	- User must be authenticated
+//	@Description	- Only public channels can be joined directly
+//	@Description	- System message will be sent to the channel
+//	@Tags			messenger-channels
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			Authorization	header		string					true					"Bearer JWT token"	example("Bearer eyJhbGciOiJIUzI1NiIs...")
+//	@Param			channel_id		path		string					true					"Channel ID"		example("123e4567-e89b-12d3-a456-426614174000")
+//	@Success		200				{object}	map[string]interface{}	"Channel ID"			example({"channel_id":"123e4567-e89b-12d3-a456-426614174000"})
+//	@Failure		400				{object}	map[string]interface{}	"Invalid channel ID"	example({"error":"invalid channel id"})
+//	@Failure		500				{object}	map[string]interface{}	"Internal server error"	example({"error":"failed to join channel"})
+//	@Router			/channels/join/{channel_id} [get]
 func (s *ServiceMessenger) JoinChannel(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
@@ -233,21 +235,22 @@ func (s *ServiceMessenger) JoinChannel(ctx *gin.Context) {
 }
 
 // KickChannelMember godoc
-// @Summary      Kick member from channel
-// @Description  Removes a member from the channel. Requires 'manage_roles' permission (permission[0] == '1').
-// @Description  - Only users with manage_roles permission can kick members
-// @Description  - System message will be sent to the channel
-// @Tags         messenger-channels
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Param        request  body  dto.CickChannelMemberRequest  true  "Kick request data"  example({"channel_id":"123e4567-e89b-12d3-a456-426614174000","kicked_member_id":"987fcdeb-51d2-12d3-a456-426614174000"})
-// @Success      200  {object}  map[string]interface{}  "Kicked member ID"  example({"kicked_member_id":"987fcdeb-51d2-12d3-a456-426614174000"})
-// @Failure      400  {object}  map[string]interface{}  "Invalid request"  example({"error":"invalid body"})
-// @Failure      403  {object}  map[string]interface{}  "Insufficient permissions"  example({"error":"the user does not have enough rights"})
-// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to kick member"})
-// @Router       /channels/cick [get]
+//
+//	@Summary		Kick member from channel
+//	@Description	Removes a member from the channel. Requires 'manage_roles' permission (permission[0] == '1').
+//	@Description	- Only users with manage_roles permission can kick members
+//	@Description	- System message will be sent to the channel
+//	@Tags			messenger-channels
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			Authorization	header		string							true						"Bearer JWT token"	example("Bearer eyJhbGciOiJIUzI1NiIs...")
+//	@Param			request			body		dto.CickChannelMemberRequest	true						"Kick request data"	example({"channel_id":"123e4567-e89b-12d3-a456-426614174000","kicked_member_id":"987fcdeb-51d2-12d3-a456-426614174000"})
+//	@Success		200				{object}	map[string]interface{}			"Kicked member ID"			example({"kicked_member_id":"987fcdeb-51d2-12d3-a456-426614174000"})
+//	@Failure		400				{object}	map[string]interface{}			"Invalid request"			example({"error":"invalid body"})
+//	@Failure		403				{object}	map[string]interface{}			"Insufficient permissions"	example({"error":"the user does not have enough rights"})
+//	@Failure		500				{object}	map[string]interface{}			"Internal server error"		example({"error":"failed to kick member"})
+//	@Router			/channels/cick [get]
 func (s *ServiceMessenger) KickChannelMember(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
@@ -309,22 +312,23 @@ func (s *ServiceMessenger) KickChannelMember(ctx *gin.Context) {
 }
 
 // LeaveFromChannel godoc
-// @Summary      Leave a channel
-// @Description  Allows a user to leave a channel. If the user is the owner and has delete_channel permission, the channel and all its data will be deleted.
-// @Description  - Owner deletion: Removes all roles, topics, members and the channel itself
-// @Description  - Regular member: Simply removes the member from the channel
-// @Description  - System message will be sent to the channel
-// @Tags         messenger-channels
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Param        channel_id  path  string  true  "Channel ID"  example("123e4567-e89b-12d3-a456-426614174000")
-// @Success      200  {object}  map[string]interface{}  "Channel ID"  example({"channel_id":"123e4567-e89b-12d3-a456-426614174000"})
-// @Failure      400  {object}  map[string]interface{}  "Invalid channel ID"  example({"error":"invalid channel id"})
-// @Failure      403  {object}  map[string]interface{}  "Insufficient permissions"  example({"error":"the user does not have enough rights"})
-// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to leave channel"})
-// @Router       /channels/leave/{channel_id} [get]
+//
+//	@Summary		Leave a channel
+//	@Description	Allows a user to leave a channel. If the user is the owner and has delete_channel permission, the channel and all its data will be deleted.
+//	@Description	- Owner deletion: Removes all roles, topics, members and the channel itself
+//	@Description	- Regular member: Simply removes the member from the channel
+//	@Description	- System message will be sent to the channel
+//	@Tags			messenger-channels
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			Authorization	header		string					true						"Bearer JWT token"	example("Bearer eyJhbGciOiJIUzI1NiIs...")
+//	@Param			channel_id		path		string					true						"Channel ID"		example("123e4567-e89b-12d3-a456-426614174000")
+//	@Success		200				{object}	map[string]interface{}	"Channel ID"				example({"channel_id":"123e4567-e89b-12d3-a456-426614174000"})
+//	@Failure		400				{object}	map[string]interface{}	"Invalid channel ID"		example({"error":"invalid channel id"})
+//	@Failure		403				{object}	map[string]interface{}	"Insufficient permissions"	example({"error":"the user does not have enough rights"})
+//	@Failure		500				{object}	map[string]interface{}	"Internal server error"		example({"error":"failed to leave channel"})
+//	@Router			/channels/leave/{channel_id} [get]
 func (s *ServiceMessenger) LeaveFromChannel(ctx *gin.Context) {
 	channelID, err := uuid.Parse(ctx.Param("channel_id"))
 	if err != nil {
@@ -436,18 +440,19 @@ func (s *ServiceMessenger) LeaveFromChannel(ctx *gin.Context) {
 }
 
 // GetChannels godoc
-// @Summary      Get user's channels
-// @Description  Retrieves all channels that the authenticated user is a member of.
-// @Tags         messenger-channels
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Param        user_id  path  string  true  "User ID"  example("123e4567-e89b-12d3-a456-426614174000")
-// @Success      200  {array}  dto.Channel  "List of channels"
-// @Failure      400  {object}  map[string]interface{}  "Invalid user ID"  example({"error":"invalid user id"})
-// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to get channels"})
-// @Router       /channels/{user_id} [get]
+//
+//	@Summary		Get user's channels
+//	@Description	Retrieves all channels that the authenticated user is a member of.
+//	@Tags			messenger-channels
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			Authorization	header		string					true	"Bearer JWT token"	example("Bearer eyJhbGciOiJIUzI1NiIs...")
+//	@Param			user_id			path		string					true	"User ID"			example("123e4567-e89b-12d3-a456-426614174000")
+//	@Success		200				{array}		dto.Channel				"List of channels"
+//	@Failure		400				{object}	map[string]interface{}	"Invalid user ID"		example({"error":"invalid user id"})
+//	@Failure		500				{object}	map[string]interface{}	"Internal server error"	example({"error":"failed to get channels"})
+//	@Router			/channels/{user_id} [get]
 func (s *ServiceMessenger) GetChannels(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
@@ -496,21 +501,22 @@ func (s *ServiceMessenger) GetChannels(ctx *gin.Context) {
 }
 
 // UpdateChannel godoc
-// @Summary      Update channel information
-// @Description  Updates channel details. Requires 'manage_channel' permission (permission[2] == '1').
-// @Description  - Can update: name, description, icon, visibility
-// @Description  - System message will be sent to the channel
-// @Tags         messenger-channels
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Param        request  body  dto.UpdateChannelRequest  true  "Channel update data"  example({"id":"123e4567-e89b-12d3-a456-426614174000","name":"New Name","description":"New description","icon_url":"https://example.com/new-icon.png","is_public":false})
-// @Success      200  {object}  dto.Channel  "Updated channel"
-// @Failure      400  {object}  map[string]interface{}  "Invalid request"  example({"error":"invalid body"})
-// @Failure      403  {object}  map[string]interface{}  "Insufficient permissions"  example({"error":"the user does not have enough rights"})
-// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to update channel"})
-// @Router       /channels [put]
+//
+//	@Summary		Update channel information
+//	@Description	Updates channel details. Requires 'manage_channel' permission (permission[2] == '1').
+//	@Description	- Can update: name, description, icon, visibility
+//	@Description	- System message will be sent to the channel
+//	@Tags			messenger-channels
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			Authorization	header		string						true	"Bearer JWT token"		example("Bearer eyJhbGciOiJIUzI1NiIs...")
+//	@Param			request			body		dto.UpdateChannelRequest	true	"Channel update data"	example({"id":"123e4567-e89b-12d3-a456-426614174000","name":"New Name","description":"New description","icon_url":"https://example.com/new-icon.png","is_public":false})
+//	@Success		200				{object}	dto.Channel					"Updated channel"
+//	@Failure		400				{object}	map[string]interface{}		"Invalid request"			example({"error":"invalid body"})
+//	@Failure		403				{object}	map[string]interface{}		"Insufficient permissions"	example({"error":"the user does not have enough rights"})
+//	@Failure		500				{object}	map[string]interface{}		"Internal server error"		example({"error":"failed to update channel"})
+//	@Router			/channels [put]
 func (s *ServiceMessenger) UpdateChannel(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
@@ -585,21 +591,22 @@ func (s *ServiceMessenger) UpdateChannel(ctx *gin.Context) {
 }
 
 // Deletechannel godoc
-// @Summary      Delete a channel
-// @Description  Permanently deletes a channel and all associated data. Requires 'manage_channel' permission (permission[2] == '1').
-// @Description  - Deletes: roles, topics, members, messages and the channel itself
-// @Description  - System message will be sent to the channel
-// @Tags         messenger-channels
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Param        request  body  dto.DeleteChannelRequest  true  "Channel ID"  example({"id":"123e4567-e89b-12d3-a456-426614174000"})
-// @Success      200  {object}  map[string]interface{}  "Channel ID"  example({"channel_id":"123e4567-e89b-12d3-a456-426614174000"})
-// @Failure      400  {object}  map[string]interface{}  "Invalid request"  example({"error":"invalid body"})
-// @Failure      403  {object}  map[string]interface{}  "Insufficient permissions"  example({"error":"the user does not have enough rights"})
-// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to delete channel"})
-// @Router       /channels [delete]
+//
+//	@Summary		Delete a channel
+//	@Description	Permanently deletes a channel and all associated data. Requires 'manage_channel' permission (permission[2] == '1').
+//	@Description	- Deletes: roles, topics, members, messages and the channel itself
+//	@Description	- System message will be sent to the channel
+//	@Tags			messenger-channels
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			Authorization	header		string						true						"Bearer JWT token"	example("Bearer eyJhbGciOiJIUzI1NiIs...")
+//	@Param			request			body		dto.DeleteChannelRequest	true						"Channel ID"		example({"id":"123e4567-e89b-12d3-a456-426614174000"})
+//	@Success		200				{object}	map[string]interface{}		"Channel ID"				example({"channel_id":"123e4567-e89b-12d3-a456-426614174000"})
+//	@Failure		400				{object}	map[string]interface{}		"Invalid request"			example({"error":"invalid body"})
+//	@Failure		403				{object}	map[string]interface{}		"Insufficient permissions"	example({"error":"the user does not have enough rights"})
+//	@Failure		500				{object}	map[string]interface{}		"Internal server error"		example({"error":"failed to delete channel"})
+//	@Router			/channels [delete]
 func (s *ServiceMessenger) Deletechannel(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {

@@ -15,20 +15,21 @@ import (
 )
 
 // CreateGroup godoc
-// @Summary      Create a new group
-// @Description  Creates a new group chat with the authenticated user as owner.
-// @Description  - Groups are simpler than channels (no roles, topics, or directories)
-// @Description  - System message will be sent to the group
-// @Tags         messenger-groups
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Param        request  body  dto.CreateGroup  true  "Group creation data"  example({"name":"Game Dev","avatar_links":"https://example.com/avatar.png","is_public":true})
-// @Success      201  {object}  dto.Group  "Created group"
-// @Failure      400  {object}  map[string]interface{}  "Invalid request"  example({"error":"invalid body"})
-// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to create group"})
-// @Router       /groups [post]
+//
+//	@Summary		Create a new group
+//	@Description	Creates a new group chat with the authenticated user as owner.
+//	@Description	- Groups are simpler than channels (no roles, topics, or directories)
+//	@Description	- System message will be sent to the group
+//	@Tags			messenger-groups
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			Authorization	header		string					true	"Bearer JWT token"		example("Bearer eyJhbGciOiJIUzI1NiIs...")
+//	@Param			request			body		dto.CreateGroup			true	"Group creation data"	example({"name":"Game Dev","avatar_links":"https://example.com/avatar.png","is_public":true})
+//	@Success		201				{object}	dto.Group				"Created group"
+//	@Failure		400				{object}	map[string]interface{}	"Invalid request"		example({"error":"invalid body"})
+//	@Failure		500				{object}	map[string]interface{}	"Internal server error"	example({"error":"failed to create group"})
+//	@Router			/groups [post]
 func (s *ServiceMessenger) CreateGroup(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
@@ -98,20 +99,21 @@ func (s *ServiceMessenger) CreateGroup(ctx *gin.Context) {
 }
 
 // JoinGroup godoc
-// @Summary      Join a group
-// @Description  Allows a user to join a public group.
-// @Description  - User must be authenticated
-// @Description  - System message will be sent to the group
-// @Tags         messenger-groups
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Param        group_id  path  string  true  "Group ID"  example("123e4567-e89b-12d3-a456-426614174000")
-// @Success      200  {object}  map[string]interface{}  "Group ID"  example({"group_id":"123e4567-e89b-12d3-a456-426614174000"})
-// @Failure      400  {object}  map[string]interface{}  "Invalid group ID"  example({"error":"invalid group id"})
-// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to join group"})
-// @Router       /groups/join/{group_id} [get]
+//
+//	@Summary		Join a group
+//	@Description	Allows a user to join a public group.
+//	@Description	- User must be authenticated
+//	@Description	- System message will be sent to the group
+//	@Tags			messenger-groups
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			Authorization	header		string					true					"Bearer JWT token"	example("Bearer eyJhbGciOiJIUzI1NiIs...")
+//	@Param			group_id		path		string					true					"Group ID"			example("123e4567-e89b-12d3-a456-426614174000")
+//	@Success		200				{object}	map[string]interface{}	"Group ID"				example({"group_id":"123e4567-e89b-12d3-a456-426614174000"})
+//	@Failure		400				{object}	map[string]interface{}	"Invalid group ID"		example({"error":"invalid group id"})
+//	@Failure		500				{object}	map[string]interface{}	"Internal server error"	example({"error":"failed to join group"})
+//	@Router			/groups/join/{group_id} [get]
 func (s *ServiceMessenger) JoinGroup(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
@@ -167,21 +169,22 @@ func (s *ServiceMessenger) JoinGroup(ctx *gin.Context) {
 }
 
 // LeaveGroup godoc
-// @Summary      Leave a group
-// @Description  Allows a user to leave a group. If the user is the owner, the group and all members will be deleted.
-// @Description  - Owner deletion: Removes all members and the group itself
-// @Description  - Regular member: Simply removes the member from the group
-// @Description  - System message will be sent to the group
-// @Tags         messenger-groups
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Param        group_id  path  string  true  "Group ID"  example("123e4567-e89b-12d3-a456-426614174000")
-// @Success      200  {object}  map[string]interface{}  "Group ID"  example({"group_id":"123e4567-e89b-12d3-a456-426614174000"})
-// @Failure      400  {object}  map[string]interface{}  "Invalid group ID"  example({"error":"invalid group id"})
-// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to leave group"})
-// @Router       /groups/leave/{group_id} [get]
+//
+//	@Summary		Leave a group
+//	@Description	Allows a user to leave a group. If the user is the owner, the group and all members will be deleted.
+//	@Description	- Owner deletion: Removes all members and the group itself
+//	@Description	- Regular member: Simply removes the member from the group
+//	@Description	- System message will be sent to the group
+//	@Tags			messenger-groups
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			Authorization	header		string					true					"Bearer JWT token"	example("Bearer eyJhbGciOiJIUzI1NiIs...")
+//	@Param			group_id		path		string					true					"Group ID"			example("123e4567-e89b-12d3-a456-426614174000")
+//	@Success		200				{object}	map[string]interface{}	"Group ID"				example({"group_id":"123e4567-e89b-12d3-a456-426614174000"})
+//	@Failure		400				{object}	map[string]interface{}	"Invalid group ID"		example({"error":"invalid group id"})
+//	@Failure		500				{object}	map[string]interface{}	"Internal server error"	example({"error":"failed to leave group"})
+//	@Router			/groups/leave/{group_id} [get]
 func (s *ServiceMessenger) LeaveGroup(ctx *gin.Context) {
 	groupID, err := uuid.Parse(ctx.Param("group_id"))
 	if err != nil {
@@ -268,18 +271,19 @@ func (s *ServiceMessenger) LeaveGroup(ctx *gin.Context) {
 }
 
 // SelectAllMembersGroup godoc
-// @Summary      Get all members of a group
-// @Description  Retrieves all members from a specific group.
-// @Tags         messenger-groups
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Param        group_id  path  string  true  "Group ID"  example("123e4567-e89b-12d3-a456-426614174000")
-// @Success      200  {array}  dto.GroupMember  "List of group members"
-// @Failure      400  {object}  map[string]interface{}  "Invalid group ID"  example({"error":"invalid group id"})
-// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to get members"})
-// @Router       /groups/member/all/{group_id} [get]
+//
+//	@Summary		Get all members of a group
+//	@Description	Retrieves all members from a specific group.
+//	@Tags			messenger-groups
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			Authorization	header		string					true	"Bearer JWT token"	example("Bearer eyJhbGciOiJIUzI1NiIs...")
+//	@Param			group_id		path		string					true	"Group ID"			example("123e4567-e89b-12d3-a456-426614174000")
+//	@Success		200				{array}		dto.GroupMember			"List of group members"
+//	@Failure		400				{object}	map[string]interface{}	"Invalid group ID"		example({"error":"invalid group id"})
+//	@Failure		500				{object}	map[string]interface{}	"Internal server error"	example({"error":"failed to get members"})
+//	@Router			/groups/member/all/{group_id} [get]
 func (s *ServiceMessenger) SelectAllMembersGroup(ctx *gin.Context) {
 	groupID, err := uuid.Parse(ctx.Param("group_id"))
 	if err != nil {
@@ -299,19 +303,20 @@ func (s *ServiceMessenger) SelectAllMembersGroup(ctx *gin.Context) {
 }
 
 // SelectMemberGroup godoc
-// @Summary      Get a specific group member
-// @Description  Retrieves a specific member from a group by user ID.
-// @Tags         messenger-groups
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Param        group_id  path  string  true  "Group ID"  example("123e4567-e89b-12d3-a456-426614174000")
-// @Param        user_id  path  string  true  "User ID"  example("987fcdeb-51d2-12d3-a456-426614174000")
-// @Success      200  {object}  dto.GroupMember  "Group member details"
-// @Failure      400  {object}  map[string]interface{}  "Invalid IDs"  example({"error":"invalid group id"})
-// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to get member"})
-// @Router       /groups/member/{group_id} [get]
+//
+//	@Summary		Get a specific group member
+//	@Description	Retrieves a specific member from a group by user ID.
+//	@Tags			messenger-groups
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			Authorization	header		string					true	"Bearer JWT token"	example("Bearer eyJhbGciOiJIUzI1NiIs...")
+//	@Param			group_id		path		string					true	"Group ID"			example("123e4567-e89b-12d3-a456-426614174000")
+//	@Param			user_id			path		string					true	"User ID"			example("987fcdeb-51d2-12d3-a456-426614174000")
+//	@Success		200				{object}	dto.GroupMember			"Group member details"
+//	@Failure		400				{object}	map[string]interface{}	"Invalid IDs"			example({"error":"invalid group id"})
+//	@Failure		500				{object}	map[string]interface{}	"Internal server error"	example({"error":"failed to get member"})
+//	@Router			/groups/member/{group_id} [get]
 func (s *ServiceMessenger) SelectMemberGroup(ctx *gin.Context) {
 	groupID, err := uuid.Parse(ctx.Param("group_id"))
 	if err != nil {
@@ -338,20 +343,21 @@ func (s *ServiceMessenger) SelectMemberGroup(ctx *gin.Context) {
 }
 
 // KickMemberFromGroup godoc
-// @Summary      Kick member from group
-// @Description  Removes a member from the group. Requires being the group owner or admin.
-// @Description  - Cannot kick the group owner
-// @Tags         messenger-groups
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Param        request  body  dto.CickGroupMember  true  "Kick request data"  example({"group_id":"123e4567-e89b-12d3-a456-426614174000","member_id":"987fcdeb-51d2-12d3-a456-426614174000"})
-// @Success      200  {object}  map[string]interface{}  "Group ID"  example({"group_id":"123e4567-e89b-12d3-a456-426614174000"})
-// @Failure      400  {object}  map[string]interface{}  "Invalid request"  example({"error":"invalid body"})
-// @Failure      403  {object}  map[string]interface{}  "Insufficient permissions"  example({"error":"not enough rights"})
-// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to kick member"})
-// @Router       /groups/kick [delete]
+//
+//	@Summary		Kick member from group
+//	@Description	Removes a member from the group. Requires being the group owner or admin.
+//	@Description	- Cannot kick the group owner
+//	@Tags			messenger-groups
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			Authorization	header		string					true						"Bearer JWT token"	example("Bearer eyJhbGciOiJIUzI1NiIs...")
+//	@Param			request			body		dto.CickGroupMember		true						"Kick request data"	example({"group_id":"123e4567-e89b-12d3-a456-426614174000","member_id":"987fcdeb-51d2-12d3-a456-426614174000"})
+//	@Success		200				{object}	map[string]interface{}	"Group ID"					example({"group_id":"123e4567-e89b-12d3-a456-426614174000"})
+//	@Failure		400				{object}	map[string]interface{}	"Invalid request"			example({"error":"invalid body"})
+//	@Failure		403				{object}	map[string]interface{}	"Insufficient permissions"	example({"error":"not enough rights"})
+//	@Failure		500				{object}	map[string]interface{}	"Internal server error"		example({"error":"failed to kick member"})
+//	@Router			/groups/kick [delete]
 func (s *ServiceMessenger) KickMemberFromGroup(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
@@ -413,16 +419,17 @@ func (s *ServiceMessenger) KickMemberFromGroup(ctx *gin.Context) {
 }
 
 // SelectGroup godoc
-// @Summary      Get user's groups
-// @Description  Retrieves all groups that the authenticated user is a member of.
-// @Tags         messenger-groups
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Success      200  {array}  dto.Group  "List of groups"
-// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to get groups"})
-// @Router       /groups [get]
+//
+//	@Summary		Get user's groups
+//	@Description	Retrieves all groups that the authenticated user is a member of.
+//	@Tags			messenger-groups
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			Authorization	header		string					true	"Bearer JWT token"	example("Bearer eyJhbGciOiJIUzI1NiIs...")
+//	@Success		200				{array}		dto.Group				"List of groups"
+//	@Failure		500				{object}	map[string]interface{}	"Internal server error"	example({"error":"failed to get groups"})
+//	@Router			/groups [get]
 func (s *ServiceMessenger) SelectGroup(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
@@ -449,22 +456,23 @@ func (s *ServiceMessenger) SelectGroup(ctx *gin.Context) {
 }
 
 // UpdateGroup godoc
-// @Summary      Update group information
-// @Description  Updates group details. Requires being the group owner or admin.
-// @Description  - Can update: name, avatar, visibility
-// @Description  - System message will be sent to the group
-// @Tags         messenger-groups
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Param        request  body  dto.UpdateGroup  true  "Group update data"  example({"id":"123e4567-e89b-12d3-a456-426614174000","name":"New Group Name","avatar_links":"https://example.com/new-avatar.png","is_public":false})
-// @Success      200  {object}  dto.Group  "Updated group"
-// @Failure      400  {object}  map[string]interface{}  "Invalid request"  example({"error":"invalid body"})
-// @Failure      403  {object}  map[string]interface{}  "Insufficient permissions"  example({"error":"not enough rights"})
-// @Failure      404  {object}  map[string]interface{}  "Group not found"  example({"error":"such a group does not exist"})
-// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to update group"})
-// @Router       /groups [put]
+//
+//	@Summary		Update group information
+//	@Description	Updates group details. Requires being the group owner or admin.
+//	@Description	- Can update: name, avatar, visibility
+//	@Description	- System message will be sent to the group
+//	@Tags			messenger-groups
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			Authorization	header		string					true	"Bearer JWT token"	example("Bearer eyJhbGciOiJIUzI1NiIs...")
+//	@Param			request			body		dto.UpdateGroup			true	"Group update data"	example({"id":"123e4567-e89b-12d3-a456-426614174000","name":"New Group Name","avatar_links":"https://example.com/new-avatar.png","is_public":false})
+//	@Success		200				{object}	dto.Group				"Updated group"
+//	@Failure		400				{object}	map[string]interface{}	"Invalid request"			example({"error":"invalid body"})
+//	@Failure		403				{object}	map[string]interface{}	"Insufficient permissions"	example({"error":"not enough rights"})
+//	@Failure		404				{object}	map[string]interface{}	"Group not found"			example({"error":"such a group does not exist"})
+//	@Failure		500				{object}	map[string]interface{}	"Internal server error"		example({"error":"failed to update group"})
+//	@Router			/groups [put]
 func (s *ServiceMessenger) UpdateGroup(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
@@ -559,21 +567,22 @@ func (s *ServiceMessenger) UpdateGroup(ctx *gin.Context) {
 }
 
 // DeleteGroup godoc
-// @Summary      Delete a group
-// @Description  Permanently deletes a group and all associated data. Requires being the group owner or admin.
-// @Description  - Deletes: members, messages and the group itself
-// @Description  - System message will be sent to the group
-// @Tags         messenger-groups
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Param        request  body  dto.DeleteGroup  true  "Group ID"  example({"id":"123e4567-e89b-12d3-a456-426614174000"})
-// @Success      200  {object}  map[string]interface{}  "Group ID"  example({"group_id":"123e4567-e89b-12d3-a456-426614174000"})
-// @Failure      400  {object}  map[string]interface{}  "Invalid request"  example({"error":"invalid body"})
-// @Failure      403  {object}  map[string]interface{}  "Insufficient permissions"  example({"error":"not enough rights"})
-// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to delete group"})
-// @Router       /groups [delete]
+//
+//	@Summary		Delete a group
+//	@Description	Permanently deletes a group and all associated data. Requires being the group owner or admin.
+//	@Description	- Deletes: members, messages and the group itself
+//	@Description	- System message will be sent to the group
+//	@Tags			messenger-groups
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			Authorization	header		string					true						"Bearer JWT token"	example("Bearer eyJhbGciOiJIUzI1NiIs...")
+//	@Param			request			body		dto.DeleteGroup			true						"Group ID"			example({"id":"123e4567-e89b-12d3-a456-426614174000"})
+//	@Success		200				{object}	map[string]interface{}	"Group ID"					example({"group_id":"123e4567-e89b-12d3-a456-426614174000"})
+//	@Failure		400				{object}	map[string]interface{}	"Invalid request"			example({"error":"invalid body"})
+//	@Failure		403				{object}	map[string]interface{}	"Insufficient permissions"	example({"error":"not enough rights"})
+//	@Failure		500				{object}	map[string]interface{}	"Internal server error"		example({"error":"failed to delete group"})
+//	@Router			/groups [delete]
 func (s *ServiceMessenger) DeleteGroup(ctx *gin.Context) {
 	var body dto.DeleteGroup
 	if err := ctx.BindJSON(&body); err != nil {

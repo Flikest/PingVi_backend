@@ -4,6 +4,8 @@ gin:
     enabled: true
     sw:
       enabled: true
+      path: "/sw"
+      jsonPath: "cmd/sso/docs/swagger.json"
     docs:
       enabled: true
     prom:

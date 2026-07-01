@@ -15,21 +15,22 @@ import (
 )
 
 // GetPermissions godoc
-// @Summary      Get user permissions in a channel
-// @Description  Retrieves the permission string for a user in a specific channel.
-// @Description  - Permission string format: 6 characters (e.g., "111111")
-// @Description  - Each position represents a different permission
-// @Tags         messenger-roles
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Param        channel_id  path  string  true  "Channel ID"  example("123e4567-e89b-12d3-a456-426614174000")
-// @Param        user_id  path  string  true  "User ID"  example("987fcdeb-51d2-12d3-a456-426614174000")
-// @Success      200  {string}  string  "Permission string"  example("111111")
-// @Failure      400  {object}  map[string]interface{}  "Invalid IDs"  example({"error":"invalid user id"})
-// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to get permissions"})
-// @Router       /roles/permissions/{channel_id}/{user_id} [get]
+//
+//	@Summary		Get user permissions in a channel
+//	@Description	Retrieves the permission string for a user in a specific channel.
+//	@Description	- Permission string format: 6 characters (e.g., "111111")
+//	@Description	- Each position represents a different permission
+//	@Tags			messenger-roles
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			Authorization	header		string					true					"Bearer JWT token"	example("Bearer eyJhbGciOiJIUzI1NiIs...")
+//	@Param			channel_id		path		string					true					"Channel ID"		example("123e4567-e89b-12d3-a456-426614174000")
+//	@Param			user_id			path		string					true					"User ID"			example("987fcdeb-51d2-12d3-a456-426614174000")
+//	@Success		200				{string}	string					"Permission string"		example("111111")
+//	@Failure		400				{object}	map[string]interface{}	"Invalid IDs"			example({"error":"invalid user id"})
+//	@Failure		500				{object}	map[string]interface{}	"Internal server error"	example({"error":"failed to get permissions"})
+//	@Router			/roles/permissions/{channel_id}/{user_id} [get]
 func (s *ServiceMessenger) GetPermissions(ctx *gin.Context) {
 	userID, err := uuid.Parse(ctx.Param("user_id"))
 	if err != nil {
@@ -56,21 +57,22 @@ func (s *ServiceMessenger) GetPermissions(ctx *gin.Context) {
 }
 
 // CreateRole godoc
-// @Summary      Create a new role in a channel
-// @Description  Creates a new role in a channel. Requires 'manage_roles' permission (permission[4] == '1').
-// @Description  - Can set: name, color, permissions, mentionable flag
-// @Description  - System message will be sent to the channel
-// @Tags         messenger-roles
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Param        request  body  dto.CreateRole  true  "Role creation data"  example({"channel_id":"123e4567-e89b-12d3-a456-426614174000","name":"Moderator","color":"#00FF00","permissions":"101000","is_mentionable":true,"is_default":false})
-// @Success      201  {object}  dto.Role  "Created role"
-// @Failure      400  {object}  map[string]interface{}  "Invalid request"  example({"error":"invalid body"})
-// @Failure      403  {object}  map[string]interface{}  "Insufficient permissions"  example({"error":"the user does not have sufficient rights"})
-// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to create role"})
-// @Router       /roles [post]
+//
+//	@Summary		Create a new role in a channel
+//	@Description	Creates a new role in a channel. Requires 'manage_roles' permission (permission[4] == '1').
+//	@Description	- Can set: name, color, permissions, mentionable flag
+//	@Description	- System message will be sent to the channel
+//	@Tags			messenger-roles
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			Authorization	header		string					true	"Bearer JWT token"		example("Bearer eyJhbGciOiJIUzI1NiIs...")
+//	@Param			request			body		dto.CreateRole			true	"Role creation data"	example({"channel_id":"123e4567-e89b-12d3-a456-426614174000","name":"Moderator","color":"#00FF00","permissions":"101000","is_mentionable":true,"is_default":false})
+//	@Success		201				{object}	dto.Role				"Created role"
+//	@Failure		400				{object}	map[string]interface{}	"Invalid request"			example({"error":"invalid body"})
+//	@Failure		403				{object}	map[string]interface{}	"Insufficient permissions"	example({"error":"the user does not have sufficient rights"})
+//	@Failure		500				{object}	map[string]interface{}	"Internal server error"		example({"error":"failed to create role"})
+//	@Router			/roles [post]
 func (s *ServiceMessenger) CreateRole(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
@@ -155,19 +157,20 @@ func (s *ServiceMessenger) CreateRole(ctx *gin.Context) {
 }
 
 // GetAllRoles godoc
-// @Summary      Get all roles in a channel
-// @Description  Retrieves all roles from a specific channel. User must be a member of the channel.
-// @Tags         messenger-roles
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Param        channel_id  path  string  true  "Channel ID"  example("123e4567-e89b-12d3-a456-426614174000")
-// @Success      200  {array}  dto.Role  "List of roles"
-// @Failure      400  {object}  map[string]interface{}  "Invalid channel ID"  example({"error":"invalid channel id"})
-// @Failure      403  {object}  map[string]interface{}  "Not a member"  example({"error":"the user does not belong to this group"})
-// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to get roles"})
-// @Router       /roles/{channel_id} [get]
+//
+//	@Summary		Get all roles in a channel
+//	@Description	Retrieves all roles from a specific channel. User must be a member of the channel.
+//	@Tags			messenger-roles
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			Authorization	header		string					true	"Bearer JWT token"	example("Bearer eyJhbGciOiJIUzI1NiIs...")
+//	@Param			channel_id		path		string					true	"Channel ID"		example("123e4567-e89b-12d3-a456-426614174000")
+//	@Success		200				{array}		dto.Role				"List of roles"
+//	@Failure		400				{object}	map[string]interface{}	"Invalid channel ID"	example({"error":"invalid channel id"})
+//	@Failure		403				{object}	map[string]interface{}	"Not a member"			example({"error":"the user does not belong to this group"})
+//	@Failure		500				{object}	map[string]interface{}	"Internal server error"	example({"error":"failed to get roles"})
+//	@Router			/roles/{channel_id} [get]
 func (s *ServiceMessenger) GetAllRoles(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
@@ -207,20 +210,21 @@ func (s *ServiceMessenger) GetAllRoles(ctx *gin.Context) {
 }
 
 // UpdateRole godoc
-// @Summary      Update a role
-// @Description  Updates an existing role in a channel. Requires 'manage_roles' permission (permission[4] == '1').
-// @Description  - Can update: name, color, permissions, mentionable flag
-// @Tags         messenger-roles
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Param        request  body  dto.UpdateRole  true  "Role update data"  example({"id":"123e4567-e89b-12d3-a456-426614174000","channel_id":"123e4567-e89b-12d3-a456-426614174000","name":"New Moderator","color":"#FF0000","permissions":"111000","is_mentionable":true})
-// @Success      200  {object}  dto.Role  "Updated role"
-// @Failure      400  {object}  map[string]interface{}  "Invalid request"  example({"error":"invalid body"})
-// @Failure      403  {object}  map[string]interface{}  "Insufficient permissions"  example({"error":"the user does not have sufficient rights"})
-// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to update role"})
-// @Router       /roles [put]
+//
+//	@Summary		Update a role
+//	@Description	Updates an existing role in a channel. Requires 'manage_roles' permission (permission[4] == '1').
+//	@Description	- Can update: name, color, permissions, mentionable flag
+//	@Tags			messenger-roles
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			Authorization	header		string					true	"Bearer JWT token"	example("Bearer eyJhbGciOiJIUzI1NiIs...")
+//	@Param			request			body		dto.UpdateRole			true	"Role update data"	example({"id":"123e4567-e89b-12d3-a456-426614174000","channel_id":"123e4567-e89b-12d3-a456-426614174000","name":"New Moderator","color":"#FF0000","permissions":"111000","is_mentionable":true})
+//	@Success		200				{object}	dto.Role				"Updated role"
+//	@Failure		400				{object}	map[string]interface{}	"Invalid request"			example({"error":"invalid body"})
+//	@Failure		403				{object}	map[string]interface{}	"Insufficient permissions"	example({"error":"the user does not have sufficient rights"})
+//	@Failure		500				{object}	map[string]interface{}	"Internal server error"		example({"error":"failed to update role"})
+//	@Router			/roles [put]
 func (s *ServiceMessenger) UpdateRole(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
@@ -270,21 +274,22 @@ func (s *ServiceMessenger) UpdateRole(ctx *gin.Context) {
 }
 
 // DeleteRole godoc
-// @Summary      Delete a role
-// @Description  Permanently deletes a role from a channel. Members with this role will be reassigned to @everyone role.
-// @Description  - Requires 'manage_roles' permission (permission[4] == '1')
-// @Description  - System message will be sent to the channel
-// @Tags         messenger-roles
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
-// @Param        request  body  dto.DeleteRole  true  "Role deletion data"  example({"role_id":"123e4567-e89b-12d3-a456-426614174000","channel_id":"987fcdeb-51d2-12d3-a456-426614174000"})
-// @Success      200  {object}  map[string]interface{}  "Role ID"  example({"role_id":"123e4567-e89b-12d3-a456-426614174000"})
-// @Failure      400  {object}  map[string]interface{}  "Invalid request"  example({"error":"invalid body"})
-// @Failure      403  {object}  map[string]interface{}  "Insufficient permissions"  example({"error":"the user does not have sufficient rights"})
-// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to delete role"})
-// @Router       /roles [delete]
+//
+//	@Summary		Delete a role
+//	@Description	Permanently deletes a role from a channel. Members with this role will be reassigned to @everyone role.
+//	@Description	- Requires 'manage_roles' permission (permission[4] == '1')
+//	@Description	- System message will be sent to the channel
+//	@Tags			messenger-roles
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			Authorization	header		string					true						"Bearer JWT token"		example("Bearer eyJhbGciOiJIUzI1NiIs...")
+//	@Param			request			body		dto.DeleteRole			true						"Role deletion data"	example({"role_id":"123e4567-e89b-12d3-a456-426614174000","channel_id":"987fcdeb-51d2-12d3-a456-426614174000"})
+//	@Success		200				{object}	map[string]interface{}	"Role ID"					example({"role_id":"123e4567-e89b-12d3-a456-426614174000"})
+//	@Failure		400				{object}	map[string]interface{}	"Invalid request"			example({"error":"invalid body"})
+//	@Failure		403				{object}	map[string]interface{}	"Insufficient permissions"	example({"error":"the user does not have sufficient rights"})
+//	@Failure		500				{object}	map[string]interface{}	"Internal server error"		example({"error":"failed to delete role"})
+//	@Router			/roles [delete]
 func (s *ServiceMessenger) DeleteRole(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
