@@ -139,7 +139,7 @@ func (h *Hub) onUpdateMesage(msg dto.UpdateMessage) {
 		IsEdited:    true,
 		ReplyToID:   msg.ReplyToID,
 		Attachments: msg.Attachments,
-		Reactions:   msg.Reactions,
+		Reactions:   nil,
 		CreatedAt:   msg.CreatedAt,
 		UpdatedAt:   now,
 	}
@@ -152,6 +152,30 @@ func (h *Hub) onUpdateMesage(msg dto.UpdateMessage) {
 	go h.broadcast(ctx, Message{
 		Operation: "update",
 		Message:   message,
+	})
+}
+
+func (h *Hub) onSetUpReaction(msgID, userID uuid.UUID, reaction map[string][]uuid.UUID) {
+	ctx := context.Background()
+
+	var emoji string
+	for key := range reaction {
+		emoji = key
+		break
+	}
+
+	reactions, err := h.RepositoryMessenger.SetUpReaction(ctx, msgID, emoji, userID)
+	if err != nil {
+		h.Log.Error("error with set up reaction: ", "error", err)
+		return
+	}
+
+	go h.broadcast(ctx, Message{
+		Operation: "set_up_reaction",
+		Message: dto.Message{
+			ID:        msgID,
+			Reactions: reactions,
+		},
 	})
 }
 
@@ -200,8 +224,6 @@ func (s *ServiceMessenger) ReadMessageFromClient(client *Client) {
 	for {
 		var msg Message
 
-		// TODO получить user id по session id
-
 		if err := client.Conn.ReadJSON(&msg); err != nil {
 			s.Hub.Log.Error("error with reading message: ", "error", err)
 			break
@@ -225,6 +247,8 @@ func (s *ServiceMessenger) ReadMessageFromClient(client *Client) {
 				MessageType: msg.Message.MessageType,
 				Attachments: msg.Message.Attachments,
 			})
+		case "set_up_reaction":
+			s.Hub.onSetUpReaction(msg.Message.ID, msg.Message.SenderID, msg.Message.Reactions)
 		case "update":
 			s.Hub.onUpdateMesage(dto.UpdateMessage{
 				ID:          msg.Message.ID,
@@ -234,7 +258,7 @@ func (s *ServiceMessenger) ReadMessageFromClient(client *Client) {
 				MessageType: msg.Message.MessageType,
 				ReplyToID:   msg.Message.ReplyToID,
 				Attachments: msg.Message.Attachments,
-				Reactions:   msg.Message.Reactions,
+				Reactions:   nil,
 				CreatedAt:   msg.Message.CreatedAt,
 			})
 		case "delete":

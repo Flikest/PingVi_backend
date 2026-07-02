@@ -618,14 +618,7 @@ func (s *ServiceSSO) DeleteUser(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
-	if err != nil {
-		s.Log.Error("error with parsing jwt token from header: ", "error", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	id, err := s.Repository.DeleteUser(ctx.Request.Context(), userID)
+	id, err := s.Repository.DeleteUser(ctx.Request.Context(), payload.ID)
 	if err != nil {
 		s.Log.Error("error with deleting user: ", "error", err)
 		ctx.JSON(http.StatusInternalServerError, err)
