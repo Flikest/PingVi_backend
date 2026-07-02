@@ -31,6 +31,7 @@ func RegisterSSORouter(h *HandlerSSO) *gin.Engine {
 		userRouter := v1.Group("/users")
 		{
 			userRouter.GET("/:id", h.Service.SelectUserByID)
+			userRouter.GET("/me", h.Service.GetMeProfile)
 			userRouter.GET("/sessions", h.Service.SelectUserSessions)
 			userRouter.POST("/refresh", h.Service.RefreshTokens)
 			userRouter.POST("/logup", h.Service.Logup)

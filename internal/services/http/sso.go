@@ -449,6 +449,39 @@ func (s *ServiceSSO) SelectUserByID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, user)
 }
 
+// GetMeProfile godoc
+// @Summary      Get current user profile
+// @Description  Retrieves the profile of the currently authenticated user.
+// @Description  - Returns public user information
+// @Description  - Does not return sensitive data (password hash, etc.)
+// @Description  - User is identified by JWT token from Authorization header
+// @Tags         sso
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        Authorization  header  string  true  "Bearer JWT token"  example("Bearer eyJhbGciOiJIUzI1NiIs...")
+// @Success      200  {object}  dto.User  "User profile information"
+// @Failure      400  {object}  map[string]interface{}  "Invalid token"  example({"error":"invalid token"})
+// @Failure      401  {object}  map[string]interface{}  "Unauthorized"  example({"error":"unauthorized"})
+// @Failure      404  {object}  map[string]interface{}  "User not found"  example({"error":"user not found"})
+// @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to get user profile"})
+// @Router       /me [get]
+func (s ServiceSSO) GetMeProfile(ctx *gin.Context) {
+	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		s.Log.Error("error with verify jwt user token: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	user, err := s.Repository.SelectUserByID(ctx.Request.Context(), payload.ID)
+	if err != nil {
+		s.Log.Error("error with getting my profile: ", "error", err)
+	}
+
+	ctx.JSON(http.StatusOK, user)
+}
+
 // SelectUserSessions godoc
 // @Summary      Get user sessions
 // @Description  Retrieves all active sessions for the authenticated user.
