@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
 	"github.com/google/uuid"
@@ -23,67 +22,6 @@ func (r *RepositoryMessenger) DeleteMessagesByChatID(ctx context.Context, chatID
 	}
 
 	return nil
-}
-
-func (r *RepositoryMessenger) SetUpReaction(ctx context.Context, messageID uuid.UUID, emoji string, userID uuid.UUID) (map[string][]uuid.UUID, error) {
-	var reactions map[string][]uuid.UUID
-	query := `SELECT reactions FROM messenger_keyspace.messages WHERE id = ?`
-	err := r.Session.ContextQuery(
-		ctx,
-		query,
-		[]string{":id"}).
-		BindMap(map[string]interface{}{":id": messageID}).Scan(&reactions)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get reactions: %w", err)
-	}
-
-	if reactions == nil {
-		reactions = make(map[string][]uuid.UUID)
-	}
-
-	users := reactions[emoji]
-	if containsUser(users, userID) {
-		reactions[emoji] = removeUser(users, userID)
-		if len(reactions[emoji]) == 0 {
-			delete(reactions, emoji)
-		}
-	} else {
-		reactions[emoji] = append(reactions[emoji], userID)
-	}
-
-	updateQuery := `UPDATE messenger_keyspace.messages SET reactions = ? WHERE id = ?`
-	err = r.Session.ContextQuery(
-		ctx,
-		updateQuery,
-		[]string{":reactions", ":id"}).
-		BindMap(map[string]interface{}{
-			":reactions": reactions,
-			":id":        messageID,
-		}).Exec()
-	if err != nil {
-		return nil, fmt.Errorf("failed to update reactions: %w", err)
-	}
-
-	return reactions, nil
-}
-
-func containsUser(users []uuid.UUID, userID uuid.UUID) bool {
-	for _, u := range users {
-		if u == userID {
-			return true
-		}
-	}
-	return false
-}
-
-func removeUser(users []uuid.UUID, userID uuid.UUID) []uuid.UUID {
-	result := make([]uuid.UUID, 0, len(users))
-	for _, u := range users {
-		if u != userID {
-			result = append(result, u)
-		}
-	}
-	return result
 }
 
 func (r *RepositoryMessenger) ReadMessage(ctx context.Context, rm dto.ReadMessage) error {
@@ -130,7 +68,6 @@ func (r *RepositoryMessenger) InsertMessage(ctx context.Context, message dto.Mes
 			":sender_id":    message.SenderID,
 			":message":      message.Message,
 			":message_type": message.MessageType,
-			":attachments":  message.Attachments,
 			":created_at":   message.CreatedAt,
 		})
 
@@ -172,13 +109,12 @@ func (r *RepositoryMessenger) UpdateMessage(ctx context.Context, message dto.Mes
 			":chat_id",
 			":sender_id",
 		}).BindMap(map[string]interface{}{
-		":message":     message.Message,
-		":is_edited":   message.IsEdited,
-		":attachments": message.Attachments,
-		":updated_at":  message.UpdatedAt,
-		":id":          message.ID,
-		":chat_id":     message.ChatID,
-		":sender_id":   message.SenderID,
+		":message":    message.Message,
+		":is_edited":  message.IsEdited,
+		":updated_at": message.UpdatedAt,
+		":id":         message.ID,
+		":chat_id":    message.ChatID,
+		":sender_id":  message.SenderID,
 	})
 
 	if err := updateMessage.ExecRelease(); err != nil {

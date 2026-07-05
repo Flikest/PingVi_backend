@@ -7,18 +7,16 @@ import (
 )
 
 type Message struct {
-	CommunityType string                 `json:"community_type"`
-	ID            uuid.UUID              `json:"id"`
-	ChatID        uuid.UUID              `json:"chat_id"`
-	SenderID      uuid.UUID              `json:"sender_id"`
-	Message       string                 `json:"message"`
-	MessageType   string                 `json:"message_type"`
-	IsEdited      bool                   `json:"is_edited"`
-	ReplyToID     uuid.UUID              `json:"reply_to_id"`
-	Attachments   string                 `json:"attachments"`
-	Reactions     map[string][]uuid.UUID `json:"reactions"`
-	CreatedAt     time.Time              `json:"created_at"`
-	UpdatedAt     time.Time              `json:"updated_at"`
+	CommunityType string    `json:"community_type"`
+	ID            uuid.UUID `json:"id"`
+	ChatID        uuid.UUID `json:"chat_id"`
+	SenderID      uuid.UUID `json:"sender_id"`
+	Message       string    `json:"message"`
+	MessageType   string    `json:"message_type"`
+	IsEdited      bool      `json:"is_edited"`
+	ReplyToID     uuid.UUID `json:"reply_to_id"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }
 
 type LinkPreviewResponse struct {

@@ -26,7 +26,6 @@ func (s *ServiceMessenger) AddMessage(ctx *gin.Context, message dto.AddMessage) 
 		SenderID:    message.SenderID,
 		Message:     message.Message,
 		MessageType: message.MessageType,
-		Attachments: message.Attachments,
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
@@ -55,8 +54,6 @@ func (s *ServiceMessenger) UpdateMessage(ctx *gin.Context, message dto.UpdateMes
 		MessageType: message.MessageType,
 		IsEdited:    true,
 		ReplyToID:   message.ReplyToID,
-		Attachments: message.Attachments,
-		Reactions:   nil,
 		CreatedAt:   message.CreatedAt,
 		UpdatedAt:   now,
 	}

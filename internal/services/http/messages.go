@@ -26,9 +26,9 @@ var upgrader = websocket.Upgrader{
 }
 
 type Message struct {
-	Operation   string      `json:"operation"`
-	Message     dto.Message `json:"message"`
-	CommunityID uuid.UUID   `json:"community_id"`
+	Operation string      `json:"operation"`
+	Message   dto.Message `json:"message"`
+	Reaction  string      `json:"reaction"`
 }
 
 type Client struct {
@@ -109,7 +109,6 @@ func (h *Hub) onSendMessage(msg dto.AddMessage) {
 		SenderID:    msg.SenderID,
 		Message:     msg.Message,
 		MessageType: msg.MessageType,
-		Attachments: msg.Attachments,
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
@@ -138,8 +137,6 @@ func (h *Hub) onUpdateMesage(msg dto.UpdateMessage) {
 		MessageType: msg.MessageType,
 		IsEdited:    true,
 		ReplyToID:   msg.ReplyToID,
-		Attachments: msg.Attachments,
-		Reactions:   nil,
 		CreatedAt:   msg.CreatedAt,
 		UpdatedAt:   now,
 	}
@@ -155,26 +152,40 @@ func (h *Hub) onUpdateMesage(msg dto.UpdateMessage) {
 	})
 }
 
-func (h *Hub) onSetUpReaction(msgID, userID uuid.UUID, reaction map[string][]uuid.UUID) {
+func (h *Hub) onSendReaction(reaction dto.Reaction) {
 	ctx := context.Background()
 
-	var emoji string
-	for key := range reaction {
-		emoji = key
-		break
-	}
-
-	reactions, err := h.RepositoryMessenger.SetUpReaction(ctx, msgID, emoji, userID)
-	if err != nil {
+	if err := h.RepositoryMessenger.InsertReaction(ctx, reaction); err != nil {
 		h.Log.Error("error with set up reaction: ", "error", err)
 		return
 	}
 
 	go h.broadcast(ctx, Message{
-		Operation: "set_up_reaction",
+		Operation: "send_reaction",
 		Message: dto.Message{
-			ID:        msgID,
-			Reactions: reactions,
+			ID:        reaction.MessageID,
+			ChatID:    reaction.ChatID,
+			SenderID:  reaction.UserID,
+			CreatedAt: reaction.SendedAt,
+		},
+		Reaction: reaction.Reaction,
+	})
+}
+
+func (h *Hub) onDeleteReaction(chatID uuid.UUID, messageID uuid.UUID, userID uuid.UUID) {
+	ctx := context.Background()
+
+	if err := h.RepositoryMessenger.DeleteReaction(ctx, chatID, messageID, userID); err != nil {
+		h.Log.Error("error with delete reaction: ", "error", "error")
+		return
+	}
+
+	go h.broadcast(ctx, Message{
+		Operation: "delete_reaction",
+		Message: dto.Message{
+			ID:       messageID,
+			ChatID:   chatID,
+			SenderID: userID,
 		},
 	})
 }
@@ -231,7 +242,7 @@ func (s *ServiceMessenger) ReadMessageFromClient(client *Client) {
 
 		switch msg.Operation {
 		case "switch_community":
-			s.Hub.onSwitchChat(msg.Message.SenderID, msg.CommunityID)
+			s.Hub.onSwitchChat(msg.Message.SenderID, msg.Message.ChatID)
 		case "read":
 			s.Hub.onRead(dto.ReadMessage{
 				ChatID:    msg.Message.ChatID,
@@ -245,10 +256,7 @@ func (s *ServiceMessenger) ReadMessageFromClient(client *Client) {
 				SenderID:    msg.Message.SenderID,
 				Message:     msg.Message.Message,
 				MessageType: msg.Message.MessageType,
-				Attachments: msg.Message.Attachments,
 			})
-		case "set_up_reaction":
-			s.Hub.onSetUpReaction(msg.Message.ID, msg.Message.SenderID, msg.Message.Reactions)
 		case "update":
 			s.Hub.onUpdateMesage(dto.UpdateMessage{
 				ID:          msg.Message.ID,
@@ -257,8 +265,6 @@ func (s *ServiceMessenger) ReadMessageFromClient(client *Client) {
 				Message:     msg.Message.Message,
 				MessageType: msg.Message.MessageType,
 				ReplyToID:   msg.Message.ReplyToID,
-				Attachments: msg.Message.Attachments,
-				Reactions:   nil,
 				CreatedAt:   msg.Message.CreatedAt,
 			})
 		case "delete":
@@ -267,6 +273,16 @@ func (s *ServiceMessenger) ReadMessageFromClient(client *Client) {
 				ChatID:   msg.Message.ChatID,
 				SenderID: msg.Message.SenderID,
 			})
+		case "send_reaction":
+			s.Hub.onSendReaction(dto.Reaction{
+				ChatID:    msg.Message.ChatID,
+				MessageID: msg.Message.ID,
+				UserID:    msg.Message.SenderID,
+				Reaction:  msg.Reaction,
+				SendedAt:  time.Now(),
+			})
+		case "delete_reaction":
+			s.Hub.onDeleteReaction(msg.Message.ChatID, msg.Message.ID, msg.Message.SenderID)
 		}
 	}
 }

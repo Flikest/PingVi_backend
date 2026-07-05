@@ -88,12 +88,19 @@ CREATE TABLE IF NOT EXISTS messages (
     message_type text,
     is_edited boolean,
     reply_to_id timeuuid,
-    attachments list<text>,
-    reactions map<text, frozen<list<uuid>>>,
     created_at timestamp,
     updated_at timestamp,
     PRIMARY KEY ((chat_id, date_bucket), id)
 ) WITH CLUSTERING ORDER BY (id ASC);
+
+CREATE TABLE IF NOT EXISTS reactions (
+    chat_id UUID,
+    user_id UUID,
+    message_id UUID,
+    reaction TEXT,
+    sended_at timestamp,
+    PRIMARY KEY((chat_id, user_id))
+);
 
 CREATE TABLE IF NOT EXISTS user_read_positions (
     user_id uuid,

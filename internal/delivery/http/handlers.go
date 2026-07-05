@@ -62,6 +62,11 @@ func RegisterMessengerRouter(h *HandlerMessenger) *gin.Engine {
 			messageRouter.DELETE("/messages/clear", h.Service.ClearMesagesFromChat)
 		}
 
+		reactionRouter := v1.Group("reactions")
+		{
+			reactionRouter.GET("/reactions/:chat_id", h.Service.GetAllReactionsFromChat)
+		}
+
 		channelRouter := v1.Group("/channels")
 		{
 			channelRouter.GET("/join/:channel_id/", h.Service.JoinChannel)
