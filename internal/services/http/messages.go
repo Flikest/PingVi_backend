@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	pb "github.com/Flikest/PingVi_backend/gen/go/user_info"
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
 	"github.com/Flikest/PingVi_backend/internal/repository"
 	mimetype "github.com/Flikest/PingVi_backend/pkg/mime_type"
@@ -33,9 +32,39 @@ type Message struct {
 
 type Client struct {
 	ID     string
-	Conn   websocket.Conn
+	Conn   *websocket.Conn
 	Send   chan Message
 	ChatID string
+
+	mu       sync.Mutex
+	isClosed bool
+}
+
+func (c *Client) Close() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.isClosed {
+		return
+	}
+	c.isClosed = true
+	c.Conn.Close()
+	close(c.Send)
+}
+
+func (c *Client) Push(msg Message) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.isClosed {
+		return false
+	}
+
+	select {
+	case c.Send <- msg:
+		return true
+	default:
+		c.Conn.Close()
+		return false
+	}
 }
 
 type Hub struct {
@@ -54,29 +83,30 @@ func NewHub(h *Hub) *Hub {
 	}
 }
 
-func (h *Hub) onConnect(client *Client) {
+func (h *Hub) onConnect(ctx context.Context, client *Client) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-
 	h.Online[client.ID] = client
 }
 
-func (h *Hub) onDisconect(userID string) {
+func (h *Hub) onDisconect(ctx context.Context, userID string) {
 	h.mu.Lock()
-	defer h.mu.Unlock()
-
-	_, exist := h.Online[userID]
-
+	client, exist := h.Online[userID]
 	if exist {
 		delete(h.Online, userID)
 	}
+	h.mu.Unlock()
+
+	if exist {
+		client.Close()
+	}
 }
-func (h *Hub) onSwitchChat(userID, swichedChatID uuid.UUID) {
+
+func (h *Hub) onSwitchChat(ctx context.Context, userID, swichedChatID uuid.UUID) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
 	value, exist := h.Online[userID.String()]
-
 	if exist {
 		if value.ChatID != swichedChatID.String() {
 			h.Online[userID.String()].ChatID = swichedChatID.String()
@@ -84,25 +114,19 @@ func (h *Hub) onSwitchChat(userID, swichedChatID uuid.UUID) {
 	}
 }
 
-func (h *Hub) onRead(r dto.ReadMessage) {
-	ctx := context.Background()
-
+func (h *Hub) onRead(ctx context.Context, r dto.ReadMessage) {
 	r.At = time.Now()
-
 	h.RepositoryMessenger.ReadMessage(ctx, r)
 }
 
-func (h *Hub) onSendMessage(msg dto.AddMessage) {
-	ctx := context.Background()
-
+func (h *Hub) onSendMessage(ctx context.Context, msg dto.AddMessage) {
 	messageID, err := uuid.NewV7()
 	if err != nil {
-		h.Log.Error("error with generating message id: ", "error", err)
+		h.Log.Error("error with generating message id", "error", err)
 		return
 	}
 
 	now := time.Now()
-
 	message := dto.Message{
 		ID:          messageID,
 		ChatID:      msg.ChatID,
@@ -114,7 +138,7 @@ func (h *Hub) onSendMessage(msg dto.AddMessage) {
 	}
 
 	if err := h.RepositoryMessenger.InsertMessage(ctx, message); err != nil {
-		h.Log.Error("error with inserting message: ", "error", err)
+		h.Log.Error("error with inserting message", "error", err)
 		return
 	}
 
@@ -124,11 +148,8 @@ func (h *Hub) onSendMessage(msg dto.AddMessage) {
 	})
 }
 
-func (h *Hub) onUpdateMesage(msg dto.UpdateMessage) {
-	ctx := context.Background()
-
+func (h *Hub) onUpdateMesage(ctx context.Context, msg dto.UpdateMessage) {
 	now := time.Now()
-
 	message := dto.Message{
 		ID:          msg.ID,
 		ChatID:      msg.ChatID,
@@ -142,7 +163,7 @@ func (h *Hub) onUpdateMesage(msg dto.UpdateMessage) {
 	}
 
 	if err := h.RepositoryMessenger.UpdateMessage(ctx, message); err != nil {
-		h.Log.Error("error with updating message: ", "error", err)
+		h.Log.Error("error with updating message", "error", err)
 		return
 	}
 
@@ -152,11 +173,9 @@ func (h *Hub) onUpdateMesage(msg dto.UpdateMessage) {
 	})
 }
 
-func (h *Hub) onSendReaction(reaction dto.Reaction) {
-	ctx := context.Background()
-
+func (h *Hub) onSendReaction(ctx context.Context, reaction dto.Reaction) {
 	if err := h.RepositoryMessenger.InsertReaction(ctx, reaction); err != nil {
-		h.Log.Error("error with set up reaction: ", "error", err)
+		h.Log.Error("error with set up reaction", "error", err)
 		return
 	}
 
@@ -172,11 +191,9 @@ func (h *Hub) onSendReaction(reaction dto.Reaction) {
 	})
 }
 
-func (h *Hub) onDeleteReaction(chatID uuid.UUID, messageID uuid.UUID, userID uuid.UUID) {
-	ctx := context.Background()
-
+func (h *Hub) onDeleteReaction(ctx context.Context, chatID uuid.UUID, messageID uuid.UUID, userID uuid.UUID) {
 	if err := h.RepositoryMessenger.DeleteReaction(ctx, chatID, messageID, userID); err != nil {
-		h.Log.Error("error with delete reaction: ", "error", "error")
+		h.Log.Error("error with delete reaction", "error", err)
 		return
 	}
 
@@ -190,11 +207,9 @@ func (h *Hub) onDeleteReaction(chatID uuid.UUID, messageID uuid.UUID, userID uui
 	})
 }
 
-func (h *Hub) onDeleteMessage(msg dto.DeleteMessage) {
-	ctx := context.Background()
-
+func (h *Hub) onDeleteMessage(ctx context.Context, msg dto.DeleteMessage) {
 	if err := h.RepositoryMessenger.DeleteMessage(ctx, msg.ID, msg.ChatID, msg.SenderID); err != nil {
-		h.Log.Error("error with deleting message: ", "error", err)
+		h.Log.Error("error with deleting message", "error", err)
 		return
 	}
 
@@ -209,7 +224,7 @@ func (h *Hub) onDeleteMessage(msg dto.DeleteMessage) {
 func (h *Hub) broadcast(ctx context.Context, message Message) {
 	participants, err := h.RepositoryMessenger.SelectAllMembersGroup(ctx, message.Message.ChatID)
 	if err != nil {
-		h.Log.Error("failed to retrieve all messages from the chat: ", "error", err)
+		h.Log.Error("failed to retrieve all messages from the chat", "error", err)
 		return
 	}
 
@@ -219,46 +234,54 @@ func (h *Hub) broadcast(ctx context.Context, message Message) {
 	for _, j := range participants {
 		client, exists := h.Online[j.UserID.String()]
 		if !exists {
-			continue // TODO заменить на отправку push уведомления
+			continue
 		}
 
-		client.Send <- message
+		client.Push(message)
 	}
 }
 
-func (s *ServiceMessenger) ReadMessageFromClient(client *Client) {
+func (s *ServiceMessenger) ReadMessageFromClient(ctx context.Context, client *Client) {
+	readCtx, cancel := context.WithCancel(ctx)
 	defer func() {
-		s.Hub.onDisconect(client.ID)
+		cancel()
+		s.Hub.onDisconect(ctx, client.ID)
+	}()
+
+	go func() {
+		<-readCtx.Done()
 		client.Conn.Close()
 	}()
 
 	for {
 		var msg Message
-
 		if err := client.Conn.ReadJSON(&msg); err != nil {
-			s.Hub.Log.Error("error with reading message: ", "error", err)
-			break
+			if readCtx.Err() != nil {
+				return
+			}
+			s.Hub.Log.Error("error with reading message", "error", err)
+			return
 		}
 
 		switch msg.Operation {
 		case "switch_community":
-			s.Hub.onSwitchChat(msg.Message.SenderID, msg.Message.ChatID)
+			s.Hub.onSwitchChat(readCtx, msg.Message.SenderID, msg.Message.ChatID)
 		case "read":
-			s.Hub.onRead(dto.ReadMessage{
+			s.Hub.onRead(readCtx, dto.ReadMessage{
 				ChatID:    msg.Message.ChatID,
 				UserID:    msg.Message.SenderID,
 				MessageID: msg.Message.ID,
 				At:        time.Now(),
 			})
 		case "send":
-			s.Hub.onSendMessage(dto.AddMessage{
+			s.Hub.onSendMessage(readCtx, dto.AddMessage{
 				ChatID:      msg.Message.ChatID,
 				SenderID:    msg.Message.SenderID,
 				Message:     msg.Message.Message,
 				MessageType: msg.Message.MessageType,
 			})
 		case "update":
-			s.Hub.onUpdateMesage(dto.UpdateMessage{
+			s.Hub.onUpdateMesage(readCtx, dto.UpdateMessage{
 				ID:          msg.Message.ID,
 				ChatID:      msg.Message.ChatID,
 				SenderID:    msg.Message.SenderID,
@@ -268,13 +291,13 @@ func (s *ServiceMessenger) ReadMessageFromClient(client *Client) {
 				CreatedAt:   msg.Message.CreatedAt,
 			})
 		case "delete":
-			s.Hub.onDeleteMessage(dto.DeleteMessage{
+			s.Hub.onDeleteMessage(readCtx, dto.DeleteMessage{
 				ID:       msg.Message.ID,
 				ChatID:   msg.Message.ChatID,
 				SenderID: msg.Message.SenderID,
 			})
 		case "send_reaction":
-			s.Hub.onSendReaction(dto.Reaction{
+			s.Hub.onSendReaction(readCtx, dto.Reaction{
 				ChatID:    msg.Message.ChatID,
 				MessageID: msg.Message.ID,
 				UserID:    msg.Message.SenderID,
@@ -282,21 +305,26 @@ func (s *ServiceMessenger) ReadMessageFromClient(client *Client) {
 				SendedAt:  time.Now(),
 			})
 		case "delete_reaction":
-			s.Hub.onDeleteReaction(msg.Message.ChatID, msg.Message.ID, msg.Message.SenderID)
+			s.Hub.onDeleteReaction(readCtx, msg.Message.ChatID, msg.Message.ID, msg.Message.SenderID)
 		}
 	}
 }
 
-func (s *ServiceMessenger) writeMessageToClient(client *Client) {
-	defer func() {
-		close(client.Send)
-		client.Conn.Close()
-	}()
+func (s *ServiceMessenger) writeMessageToClient(ctx context.Context, client *Client) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case message, ok := <-client.Send:
+			if !ok {
+				return
+			}
 
-	for message := range client.Send {
-		if err := client.Conn.WriteJSON(message); err != nil {
-			s.Log.Error("error writing to client: ", "error", err)
-			break
+			client.Conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			if err := client.Conn.WriteJSON(message); err != nil {
+				s.Log.Error("error writing to client", "error", err)
+				return
+			}
 		}
 	}
 }
@@ -318,40 +346,31 @@ func (s *ServiceMessenger) writeMessageToClient(client *Client) {
 //	@Failure		500			{object}	map[string]interface{}	"WebSocket upgrade failed"	example({"error":"WebSocket upgrade failed"})
 //	@Router			/ws/{session_id} [get]
 func (s *ServiceMessenger) Handshake(ctx *gin.Context) {
-	defer ctx.Request.Body.Close()
-
-	if ctx.GetHeader("Content-Type") != "application/json" {
-		s.Log.Error("invalid content type")
-		ctx.Status(http.StatusUnsupportedMediaType)
-		ctx.JSON(http.StatusUnsupportedMediaType, map[string]string{
-			"error": "Content-Type must be application/json",
-		})
+	sessionID := ctx.Param("session_id")
+	if sessionID == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid session id"})
 		return
-
 	}
 
-	payload, err := s.Client.GetUserIDBySessionID(ctx.Request.Context(), &pb.GetUserIDBySessionIDRequest{
-		SessionId: ctx.Param("session_id"),
-	})
-
-	conn, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
+	wsConn, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
 	if err != nil {
-		s.Log.Error("error with handshake to client: ", "error", err)
-		ctx.JSON(http.StatusInternalServerError, "WebSocket upgrade failed")
+		s.Log.Error("WebSocket upgrade failed", "error", err)
 		return
 	}
 
-	client := Client{
-		ID:     payload.UserId,
-		Conn:   *conn,
-		Send:   make(chan Message, 256),
-		ChatID: "main",
+	client := &Client{
+		ID:   sessionID,
+		Conn: wsConn,
+		Send: make(chan Message, 256),
 	}
 
-	s.Hub.onConnect(&client)
+	reqCtx := ctx.Request.Context()
 
-	go s.ReadMessageFromClient(&client)
-	go s.writeMessageToClient(&client)
+	s.Hub.onConnect(reqCtx, client)
+
+	go s.writeMessageToClient(reqCtx, client)
+
+	s.ReadMessageFromClient(reqCtx, client)
 }
 
 // LinkPreview godoc

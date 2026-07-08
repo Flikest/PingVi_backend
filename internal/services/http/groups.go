@@ -88,7 +88,7 @@ func (s *ServiceMessenger) CreateGroup(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onSendMessage(dto.AddMessage{
+	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:      groupID,
 		SenderID:    uuid.Nil,
 		Message:     fmt.Sprintf("User %s create this group", response.GetName()),
@@ -158,7 +158,7 @@ func (s *ServiceMessenger) JoinGroup(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onSendMessage(dto.AddMessage{
+	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:      groupID,
 		SenderID:    uuid.Nil,
 		Message:     fmt.Sprintf("User %s joined the channel", response.GetName()),
@@ -234,7 +234,7 @@ func (s *ServiceMessenger) LeaveGroup(ctx *gin.Context) {
 			return
 		}
 
-		s.Hub.onSendMessage(dto.AddMessage{
+		s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 			ChatID:      groupID,
 			SenderID:    uuid.Nil,
 			Message:     fmt.Sprintf("channel %s was deleted", groupName),
@@ -260,7 +260,7 @@ func (s *ServiceMessenger) LeaveGroup(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onSendMessage(dto.AddMessage{
+	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:      groupID,
 		SenderID:    uuid.Nil,
 		Message:     fmt.Sprintf("User %s has left the channel", response.GetName()),
@@ -556,7 +556,7 @@ func (s *ServiceMessenger) UpdateGroup(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onSendMessage(dto.AddMessage{
+	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:      group.ID,
 		SenderID:    uuid.Nil,
 		Message:     fmt.Sprintf("User %s changed the group", response.GetName()),
@@ -630,7 +630,7 @@ func (s *ServiceMessenger) DeleteGroup(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onSendMessage(dto.AddMessage{
+	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:      body.ID,
 		SenderID:    uuid.Nil,
 		Message:     fmt.Sprintf("channel %s was deleted", groupName),

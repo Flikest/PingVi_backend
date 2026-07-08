@@ -146,7 +146,7 @@ func (s *ServiceMessenger) CreateRole(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onSendMessage(dto.AddMessage{
+	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:      body.ChannelID,
 		SenderID:    uuid.Nil,
 		Message:     fmt.Sprintf("User %s created the role %s", response.GetName(), role.Name),
@@ -369,7 +369,7 @@ func (s *ServiceMessenger) DeleteRole(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onSendMessage(dto.AddMessage{
+	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:      body.ChannelID,
 		SenderID:    uuid.Nil,
 		Message:     fmt.Sprintf("User %s deleted the role %s", response.GetName(), roleName),

@@ -132,21 +132,21 @@ func (s *ServiceMessenger) CreateChannel(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onSendMessage(dto.AddMessage{
+	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:      channelID,
 		SenderID:    uuid.Nil,
 		Message:     fmt.Sprintf("User %s create this channel", response.GetName()),
 		MessageType: "system",
 	})
 
-	s.Hub.onSendMessage(dto.AddMessage{
+	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:      channelID,
 		SenderID:    uuid.Nil,
 		Message:     "General topic was created",
 		MessageType: "system",
 	})
 
-	s.Hub.onSendMessage(dto.AddMessage{
+	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:      channelID,
 		SenderID:    uuid.Nil,
 		Message:     "General directory was created",
@@ -224,7 +224,7 @@ func (s *ServiceMessenger) JoinChannel(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onSendMessage(dto.AddMessage{
+	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:      channelID,
 		SenderID:    uuid.Nil,
 		Message:     fmt.Sprintf("User %s joined the channel", response.GetName()),
@@ -301,7 +301,7 @@ func (s *ServiceMessenger) KickChannelMember(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onSendMessage(dto.AddMessage{
+	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:      bodyRequest.ChannelID,
 		SenderID:    uuid.Nil,
 		Message:     fmt.Sprintf("User %s was kicked from the channel", response.GetName()),
@@ -403,7 +403,7 @@ func (s *ServiceMessenger) LeaveFromChannel(ctx *gin.Context) {
 			return
 		}
 
-		s.Hub.onSendMessage(dto.AddMessage{
+		s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 			ChatID:      channelID,
 			SenderID:    uuid.Nil,
 			Message:     fmt.Sprintf("channel %s was deleted", channelName),
@@ -429,7 +429,7 @@ func (s *ServiceMessenger) LeaveFromChannel(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onSendMessage(dto.AddMessage{
+	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:      channelID,
 		SenderID:    uuid.Nil,
 		Message:     fmt.Sprintf("User %s has left the channel", response.GetName()),
@@ -580,7 +580,7 @@ func (s *ServiceMessenger) UpdateChannel(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onSendMessage(dto.AddMessage{
+	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:      channel.ID,
 		SenderID:    uuid.Nil,
 		Message:     fmt.Sprintf("User %s changed the group", response.GetName()),
@@ -673,7 +673,7 @@ func (s *ServiceMessenger) Deletechannel(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onSendMessage(dto.AddMessage{
+	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:      body.ID,
 		SenderID:    uuid.Nil,
 		Message:     fmt.Sprintf("channel %s was deleted", channelName),

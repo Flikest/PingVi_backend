@@ -76,7 +76,7 @@ func (s *ServiceMessenger) CreateTopic(ctx *gin.Context) {
 		systemMessage = fmt.Sprintf("User %s created a voice topic named %s", response.GetName(), body.Name)
 	}
 
-	s.Hub.onSendMessage(dto.AddMessage{
+	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:      body.ChannelId,
 		SenderID:    uuid.Nil,
 		Message:     systemMessage,
@@ -248,7 +248,7 @@ func (s *ServiceMessenger) DeleteTopic(ctx *gin.Context) {
 		s.Log.Error("error with getting ")
 	}
 
-	s.Hub.onSendMessage(dto.AddMessage{
+	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:      body.ChannelId,
 		SenderID:    uuid.Nil,
 		Message:     fmt.Sprintf("User %s deleted the topic name %s", response.GetName(), topicName),
