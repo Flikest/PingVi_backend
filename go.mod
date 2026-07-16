@@ -20,6 +20,7 @@ require (
 	cel.dev/expr v0.25.1 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
+	github.com/bwmarrin/snowflake v0.3.0 // indirect
 	github.com/dennwc/iters v1.2.2 // indirect
 	github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect

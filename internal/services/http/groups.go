@@ -89,10 +89,10 @@ func (s *ServiceMessenger) CreateGroup(ctx *gin.Context) {
 	}
 
 	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
-		ChatID:      groupID,
-		SenderID:    uuid.Nil,
-		Message:     fmt.Sprintf("User %s create this group", response.GetName()),
-		MessageType: "system",
+		ChatID:   groupID,
+		SenderID: uuid.Nil,
+		Message:  fmt.Sprintf("User %s create this group", response.GetName()),
+		IsSystem: true,
 	})
 
 	ctx.JSON(http.StatusCreated, group)
@@ -159,10 +159,10 @@ func (s *ServiceMessenger) JoinGroup(ctx *gin.Context) {
 	}
 
 	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
-		ChatID:      groupID,
-		SenderID:    uuid.Nil,
-		Message:     fmt.Sprintf("User %s joined the channel", response.GetName()),
-		MessageType: "system",
+		ChatID:   groupID,
+		SenderID: uuid.Nil,
+		Message:  fmt.Sprintf("User %s joined the channel", response.GetName()),
+		IsSystem: true,
 	})
 
 	ctx.JSON(http.StatusOK, groupID)
@@ -235,10 +235,10 @@ func (s *ServiceMessenger) LeaveGroup(ctx *gin.Context) {
 		}
 
 		s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
-			ChatID:      groupID,
-			SenderID:    uuid.Nil,
-			Message:     fmt.Sprintf("channel %s was deleted", groupName),
-			MessageType: "system",
+			ChatID:   groupID,
+			SenderID: uuid.Nil,
+			Message:  fmt.Sprintf("channel %s was deleted", groupName),
+			IsSystem: true,
 		})
 
 		ctx.JSON(http.StatusOK, groupID)
@@ -261,10 +261,10 @@ func (s *ServiceMessenger) LeaveGroup(ctx *gin.Context) {
 	}
 
 	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
-		ChatID:      groupID,
-		SenderID:    uuid.Nil,
-		Message:     fmt.Sprintf("User %s has left the channel", response.GetName()),
-		MessageType: "system",
+		ChatID:   groupID,
+		SenderID: uuid.Nil,
+		Message:  fmt.Sprintf("User %s has left the channel", response.GetName()),
+		IsSystem: true,
 	})
 
 	ctx.JSON(http.StatusOK, userID)
@@ -408,7 +408,6 @@ func (s *ServiceMessenger) KickMemberFromGroup(ctx *gin.Context) {
 		return
 	}
 
-	// Удаление участника
 	if err := s.Repository.DeleteGroupMember(ctx.Request.Context(), body.GroupID, body.MemberID); err != nil {
 		s.Log.Error("error with deleting member from group: ", "error", err)
 		ctx.JSON(http.StatusInternalServerError, err)
@@ -557,10 +556,10 @@ func (s *ServiceMessenger) UpdateGroup(ctx *gin.Context) {
 	}
 
 	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
-		ChatID:      group.ID,
-		SenderID:    uuid.Nil,
-		Message:     fmt.Sprintf("User %s changed the group", response.GetName()),
-		MessageType: "system",
+		ChatID:   group.ID,
+		SenderID: uuid.Nil,
+		Message:  fmt.Sprintf("User %s changed the group", response.GetName()),
+		IsSystem: true,
 	})
 
 	ctx.JSON(http.StatusOK, group)
@@ -631,10 +630,9 @@ func (s *ServiceMessenger) DeleteGroup(ctx *gin.Context) {
 	}
 
 	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
-		ChatID:      body.ID,
-		SenderID:    uuid.Nil,
-		Message:     fmt.Sprintf("channel %s was deleted", groupName),
-		MessageType: "system",
+		ChatID:   body.ID,
+		SenderID: uuid.Nil,
+		Message:  fmt.Sprintf("channel %s was deleted", groupName),
 	})
 
 	ctx.JSON(http.StatusOK, body.ID)

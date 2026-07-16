@@ -1,94 +1,66 @@
 package servicehttp
 
 import (
+	"context"
 	"errors"
-	"time"
 
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
-	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
-func (s *ServiceMessenger) AddMessage(ctx *gin.Context, message dto.AddMessage) (dto.Message, error) {
-	// Бизнес-логика: генерация ID и времени
-	messageID, err := uuid.NewV7()
+func (s *ServiceMessenger) GetSubscribers(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, error) {
+	var userIDs []uuid.UUID
+
+	channelIDs, err := s.Repository.SelectChannelIdsByUserId(ctx, userID)
 	if err != nil {
-		s.Log.Error("error with generating message id: ", "error", err)
-		return dto.Message{}, err
+		s.Log.Error("error with getting channel ids: ", "error", err)
+		return nil, err
 	}
 
-	now := time.Now()
-
-	// Создание сообщения
-	msg := dto.Message{
-		ID:          messageID,
-		ChatID:      message.ChatID,
-		SenderID:    message.SenderID,
-		Message:     message.Message,
-		MessageType: message.MessageType,
-		CreatedAt:   now,
-		UpdatedAt:   now,
+	for _, id := range channelIDs {
+		userIDs, err := s.Repository.SelectChannelMembers(ctx, id)
+		if err != nil {
+			s.Log.Error("error with getting members in channel by channel id: ", "error", err)
+			return nil, err
+		}
+		userIDs = append(userIDs, userIDs...)
 	}
 
-	// Вставка в БД
-	if err := s.Repository.InsertMessage(ctx.Request.Context(), msg); err != nil {
-		s.Log.Error("error with inserting message: ", "error", err)
-		return dto.Message{}, err
+	groupIDs, err := s.Repository.SelectGroupIdsByUserId(ctx, userID)
+	if err != nil {
+		s.Log.Error("error with getting group ids: ", "error", err)
+		return nil, err
 	}
 
-	return msg, nil
+	for _, id := range groupIDs {
+		userIDs, err := s.Repository.SelectGroupMembers(ctx, id)
+		if err != nil {
+			s.Log.Error("error with getting members in group by group id: ", "error", err)
+			return nil, err
+		}
+		userIDs = append(userIDs, userIDs...)
+	}
+
+	personalChatIDs, err := s.Repository.SelectPersonalChatMemberIdsByUserId(ctx, userID)
+	if err != nil {
+		s.Log.Error("error with getting personal chat member ids by user id: ", "error", err)
+		return nil, err
+	}
+	userIDs = append(userIDs, personalChatIDs...)
+
+	return userIDs, nil
 }
 
-func (s *ServiceMessenger) UpdateMessage(ctx *gin.Context, message dto.UpdateMessage) (dto.Message, error) {
-	// Проверка, что отправитель обновляет свое сообщение
-	// В реальном приложении нужно проверить права
-
-	now := time.Now()
-
-	// Обновление сообщения
-	msg := dto.Message{
-		ID:          message.ID,
-		ChatID:      message.ChatID,
-		SenderID:    message.SenderID,
-		Message:     message.Message,
-		MessageType: message.MessageType,
-		IsEdited:    true,
-		ReplyToID:   message.ReplyToID,
-		CreatedAt:   message.CreatedAt,
-		UpdatedAt:   now,
-	}
-
-	if err := s.Repository.UpdateMessage(ctx.Request.Context(), msg); err != nil {
-		s.Log.Error("error with updating message: ", "error", err)
-		return dto.Message{}, err
-	}
-
-	return msg, nil
-}
-
-func (s *ServiceMessenger) DeleteMessage(ctx *gin.Context, message dto.DeleteMessage) error {
-	// Проверка, что отправитель удаляет свое сообщение
-	// В реальном приложении нужно проверить права
-
-	if err := s.Repository.DeleteMessage(ctx.Request.Context(), message.ID, message.ChatID, message.SenderID); err != nil {
-		s.Log.Error("error with deleting message: ", "error", err)
-		return err
-	}
-
-	return nil
-}
-
-func (s *ServiceMessenger) ClearMessagesFromCommunity(ctx *gin.Context, clearMessage dto.ClearMessage) (uuid.UUID, error) {
+func (s *ServiceMessenger) ClearMessagesFromCommunity(ctx context.Context, clearMessage dto.ClearMessage) (uuid.UUID, error) {
 	switch clearMessage.CommunityType {
 	case "group":
-		// Бизнес-логика: проверка прав для группы
-		isAdmin, err := s.Repository.SelectGroupMemberIsAdmin(ctx.Request.Context(), clearMessage.CommunityID, clearMessage.UserID)
+		isAdmin, err := s.Repository.SelectGroupMemberIsAdmin(ctx, clearMessage.CommunityID, clearMessage.UserID)
 		if err != nil {
 			s.Log.Error("error with selecting rights: ", "error", err)
 			return uuid.Nil, err
 		}
 
-		ownerID, err := s.Repository.SelectGroupOwnerID(ctx.Request.Context(), clearMessage.CommunityID)
+		ownerID, err := s.Repository.SelectGroupOwnerID(ctx, clearMessage.CommunityID)
 		if err != nil {
 			s.Log.Error("error with selecting owner: ", "error", err)
 			return uuid.Nil, err
@@ -99,15 +71,13 @@ func (s *ServiceMessenger) ClearMessagesFromCommunity(ctx *gin.Context, clearMes
 			return uuid.Nil, errors.New("not enough rights")
 		}
 
-		// Удаление сообщений
-		if err := s.Repository.DeleteMessagesByChatID(ctx.Request.Context(), clearMessage.CommunityID); err != nil {
+		if err := s.Repository.DeleteMessagesByChatID(ctx, clearMessage.CommunityID); err != nil {
 			s.Log.Error("error with clearing messages from group: ", "error", err)
 			return uuid.Nil, err
 		}
 
 	case "channel":
-		// Бизнес-логика: проверка прав для канала
-		permissions, err := s.Repository.SelectPermissions(ctx.Request.Context(), clearMessage.UserID, clearMessage.CommunityID)
+		permissions, err := s.Repository.SelectPermissions(ctx, clearMessage.UserID, clearMessage.CommunityID)
 		if err != nil {
 			s.Log.Error("error with selecting permissions from channel: ", "error", err)
 			return uuid.Nil, err
@@ -118,8 +88,7 @@ func (s *ServiceMessenger) ClearMessagesFromCommunity(ctx *gin.Context, clearMes
 			return uuid.Nil, errors.New("not enough rights")
 		}
 
-		// Проверка тем в канале
-		topics, err := s.Repository.SelectTopicsByChannelID(ctx.Request.Context(), clearMessage.CommunityID)
+		topics, err := s.Repository.SelectTopicsByChannelID(ctx, clearMessage.CommunityID)
 		if err != nil {
 			s.Log.Error("error with selecting topics from channel: ", "error", err)
 			return uuid.Nil, err
@@ -130,15 +99,13 @@ func (s *ServiceMessenger) ClearMessagesFromCommunity(ctx *gin.Context, clearMes
 			return uuid.Nil, errors.New("no topic found")
 		}
 
-		// Удаление сообщений
-		if err := s.Repository.DeleteMessagesByChatID(ctx.Request.Context(), clearMessage.CommunityID); err != nil {
+		if err := s.Repository.DeleteMessagesByChatID(ctx, clearMessage.CommunityID); err != nil {
 			s.Log.Error("error with clearing messages from topic: ", "error", err)
 			return uuid.Nil, err
 		}
 
 	case "personal_chat":
-		// Бизнес-логика: проверка прав для личного чата
-		user1ID, user2ID, err := s.Repository.SelectPersonalChatUsers(ctx.Request.Context(), clearMessage.CommunityID)
+		user1ID, user2ID, err := s.Repository.SelectPersonalChatUsers(ctx, clearMessage.CommunityID)
 		if err != nil {
 			s.Log.Error("error with selecting user1 and user2 from personal chat", "error", err)
 			return uuid.Nil, err
@@ -149,8 +116,7 @@ func (s *ServiceMessenger) ClearMessagesFromCommunity(ctx *gin.Context, clearMes
 			return uuid.Nil, errors.New("not enough rights")
 		}
 
-		// Удаление сообщений
-		if err := s.Repository.DeleteMessagesByChatID(ctx.Request.Context(), clearMessage.CommunityID); err != nil {
+		if err := s.Repository.DeleteMessagesByChatID(ctx, clearMessage.CommunityID); err != nil {
 			s.Log.Error("error with clearing messages from topic: ", "error", err)
 			return uuid.Nil, err
 		}

@@ -3,20 +3,21 @@ package dto
 import (
 	"time"
 
+	"github.com/bwmarrin/snowflake"
 	"github.com/google/uuid"
 )
 
 type Message struct {
-	CommunityType string    `json:"community_type"`
-	ID            uuid.UUID `json:"id"`
-	ChatID        uuid.UUID `json:"chat_id"`
-	SenderID      uuid.UUID `json:"sender_id"`
-	Message       string    `json:"message"`
-	MessageType   string    `json:"message_type"`
-	IsEdited      bool      `json:"is_edited"`
-	ReplyToID     uuid.UUID `json:"reply_to_id"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	CommunityType string       `json:"community_type"`
+	ID            snowflake.ID `json:"id"`
+	ChatID        uuid.UUID    `json:"chat_id"`
+	SenderID      uuid.UUID    `json:"sender_id"`
+	Message       string       `json:"message"`
+	IsMy          bool         `json:"is_my"`
+	IsSystem      bool         `json:"is_system"`
+	ReplyToID     snowflake.ID `json:"reply_to_id"`
+	CreatedAt     time.Time    `json:"created_at"`
+	UpdatedAt     time.Time    `json:"updated_at"`
 }
 
 type LinkPreviewResponse struct {
@@ -25,31 +26,27 @@ type LinkPreviewResponse struct {
 }
 
 type ReadMessage struct {
-	ChatID    uuid.UUID `json:"chat_id"`
-	UserID    uuid.UUID `json:"user_id"`
-	MessageID uuid.UUID `json:"message_id"`
-	At        time.Time `json:"at"`
+	ChatID    uuid.UUID    `json:"chat_id"`
+	UserID    uuid.UUID    `json:"user_id"`
+	MessageID snowflake.ID `json:"message_id"`
+	At        time.Time    `json:"at"`
 }
 
 type AddMessage struct {
-	ChatID      uuid.UUID `json:"chat_id"`
-	SenderID    uuid.UUID `json:"sender_id"`
-	Message     string    `json:"message"`
-	MessageType string    `json:"message_type"`
-	Attachments string    `json:"attachments"`
+	ChatID   uuid.UUID `json:"chat_id"`
+	SenderID uuid.UUID `json:"sender_id"`
+	Message  string    `json:"message"`
+	IsSystem bool      `json:"is_system"`
 }
 
 type UpdateMessage struct {
-	ID          uuid.UUID `json:"id"`
-	UserID      uuid.UUID `json:"user_id"`
-	ChatID      uuid.UUID `json:"chat_id"`
-	SenderID    uuid.UUID `json:"sender_id"`
-	Message     string    `json:"message"`
-	MessageType string    `json:"message_type"`
-	ReplyToID   uuid.UUID `json:"reply_to_id"`
-	Attachments string    `json:"attachments"`
-	Reactions   []string  `json:"reactions"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID        snowflake.ID `json:"id"`
+	UserID    uuid.UUID    `json:"user_id"`
+	ChatID    uuid.UUID    `json:"chat_id"`
+	SenderID  uuid.UUID    `json:"sender_id"`
+	Message   string       `json:"message"`
+	ReplyToID snowflake.ID `json:"reply_to_id"`
+	CreatedAt time.Time    `json:"created_at"`
 }
 
 type ClearMessage struct {
@@ -59,7 +56,7 @@ type ClearMessage struct {
 }
 
 type DeleteMessage struct {
-	ID       uuid.UUID `json:"id"`
-	ChatID   uuid.UUID `json:"chat_id"`
-	SenderID uuid.UUID `json:"sender_id"`
+	ID       snowflake.ID `json:"id"`
+	ChatID   uuid.UUID    `json:"chat_id"`
+	SenderID uuid.UUID    `json:"sender_id"`
 }

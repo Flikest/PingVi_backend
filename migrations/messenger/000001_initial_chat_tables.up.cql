@@ -80,17 +80,15 @@ CREATE TABLE IF NOT EXISTS group_members (
 
 
 CREATE TABLE IF NOT EXISTS messages (
-    id uuid,
+    id BIGINT,
     chat_id uuid,
-    date_bucket text, 
+    backet_id BIGINT,
     sender_id uuid,
     message text,
-    message_type text,
-    is_edited boolean,
-    reply_to_id timeuuid,
+    reply_to_id BIGINT,
     created_at timestamp,
     updated_at timestamp,
-    PRIMARY KEY ((chat_id, date_bucket), id)
+    PRIMARY KEY ((chat_id, backet_id), id)
 ) WITH CLUSTERING ORDER BY (id ASC);
 
 CREATE TABLE IF NOT EXISTS reactions (

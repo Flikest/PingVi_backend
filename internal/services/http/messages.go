@@ -10,12 +10,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Flikest/PingVi_backend/gen/go/user_info"
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
 	"github.com/Flikest/PingVi_backend/internal/repository"
 	mimetype "github.com/Flikest/PingVi_backend/pkg/mime_type"
+	"github.com/bwmarrin/snowflake"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"github.com/redis/go-redis/v9"
 )
 
 var upgrader = websocket.Upgrader{
@@ -28,6 +31,7 @@ type Message struct {
 	Operation string      `json:"operation"`
 	Message   dto.Message `json:"message"`
 	Reaction  string      `json:"reaction"`
+	Status    string      `json:"status"`
 }
 
 type Client struct {
@@ -68,34 +72,57 @@ func (c *Client) Push(msg Message) bool {
 }
 
 type Hub struct {
-	Online              map[string]*Client
+	Clients             map[string]*Client
+	Redis               *redis.Client
 	RepositoryMessenger *repository.RepositoryMessenger
 	Log                 *slog.Logger
+	Node                *snowflake.Node
 
 	mu sync.RWMutex
 }
 
 func NewHub(h *Hub) *Hub {
 	return &Hub{
-		Online:              h.Online,
+		Clients:             h.Clients,
+		Redis:               h.Redis,
 		RepositoryMessenger: h.RepositoryMessenger,
 		Log:                 h.Log,
+		Node:                h.Node,
 	}
 }
 
-func (h *Hub) onConnect(ctx context.Context, client *Client) {
+func (h *Hub) onConnect(ctx context.Context, client *Client, subscribeUsers []uuid.UUID) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	h.Online[client.ID] = client
+
+	h.Clients[client.ID] = client
+
+	userID, err := uuid.Parse(client.ID)
+	if err == nil && h.Redis != nil {
+		h.setUserOnline(ctx, userID)
+
+		for _, subUserID := range subscribeUsers {
+			h.addUserSubscription(ctx, userID, subUserID)
+		}
+
+		go h.sendInitialStatuses(ctx, userID, client)
+	}
 }
 
 func (h *Hub) onDisconect(ctx context.Context, userID string) {
 	h.mu.Lock()
-	client, exist := h.Online[userID]
+	client, exist := h.Clients[userID]
 	if exist {
-		delete(h.Online, userID)
+		delete(h.Clients, userID)
 	}
 	h.mu.Unlock()
+
+	if h.Redis != nil && exist {
+		userUUID, err := uuid.Parse(userID)
+		if err == nil {
+			h.setUserOffline(ctx, userUUID)
+		}
+	}
 
 	if exist {
 		client.Close()
@@ -106,11 +133,17 @@ func (h *Hub) onSwitchChat(ctx context.Context, userID, swichedChatID uuid.UUID)
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	value, exist := h.Online[userID.String()]
+	client, exist := h.Clients[userID.String()]
 	if exist {
-		if value.ChatID != swichedChatID.String() {
-			h.Online[userID.String()].ChatID = swichedChatID.String()
+		if client.ChatID != swichedChatID.String() {
+			client.ChatID = swichedChatID.String()
 		}
+	}
+
+	if h.Redis != nil && exist {
+		h.setUserActiveChat(ctx, userID, swichedChatID)
+
+		go h.notifySubscribers(ctx, userID, "active_chat", swichedChatID)
 	}
 }
 
@@ -120,21 +153,16 @@ func (h *Hub) onRead(ctx context.Context, r dto.ReadMessage) {
 }
 
 func (h *Hub) onSendMessage(ctx context.Context, msg dto.AddMessage) {
-	messageID, err := uuid.NewV7()
-	if err != nil {
-		h.Log.Error("error with generating message id", "error", err)
-		return
-	}
+	messageID := h.Node.Generate()
 
 	now := time.Now()
 	message := dto.Message{
-		ID:          messageID,
-		ChatID:      msg.ChatID,
-		SenderID:    msg.SenderID,
-		Message:     msg.Message,
-		MessageType: msg.MessageType,
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		ID:        messageID,
+		ChatID:    msg.ChatID,
+		SenderID:  msg.SenderID,
+		Message:   msg.Message,
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 
 	if err := h.RepositoryMessenger.InsertMessage(ctx, message); err != nil {
@@ -151,15 +179,13 @@ func (h *Hub) onSendMessage(ctx context.Context, msg dto.AddMessage) {
 func (h *Hub) onUpdateMesage(ctx context.Context, msg dto.UpdateMessage) {
 	now := time.Now()
 	message := dto.Message{
-		ID:          msg.ID,
-		ChatID:      msg.ChatID,
-		SenderID:    msg.UserID,
-		Message:     msg.Message,
-		MessageType: msg.MessageType,
-		IsEdited:    true,
-		ReplyToID:   msg.ReplyToID,
-		CreatedAt:   msg.CreatedAt,
-		UpdatedAt:   now,
+		ID:        msg.ID,
+		ChatID:    msg.ChatID,
+		SenderID:  msg.UserID,
+		Message:   msg.Message,
+		ReplyToID: msg.ReplyToID,
+		CreatedAt: msg.CreatedAt,
+		UpdatedAt: now,
 	}
 
 	if err := h.RepositoryMessenger.UpdateMessage(ctx, message); err != nil {
@@ -191,8 +217,8 @@ func (h *Hub) onSendReaction(ctx context.Context, reaction dto.Reaction) {
 	})
 }
 
-func (h *Hub) onDeleteReaction(ctx context.Context, chatID uuid.UUID, messageID uuid.UUID, userID uuid.UUID) {
-	if err := h.RepositoryMessenger.DeleteReaction(ctx, chatID, messageID, userID); err != nil {
+func (h *Hub) onDeleteReaction(ctx context.Context, chatID uuid.UUID, messageID snowflake.ID, userID uuid.UUID) {
+	if err := h.RepositoryMessenger.DeleteReaction(ctx, messageID, chatID, userID); err != nil {
 		h.Log.Error("error with delete reaction", "error", err)
 		return
 	}
@@ -232,12 +258,78 @@ func (h *Hub) broadcast(ctx context.Context, message Message) {
 	defer h.mu.RUnlock()
 
 	for _, j := range participants {
-		client, exists := h.Online[j.UserID.String()]
+		client, exists := h.Clients[j.UserID.String()]
 		if !exists {
 			continue
 		}
 
+		message.Message.IsMy = message.Message.SenderID.String() == j.UserID.String()
+
 		client.Push(message)
+	}
+}
+
+func (h *Hub) sendInitialStatuses(ctx context.Context, userID uuid.UUID, client *Client) {
+	if h.Redis == nil {
+		return
+	}
+
+	statuses, err := h.getSubscribedUsersStatus(ctx, userID)
+	if err != nil {
+		h.Log.Error("failed to get subscribed users status", "error", err)
+		return
+	}
+
+	for subUserID, _ := range statuses {
+		statusMessage := Message{
+			Operation: "user_status",
+			Message: dto.Message{
+				SenderID: subUserID,
+			},
+		}
+
+		client.Push(statusMessage)
+	}
+}
+
+func (h *Hub) notifySubscribers(ctx context.Context, userID uuid.UUID, statusType string, chatID uuid.UUID) {
+	if h.Redis == nil {
+		return
+	}
+
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	for _, client := range h.Clients {
+		clientUserID, err := uuid.Parse(client.ID)
+		if err != nil {
+			continue
+		}
+
+		subs, err := h.getUserSubscriptions(ctx, clientUserID)
+		if err != nil {
+			continue
+		}
+
+		for _, subID := range subs {
+			if subID == userID {
+				statusMessage := Message{
+					Operation: "user_status_update",
+					Message: dto.Message{
+						SenderID: userID,
+						ChatID:   chatID,
+					},
+				}
+				if statusType == "typing" {
+					statusMessage.Status = "typing_start"
+				} else if statusType == "active_chat" {
+					statusMessage.Status = "active_chat_changed"
+				}
+
+				client.Push(statusMessage)
+				break
+			}
+		}
 	}
 }
 
@@ -275,20 +367,18 @@ func (s *ServiceMessenger) ReadMessageFromClient(ctx context.Context, client *Cl
 			})
 		case "send":
 			s.Hub.onSendMessage(readCtx, dto.AddMessage{
-				ChatID:      msg.Message.ChatID,
-				SenderID:    msg.Message.SenderID,
-				Message:     msg.Message.Message,
-				MessageType: msg.Message.MessageType,
+				ChatID:   msg.Message.ChatID,
+				SenderID: msg.Message.SenderID,
+				Message:  msg.Message.Message,
 			})
 		case "update":
 			s.Hub.onUpdateMesage(readCtx, dto.UpdateMessage{
-				ID:          msg.Message.ID,
-				ChatID:      msg.Message.ChatID,
-				SenderID:    msg.Message.SenderID,
-				Message:     msg.Message.Message,
-				MessageType: msg.Message.MessageType,
-				ReplyToID:   msg.Message.ReplyToID,
-				CreatedAt:   msg.Message.CreatedAt,
+				ID:        msg.Message.ID,
+				ChatID:    msg.Message.ChatID,
+				SenderID:  msg.Message.SenderID,
+				Message:   msg.Message.Message,
+				ReplyToID: msg.Message.ReplyToID,
+				CreatedAt: msg.Message.CreatedAt,
 			})
 		case "delete":
 			s.Hub.onDeleteMessage(readCtx, dto.DeleteMessage{
@@ -306,6 +396,15 @@ func (s *ServiceMessenger) ReadMessageFromClient(ctx context.Context, client *Cl
 			})
 		case "delete_reaction":
 			s.Hub.onDeleteReaction(readCtx, msg.Message.ChatID, msg.Message.ID, msg.Message.SenderID)
+		case "typing_start":
+			if s.Hub.Redis != nil {
+				s.Hub.setUserTyping(readCtx, msg.Message.SenderID, msg.Message.ChatID)
+				go s.Hub.notifySubscribers(readCtx, msg.Message.SenderID, "typing", msg.Message.ChatID)
+			}
+		case "typing_stop":
+			if s.Hub.Redis != nil {
+				s.Hub.clearUserTyping(readCtx, msg.Message.SenderID)
+			}
 		}
 	}
 }
@@ -352,11 +451,27 @@ func (s *ServiceMessenger) Handshake(ctx *gin.Context) {
 		return
 	}
 
+	response, err := s.Client.GetUserIDBySessionID(ctx.Request.Context(), &user_info.GetUserIDBySessionIDRequest{
+		SessionId: sessionID,
+	})
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "error with getting user id by session id"})
+		return
+	}
+
+	userID, err := uuid.Parse(response.GetUserId())
+	if err != nil {
+		s.Log.Error("error with parsing user id uuid: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "error with parsing user id"})
+	}
+
 	wsConn, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
 	if err != nil {
 		s.Log.Error("WebSocket upgrade failed", "error", err)
 		return
 	}
+
+	subscribers, err := s.GetSubscribers(ctx.Request.Context(), userID)
 
 	client := &Client{
 		ID:   sessionID,
@@ -366,7 +481,7 @@ func (s *ServiceMessenger) Handshake(ctx *gin.Context) {
 
 	reqCtx := ctx.Request.Context()
 
-	s.Hub.onConnect(reqCtx, client)
+	s.Hub.onConnect(reqCtx, client, subscribers)
 
 	go s.writeMessageToClient(reqCtx, client)
 
@@ -502,7 +617,7 @@ func (s *ServiceMessenger) ClearMesagesFromChat(ctx *gin.Context) {
 		return
 	}
 
-	chatID, err := s.ClearMessagesFromCommunity(ctx, body)
+	chatID, err := s.ClearMessagesFromCommunity(ctx.Request.Context(), body)
 	if err != nil {
 		s.Log.Error("error with clearing message from chat: ", "error", err)
 		ctx.JSON(http.StatusInternalServerError, err)

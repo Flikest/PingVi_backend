@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
+	"github.com/bwmarrin/snowflake"
 	"github.com/google/uuid"
 )
 
@@ -57,18 +58,19 @@ func (r *RepositoryMessenger) InsertMessage(ctx context.Context, message dto.Mes
 		[]string{
 			":id",
 			":chat_id",
+			":backet_id",
 			":sender_id",
 			":message",
-			":message_type",
-			":attachments",
+			":reply_to_id",
 			":created_at"}).
 		BindMap(map[string]interface{}{
-			":id":           message.ID,
-			":chat_id":      message.ChatID,
-			":sender_id":    message.SenderID,
-			":message":      message.Message,
-			":message_type": message.MessageType,
-			":created_at":   message.CreatedAt,
+			":id":          message.ID,
+			":chat_id":     message.ChatID,
+			":backet_id":   message.ID / 10000,
+			":sender_id":   message.SenderID,
+			":message":     message.Message,
+			":reply_to_id": message.ReplyToID,
+			":created_at":  message.CreatedAt,
 		})
 
 	if err := addMessage.ExecRelease(); err != nil {
@@ -98,19 +100,16 @@ func (r *RepositoryMessenger) UpdateMessage(ctx context.Context, message dto.Mes
 	updateMessage := r.Session.ContextQuery(
 		ctx,
 		`UPDATE messenger_keyspace.messages
-		SET message=?, is_edited=?, attachments=?, updated_at=?
+		SET message=?, updated_at=?
 		WHERE id=? AND chat_id=? AND sender_id=?`,
 		[]string{
 			":message",
-			":is_edited",
-			":attachments",
 			":updated_at",
 			":id",
 			":chat_id",
 			":sender_id",
 		}).BindMap(map[string]interface{}{
 		":message":    message.Message,
-		":is_edited":  message.IsEdited,
 		":updated_at": message.UpdatedAt,
 		":id":         message.ID,
 		":chat_id":    message.ChatID,
@@ -161,7 +160,7 @@ func (r *RepositoryMessenger) SelectPersonalChatUsers(ctx context.Context, chatI
 	return users.user1ID, users.user2ID, nil
 }
 
-func (r *RepositoryMessenger) DeleteMessage(ctx context.Context, messageID, chatID, senderID uuid.UUID) error {
+func (r *RepositoryMessenger) DeleteMessage(ctx context.Context, messageID snowflake.ID, chatID, senderID uuid.UUID) error {
 	deleteMessage := r.Session.ContextQuery(
 		ctx,
 		`DELETE FROM messenger_keyspace.messages WHERE id=? AND chat_id=? AND sender_id=?`,

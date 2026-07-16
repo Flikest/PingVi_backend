@@ -61,7 +61,7 @@ tasks:
       - sleep 3
       - go run cmd/migrator/main.go -env ./messenger.local.env -db scylladb
       - sleep 3
-      - go run cmd/messenger/main.go -env local
+      - go run cmd/messenger/main.go --env local --node_number 1
 
   raise-messenger-prod:
     cmds:
@@ -71,7 +71,7 @@ tasks:
       - sleep 3
       - go run cmd/migrator/main.go -env ./messenger.prod.env -db scylladb
       - sleep 3
-      - go run cmd/messenger/main.go -env prod
+      - go run cmd/messenger/main.go -env prod --node_number 1
 
   raise-file-storage:
     cmds:

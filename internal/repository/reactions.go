@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
+	"github.com/bwmarrin/snowflake"
 	"github.com/google/uuid"
 )
 
@@ -64,7 +65,7 @@ func (r *RepositoryMessenger) SelectReactionById(ctx context.Context, chatID, me
 	return reaction, nil
 }
 
-func (r *RepositoryMessenger) DeleteReaction(ctx context.Context, chatID, messageID, userID uuid.UUID) error {
+func (r *RepositoryMessenger) DeleteReaction(ctx context.Context, messageID snowflake.ID, chatID, userID uuid.UUID) error {
 	deleteReaction := r.Session.ContextQuery(
 		ctx,
 		`DELETE FROM messenger_keyspace.reactions WHERE chat_id=? AND message_id=? AND user_id=?`,

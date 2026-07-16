@@ -133,24 +133,24 @@ func (s *ServiceMessenger) CreateChannel(ctx *gin.Context) {
 	}
 
 	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
-		ChatID:      channelID,
-		SenderID:    uuid.Nil,
-		Message:     fmt.Sprintf("User %s create this channel", response.GetName()),
-		MessageType: "system",
+		ChatID:   channelID,
+		SenderID: uuid.Nil,
+		Message:  fmt.Sprintf("User %s create this channel", response.GetName()),
+		IsSystem: true,
 	})
 
 	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
-		ChatID:      channelID,
-		SenderID:    uuid.Nil,
-		Message:     "General topic was created",
-		MessageType: "system",
+		ChatID:   channelID,
+		SenderID: uuid.Nil,
+		Message:  "General topic was created",
+		IsSystem: true,
 	})
 
 	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
-		ChatID:      channelID,
-		SenderID:    uuid.Nil,
-		Message:     "General directory was created",
-		MessageType: "system",
+		ChatID:   channelID,
+		SenderID: uuid.Nil,
+		Message:  "General directory was created",
+		IsSystem: true,
 	})
 
 	ctx.JSON(http.StatusCreated, channel)
@@ -225,10 +225,10 @@ func (s *ServiceMessenger) JoinChannel(ctx *gin.Context) {
 	}
 
 	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
-		ChatID:      channelID,
-		SenderID:    uuid.Nil,
-		Message:     fmt.Sprintf("User %s joined the channel", response.GetName()),
-		MessageType: "system",
+		ChatID:   channelID,
+		SenderID: uuid.Nil,
+		Message:  fmt.Sprintf("User %s joined the channel", response.GetName()),
+		IsSystem: true,
 	})
 
 	ctx.JSON(http.StatusOK, channelID)
@@ -302,10 +302,10 @@ func (s *ServiceMessenger) KickChannelMember(ctx *gin.Context) {
 	}
 
 	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
-		ChatID:      bodyRequest.ChannelID,
-		SenderID:    uuid.Nil,
-		Message:     fmt.Sprintf("User %s was kicked from the channel", response.GetName()),
-		MessageType: "system",
+		ChatID:   bodyRequest.ChannelID,
+		SenderID: uuid.Nil,
+		Message:  fmt.Sprintf("User %s was kicked from the channel", response.GetName()),
+		IsSystem: true,
 	})
 
 	ctx.JSON(http.StatusOK, bodyRequest.KickedMemberID)
@@ -404,10 +404,10 @@ func (s *ServiceMessenger) LeaveFromChannel(ctx *gin.Context) {
 		}
 
 		s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
-			ChatID:      channelID,
-			SenderID:    uuid.Nil,
-			Message:     fmt.Sprintf("channel %s was deleted", channelName),
-			MessageType: "system",
+			ChatID:   channelID,
+			SenderID: uuid.Nil,
+			Message:  fmt.Sprintf("channel %s was deleted", channelName),
+			IsSystem: true,
 		})
 
 		ctx.JSON(http.StatusOK, channelID)
@@ -430,10 +430,10 @@ func (s *ServiceMessenger) LeaveFromChannel(ctx *gin.Context) {
 	}
 
 	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
-		ChatID:      channelID,
-		SenderID:    uuid.Nil,
-		Message:     fmt.Sprintf("User %s has left the channel", response.GetName()),
-		MessageType: "system",
+		ChatID:   channelID,
+		SenderID: uuid.Nil,
+		Message:  fmt.Sprintf("User %s has left the channel", response.GetName()),
+		IsSystem: true,
 	})
 
 	ctx.JSON(http.StatusOK, channelID)
@@ -581,10 +581,10 @@ func (s *ServiceMessenger) UpdateChannel(ctx *gin.Context) {
 	}
 
 	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
-		ChatID:      channel.ID,
-		SenderID:    uuid.Nil,
-		Message:     fmt.Sprintf("User %s changed the group", response.GetName()),
-		MessageType: "system",
+		ChatID:   channel.ID,
+		SenderID: uuid.Nil,
+		Message:  fmt.Sprintf("User %s changed the group", response.GetName()),
+		IsSystem: true,
 	})
 
 	ctx.JSON(http.StatusOK, channel)
@@ -674,10 +674,10 @@ func (s *ServiceMessenger) Deletechannel(ctx *gin.Context) {
 	}
 
 	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
-		ChatID:      body.ID,
-		SenderID:    uuid.Nil,
-		Message:     fmt.Sprintf("channel %s was deleted", channelName),
-		MessageType: "system",
+		ChatID:   body.ID,
+		SenderID: uuid.Nil,
+		Message:  fmt.Sprintf("channel %s was deleted", channelName),
+		IsSystem: true,
 	})
 
 	ctx.JSON(http.StatusOK, body.ID)

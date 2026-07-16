@@ -77,10 +77,10 @@ func (s *ServiceMessenger) CreateTopic(ctx *gin.Context) {
 	}
 
 	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
-		ChatID:      body.ChannelId,
-		SenderID:    uuid.Nil,
-		Message:     systemMessage,
-		MessageType: "system",
+		ChatID:   body.ChannelId,
+		SenderID: uuid.Nil,
+		Message:  systemMessage,
+		IsSystem: true,
 	})
 
 	ctx.JSON(http.StatusCreated, topic)
@@ -249,10 +249,10 @@ func (s *ServiceMessenger) DeleteTopic(ctx *gin.Context) {
 	}
 
 	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
-		ChatID:      body.ChannelId,
-		SenderID:    uuid.Nil,
-		Message:     fmt.Sprintf("User %s deleted the topic name %s", response.GetName(), topicName),
-		MessageType: "system",
+		ChatID:   body.ChannelId,
+		SenderID: uuid.Nil,
+		Message:  fmt.Sprintf("User %s deleted the topic name %s", response.GetName(), topicName),
+		IsSystem: true,
 	})
 
 	ctx.JSON(http.StatusOK, topicID)

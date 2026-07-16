@@ -27,6 +27,42 @@ func (r *RepositoryMessenger) SelectGroupOwnerID(ctx context.Context, groupID uu
 	return ownerID, nil
 }
 
+func (r *RepositoryMessenger) SelectGroupIdsByUserId(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, error) {
+	query := r.Session.ContextQuery(
+		ctx,
+		`SELECT group_id FROM messenger_keyspace.group_members WHERE user_id=?`,
+		[]string{":user_id"}).
+		BindMap(map[string]interface{}{
+			":user_id": userID,
+		})
+
+	var groupIDs []uuid.UUID
+	if err := query.SelectRelease(&groupIDs); err != nil {
+		r.Log.Error("error with selecting user ids from group: ", "error", err)
+		return nil, err
+	}
+
+	return groupIDs, nil
+}
+
+func (r *RepositoryMessenger) SelectGroupMembers(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error) {
+	query := r.Session.ContextQuery(
+		ctx,
+		`SELECT user_id FROM messenger_keyspace.group_members WHERE group_id=?`,
+		[]string{":group_id"}).
+		BindMap(map[string]interface{}{
+			":group_id": groupID,
+		})
+
+	var userIDs []uuid.UUID
+	if err := query.SelectRelease(&userIDs); err != nil {
+		r.Log.Error("error with selecting members from group")
+		return nil, err
+	}
+
+	return userIDs, nil
+}
+
 func (r *RepositoryMessenger) SelectGroupMemberIsAdmin(ctx context.Context, groupID, userID uuid.UUID) (bool, error) {
 	selectMemberIsAdmin := r.Session.ContextQuery(
 		ctx,

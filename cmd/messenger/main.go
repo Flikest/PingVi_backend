@@ -7,11 +7,13 @@ import (
 
 	"github.com/Flikest/PingVi_backend/internal/clients"
 	"github.com/Flikest/PingVi_backend/internal/config"
+	"github.com/Flikest/PingVi_backend/internal/database/redis"
 	"github.com/Flikest/PingVi_backend/internal/database/scylla"
 	deliveryhttp "github.com/Flikest/PingVi_backend/internal/delivery/http"
 	"github.com/Flikest/PingVi_backend/internal/repository"
 	servicehttp "github.com/Flikest/PingVi_backend/internal/services/http"
 	"github.com/Flikest/PingVi_backend/pkg/logger"
+	"github.com/bwmarrin/snowflake"
 	rkboot "github.com/rookie-ninja/rk-boot/v2"
 	rkgin "github.com/rookie-ninja/rk-gin/v2/boot"
 )
@@ -30,6 +32,9 @@ import (
 // @externalDocs.url			https://swagger.io/resources/open-api/
 func main() {
 	env := flag.String("env", "local", "enviroment variable")
+
+	nodeNumber := flag.Int64("node-number", 1, "node number")
+
 	flag.Parse()
 
 	log := logger.NewLogger(*env)
@@ -47,15 +52,25 @@ func main() {
 
 	scyllaSession := scylla.MustScyllaDBOpen()
 
+	redisClient := redis.NewRedisCleint()
+
 	repository := repository.NewRepositoryMessenger(&repository.RepositoryMessenger{
 		Log:     log,
 		Session: scyllaSession,
 	})
 
+	node, err := snowflake.NewNode(*nodeNumber)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	hub := servicehttp.NewHub(&servicehttp.Hub{
-		Online:              make(map[string]*servicehttp.Client),
+		Clients:             make(map[string]*servicehttp.Client),
+		Redis:               redisClient,
 		RepositoryMessenger: repository,
 		Log:                 log,
+		Node:                node,
 	})
 
 	client, conn, err := clients.NewUserInfoClient(log)
@@ -78,6 +93,9 @@ func main() {
 	boot.AddShutdownHookFunc("shotdown-messenger-service", func() {
 		log.Info("shutdown messenger service")
 		conn.Close()
+		if redisClient != nil {
+			redisClient.Close()
+		}
 	})
 	boot.Bootstrap(ctx)
 

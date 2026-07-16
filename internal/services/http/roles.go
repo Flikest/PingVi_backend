@@ -147,10 +147,10 @@ func (s *ServiceMessenger) CreateRole(ctx *gin.Context) {
 	}
 
 	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
-		ChatID:      body.ChannelID,
-		SenderID:    uuid.Nil,
-		Message:     fmt.Sprintf("User %s created the role %s", response.GetName(), role.Name),
-		MessageType: "system",
+		ChatID:   body.ChannelID,
+		SenderID: uuid.Nil,
+		Message:  fmt.Sprintf("User %s created the role %s", response.GetName(), role.Name),
+		IsSystem: true,
 	})
 
 	ctx.JSON(http.StatusCreated, role)
@@ -370,10 +370,10 @@ func (s *ServiceMessenger) DeleteRole(ctx *gin.Context) {
 	}
 
 	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
-		ChatID:      body.ChannelID,
-		SenderID:    uuid.Nil,
-		Message:     fmt.Sprintf("User %s deleted the role %s", response.GetName(), roleName),
-		MessageType: "system",
+		ChatID:   body.ChannelID,
+		SenderID: uuid.Nil,
+		Message:  fmt.Sprintf("User %s deleted the role %s", response.GetName(), roleName),
+		IsSystem: true,
 	})
 
 	ctx.JSON(http.StatusOK, body.RoleID)

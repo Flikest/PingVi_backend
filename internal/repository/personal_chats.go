@@ -40,6 +40,41 @@ func (r *RepositoryMessenger) CreatePersonalChat(ctx context.Context, personalCh
 	return personalChat, nil
 }
 
+func (r *RepositoryMessenger) SelectPersonalChatMemberIdsByUserId(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, error) {
+	query := r.Session.ContextQuery(
+		ctx,
+		`SELECT user1_id, user2_id WHERE user1_id=? OR user2_id=?`,
+		[]string{
+			":user1_id",
+			":user2_id",
+		}).
+		BindMap(map[string]interface{}{
+			":user1_id": userID,
+			":user2_id": userID,
+		})
+
+	userIDs := []struct {
+		user1ID uuid.UUID
+		user2ID uuid.UUID
+	}{}
+	if err := query.SelectRelease(&userIDs); err != nil {
+		r.Log.Error("error with selectiing user1id and user2id from personal chat: ", "error", err)
+		return nil, err
+	}
+
+	var result []uuid.UUID
+
+	for _, ids := range userIDs {
+		if ids.user1ID == userID {
+			result = append(result, ids.user2ID)
+		} else {
+			result = append(result, ids.user1ID)
+		}
+	}
+
+	return result, nil
+}
+
 func (r *RepositoryMessenger) DeletePersonalChat(ctx context.Context, personalChat dto.DeletePersonalChat) (uuid.UUID, error) {
 	deletePersonalChat := r.Session.ContextQuery(
 		ctx,
