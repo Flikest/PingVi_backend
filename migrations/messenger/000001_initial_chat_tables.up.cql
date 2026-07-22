@@ -92,6 +92,7 @@ CREATE TABLE IF NOT EXISTS messages (
 ) WITH CLUSTERING ORDER BY (id ASC);
 
 CREATE TABLE IF NOT EXISTS reactions (
+    id UUID,
     chat_id UUID,
     user_id UUID,
     message_id UUID,

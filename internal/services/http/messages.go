@@ -28,10 +28,10 @@ var upgrader = websocket.Upgrader{
 }
 
 type Message struct {
-	Operation string      `json:"operation"`
-	Message   dto.Message `json:"message"`
-	Reaction  string      `json:"reaction"`
-	Status    string      `json:"status"`
+	Operation string       `json:"operation"`
+	Message   dto.Message  `json:"message"`
+	Reaction  dto.Reaction `json:"reaction"`
+	Status    string       `json:"status"`
 }
 
 type Client struct {
@@ -200,6 +200,12 @@ func (h *Hub) onUpdateMesage(ctx context.Context, msg dto.UpdateMessage) {
 }
 
 func (h *Hub) onSendReaction(ctx context.Context, reaction dto.Reaction) {
+	reactionID, err := uuid.NewV7()
+	if err != nil {
+		h.Log.Error("error with generate reaction id: ", "error", err)
+	}
+
+	reaction.ID = reactionID
 	if err := h.RepositoryMessenger.InsertReaction(ctx, reaction); err != nil {
 		h.Log.Error("error with set up reaction", "error", err)
 		return
@@ -213,12 +219,12 @@ func (h *Hub) onSendReaction(ctx context.Context, reaction dto.Reaction) {
 			SenderID:  reaction.UserID,
 			CreatedAt: reaction.SendedAt,
 		},
-		Reaction: reaction.Reaction,
+		Reaction: reaction,
 	})
 }
 
-func (h *Hub) onDeleteReaction(ctx context.Context, chatID uuid.UUID, messageID snowflake.ID, userID uuid.UUID) {
-	if err := h.RepositoryMessenger.DeleteReaction(ctx, messageID, chatID, userID); err != nil {
+func (h *Hub) onDeleteReaction(ctx context.Context, id, chatID, userID uuid.UUID, messageID snowflake.ID) {
+	if err := h.RepositoryMessenger.DeleteReaction(ctx, id); err != nil {
 		h.Log.Error("error with delete reaction", "error", err)
 		return
 	}
@@ -391,11 +397,11 @@ func (s *ServiceMessenger) ReadMessageFromClient(ctx context.Context, client *Cl
 				ChatID:    msg.Message.ChatID,
 				MessageID: msg.Message.ID,
 				UserID:    msg.Message.SenderID,
-				Reaction:  msg.Reaction,
+				Reaction:  msg.Reaction.Reaction,
 				SendedAt:  time.Now(),
 			})
 		case "delete_reaction":
-			s.Hub.onDeleteReaction(readCtx, msg.Message.ChatID, msg.Message.ID, msg.Message.SenderID)
+			s.Hub.onDeleteReaction(readCtx, msg.Reaction.ID, msg.Message.ChatID, msg.Message.SenderID, msg.Message.ID)
 		case "typing_start":
 			if s.Hub.Redis != nil {
 				s.Hub.setUserTyping(readCtx, msg.Message.SenderID, msg.Message.ChatID)

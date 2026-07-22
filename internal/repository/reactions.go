@@ -4,16 +4,16 @@ import (
 	"context"
 
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
-	"github.com/bwmarrin/snowflake"
 	"github.com/google/uuid"
 )
 
 func (r *RepositoryMessenger) InsertReaction(ctx context.Context, reaction dto.Reaction) error {
 	insertReaction := r.Session.ContextQuery(
 		ctx,
-		`INSERT INTO messenger_keyspace.reactions (chat_id, user_id, message_id, reaction, sended_at) VALUES (?, ?, ?, ?, ?)`,
-		[]string{":chat_id", ":user_id", ":message_id", ":reaction", ":sended_at"}).
+		`INSERT INTO messenger_keyspace.reactions (id, chat_id, user_id, message_id, reaction, sended_at) VALUES (?, ?, ?, ?, ?)`,
+		[]string{":id", ":chat_id", ":user_id", ":message_id", ":reaction", ":sended_at"}).
 		BindMap(map[string]interface{}{
+			":id":         reaction.ID,
 			":chat_id":    reaction.ChatID,
 			":user_id":    reaction.UserID,
 			":message_id": reaction.MessageID,
@@ -65,15 +65,13 @@ func (r *RepositoryMessenger) SelectReactionById(ctx context.Context, chatID, me
 	return reaction, nil
 }
 
-func (r *RepositoryMessenger) DeleteReaction(ctx context.Context, messageID snowflake.ID, chatID, userID uuid.UUID) error {
+func (r *RepositoryMessenger) DeleteReaction(ctx context.Context, id uuid.UUID) error {
 	deleteReaction := r.Session.ContextQuery(
 		ctx,
-		`DELETE FROM messenger_keyspace.reactions WHERE chat_id=? AND message_id=? AND user_id=?`,
-		[]string{":chat_id", ":message_id", ":user_id"}).
+		`DELETE FROM messenger_keyspace.reactions WHERE id=?`,
+		[]string{":id"}).
 		BindMap(map[string]interface{}{
-			":chat_id":    chatID,
-			":message_id": messageID,
-			":user_id":    userID,
+			":id": id,
 		})
 
 	if err := deleteReaction.ExecRelease(); err != nil {
