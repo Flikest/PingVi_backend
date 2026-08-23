@@ -25,22 +25,37 @@ type RepositoryFileStorage struct {
 	MinIOClient *minio.Client
 }
 
-func NewRepositorySSO(s *RepositorySSO) *RepositorySSO {
+type RepositoryBots struct {
+	Log *slog.Logger
+	DB  *pgxpool.Pool
+	RDB *redis.Client
+}
+
+func NewRepositorySSO(r *RepositorySSO) *RepositorySSO {
 	return &RepositorySSO{
-		Log: s.Log,
-		DB:  s.DB,
+		Log: r.Log,
+		DB:  r.DB,
 	}
 }
 
-func NewRepositoryMessenger(s *RepositoryMessenger) *RepositoryMessenger {
+func NewRepositoryMessenger(r *RepositoryMessenger) *RepositoryMessenger {
 	return &RepositoryMessenger{
-		Log:     s.Log,
-		Session: s.Session,
+		Log:     r.Log,
+		Session: r.Session,
 	}
 }
 
-func NewReposossoryFileStorage(s *RepositoryFileStorage) *RepositoryFileStorage {
+func NewReposossoryFileStorage(r *RepositoryFileStorage) *RepositoryFileStorage {
 	return &RepositoryFileStorage{
-		Log: s.Log,
+		Log:         r.Log,
+		MinIOClient: r.MinIOClient,
+	}
+}
+
+func NewRepositoryBots(r *RepositoryBots) *RepositoryBots {
+	return &RepositoryBots{
+		Log: r.Log,
+		DB:  r.DB,
+		RDB: r.RDB,
 	}
 }

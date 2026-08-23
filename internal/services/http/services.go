@@ -30,6 +30,12 @@ type ServiceFileStorage struct {
 	Repository *repository.RepositoryFileStorage
 }
 
+type ServiceBots struct {
+	BotHub     BotHub
+	Log        *slog.Logger
+	Repository *repository.RepositoryBots
+}
+
 func NewSSOService(s *ServiceSSO) *ServiceSSO {
 	return &ServiceSSO{
 		Log:        s.Log,
@@ -54,6 +60,14 @@ func NewSFUService(s *ServiceSFU) *ServiceSFU {
 
 func NewFileStorageService(s *ServiceFileStorage) *ServiceFileStorage {
 	return &ServiceFileStorage{
+		Log:        s.Log,
+		Repository: s.Repository,
+	}
+}
+
+func NewBotsService(s *ServiceBots) *ServiceBots {
+	return &ServiceBots{
+		BotHub:     s.BotHub,
 		Log:        s.Log,
 		Repository: s.Repository,
 	}

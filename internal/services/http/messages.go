@@ -253,6 +253,67 @@ func (h *Hub) onDeleteMessage(ctx context.Context, msg dto.DeleteMessage) {
 	})
 }
 
+func (h *Hub) onKickMember(ctx context.Context, msg dto.KickMemberMessage) {
+	messageID := h.Node.Generate()
+
+	if err := h.RepositoryMessenger.InsertMessage(ctx, dto.Message{
+		ID:        messageID,
+		ChatID:    msg.ChatID,
+		SenderID:  uuid.Nil,
+		Message:   msg.Message,
+		IsMy:      false,
+		IsSystem:  true,
+		CreatedAt: time.Now(),
+	}); err != nil {
+		h.Log.Error("error with inserting message", "error", err)
+		return
+	}
+
+	go h.broadcast(ctx, Message{
+		Operation: "kick_member",
+		Message: dto.Message{
+			ID:      messageID,
+			ChatID:  msg.ChatID,
+			Message: msg.Message,
+		},
+	})
+}
+
+func (h *Hub) onLeaveMember(ctx context.Context, msg dto.LeaveMemberMessage) {
+	messageID := h.Node.Generate()
+
+	if err := h.RepositoryMessenger.InsertMessage(ctx, dto.Message{
+		ID:        messageID,
+		ChatID:    msg.ChatID,
+		SenderID:  uuid.Nil,
+		Message:   msg.Message,
+		IsMy:      false,
+		IsSystem:  true,
+		CreatedAt: time.Now(),
+	}); err != nil {
+		h.Log.Error("error with inserting message", "error", err)
+		return
+	}
+
+	go h.broadcast(ctx, Message{
+		Operation: "leave_member",
+		Message: dto.Message{
+			ID:      messageID,
+			ChatID:  msg.ChatID,
+			Message: msg.Message,
+		},
+	})
+}
+
+func (h *Hub) onDeleteChat(ctx context.Context, msg dto.DeleteChatMessage) {
+	go h.broadcast(ctx, Message{
+		Operation: "delete_chat",
+		Message: dto.Message{
+			ChatID: msg.ChatID,
+		},
+	})
+}
+
 func (h *Hub) broadcast(ctx context.Context, message Message) {
 	participants, err := h.RepositoryMessenger.SelectAllMembersGroup(ctx, message.Message.ChatID)
 	if err != nil {

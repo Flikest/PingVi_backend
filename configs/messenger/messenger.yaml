@@ -18,27 +18,3 @@ gin:
     timeout:
       enabled: true
       timeoutMs: 5000
-
-grpc:
-  - name: permissions
-    port: 50053
-    enabled: true
-    enableReflection: true
-    commonService:
-      enabled: false #после добавления k8s поменять на true!!!!!!!!!!!!!!!!!
-    sw:
-      enabled: true
-    docs:
-      enabled: true
-    prom:
-      enabled: true
-    middleware:
-      logging:
-        enabled: true
-      prom:
-        enabled: true
-      meta:
-        enabled: true
-    timeout:
-      enabled: true
-      timeoutMs: 5000

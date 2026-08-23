@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package bots;
+
+// Путь для генерации Go-пакета
+option go_package = "./gen/go/bots;botsv1";
+
+service Bots {
+    rpc GetBotAnswers (stream StreamMessageRequest) returns (stream StreamMessageResponse);
+    rpc GetBotInfo (GetBotInfoRequest) returns (GetBotInfoResponse);
+}
+
+message GetBotInfoRequest {
+    string bot_id = 1;
+}
+
+message GetBotInfoResponse {
+    string id = 1;     
+    string name = 2;
+    string description = 3;
+    repeated string avatar = 4;
+    string creator_id = 5;
+    string token = 6;
+    string created_at = 7;
+}
+
+message StreamMessageRequest {
+    string botID = 1;
+    Message message_data = 2;
+}
+
+message StreamMessageResponse {
+    Message message_data = 2;
+}
+
+message Message {
+    string operation = 1;
+    MessageItem message = 2;
+    Reaction reaction = 3;
+    string status = 4;
+}
+
+message MessageItem {
+    string id = 1;
+    string chat_id = 2;
+    string sender_id = 3;
+    string message = 4;
+    bool is_my = 5;
+    bool is_system = 6;
+    string reply_to_id = 7;
+    string created_at = 8;
+    string updated_at = 9;
+}
+
+message Reaction {
+    string id = 1;
+    string chat_id = 2;
+    string user_id = 3;
+    string message_id = 4;
+    string reaction = 5;
+    string sended_at = 6;
+}

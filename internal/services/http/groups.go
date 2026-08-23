@@ -260,11 +260,9 @@ func (s *ServiceMessenger) LeaveGroup(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
-		ChatID:   groupID,
-		SenderID: uuid.Nil,
-		Message:  fmt.Sprintf("User %s has left the channel", response.GetName()),
-		IsSystem: true,
+	s.Hub.onLeaveMember(ctx.Request.Context(), dto.LeaveMemberMessage{
+		ChatID:  groupID,
+		Message: fmt.Sprintf("User %s has left the channel", response.GetName()),
 	})
 
 	ctx.JSON(http.StatusOK, userID)
@@ -408,12 +406,29 @@ func (s *ServiceMessenger) KickMemberFromGroup(ctx *gin.Context) {
 		return
 	}
 
+	userName, err := s.Client.GetUserNameByID(ctx.Request.Context(), &pb.GetUserNameByIdRequest{
+		UserId: body.KickedMemberID.String(),
+	})
+
+	if err != nil {
+		s.Log.Error("error with getting user name by id: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	systemMessage := fmt.Sprintf("user %s was kicked from the group", userName)
+
 	if err := s.Repository.DeleteGroupMember(ctx.Request.Context(), body.GroupID, body.MemberID); err != nil {
 		s.Log.Error("error with deleting member from group: ", "error", err)
 		ctx.JSON(http.StatusInternalServerError, err)
 		return
 	}
 
+	s.Hub.onKickMember(ctx.Request.Context(), dto.KickMemberMessage{
+		UserID:  body.KickedMemberID,
+		ChatID:  body.GroupID,
+		Message: systemMessage,
+	})
 	ctx.JSON(http.StatusOK, body.GroupID)
 }
 
@@ -622,17 +637,8 @@ func (s *ServiceMessenger) DeleteGroup(ctx *gin.Context) {
 		return
 	}
 
-	groupName, err := s.Repository.SelectGroupNameByID(ctx.Request.Context(), body.ID)
-	if err != nil {
-		s.Log.Error("error with selecting channel name: ", "error", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
-		ChatID:   body.ID,
-		SenderID: uuid.Nil,
-		Message:  fmt.Sprintf("channel %s was deleted", groupName),
+	s.Hub.onDeleteChat(ctx.Request.Context(), dto.DeleteChatMessage{
+		ChatID: body.ID,
 	})
 
 	ctx.JSON(http.StatusOK, body.ID)

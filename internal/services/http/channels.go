@@ -121,7 +121,7 @@ func (s *ServiceMessenger) CreateChannel(ctx *gin.Context) {
 		s.Log.Error("error getting user name: ", "error", err)
 	}
 
-	// TODO: создать топик и директорию по general
+	// TODO: создать топик и директорию general
 
 	response, err := s.Client.GetUserNameByID(ctx.Request.Context(), &pb.GetUserNameByIdRequest{
 		UserId: userID.String(),
@@ -301,11 +301,9 @@ func (s *ServiceMessenger) KickChannelMember(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
-		ChatID:   bodyRequest.ChannelID,
-		SenderID: uuid.Nil,
-		Message:  fmt.Sprintf("User %s was kicked from the channel", response.GetName()),
-		IsSystem: true,
+	s.Hub.onKickMember(ctx.Request.Context(), dto.KickMemberMessage{
+		ChatID:  bodyRequest.ChannelID,
+		Message: fmt.Sprintf("User %s was kicked from the channel", response.GetName()),
 	})
 
 	ctx.JSON(http.StatusOK, bodyRequest.KickedMemberID)
@@ -429,11 +427,9 @@ func (s *ServiceMessenger) LeaveFromChannel(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
-		ChatID:   channelID,
-		SenderID: uuid.Nil,
-		Message:  fmt.Sprintf("User %s has left the channel", response.GetName()),
-		IsSystem: true,
+	s.Hub.onLeaveMember(ctx.Request.Context(), dto.LeaveMemberMessage{
+		ChatID:  channelID,
+		Message: fmt.Sprintf("User %s has left the channel", response.GetName()),
 	})
 
 	ctx.JSON(http.StatusOK, channelID)
@@ -666,18 +662,8 @@ func (s *ServiceMessenger) Deletechannel(ctx *gin.Context) {
 		return
 	}
 
-	channelName, err := s.Repository.SelectChannelNameByID(ctx.Request.Context(), body.ID)
-	if err != nil {
-		s.Log.Error("error with selecting channel name: ", "error", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
-		ChatID:   body.ID,
-		SenderID: uuid.Nil,
-		Message:  fmt.Sprintf("channel %s was deleted", channelName),
-		IsSystem: true,
+	s.Hub.onDeleteChat(ctx.Request.Context(), dto.DeleteChatMessage{
+		ChatID: body.ID,
 	})
 
 	ctx.JSON(http.StatusOK, body.ID)

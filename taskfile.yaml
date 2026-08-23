@@ -36,6 +36,11 @@ tasks:
     cmds:
       - protoc -I proto proto/permissions/*.proto --go_out=./gen/go/ --go_opt=paths=source_relative --go-grpc_out=./gen/go/ --go-grpc_opt=paths=source_relative
 
+  generate-bots-proto:
+    desc: "Generate code from proto permissions file"
+    cmds:
+      - protoc -I proto proto/bots/*.proto --go_out=./gen/go/ --go_opt=paths=source_relative --go-grpc_out=./gen/go/ --go-grpc_opt=paths=source_relative
+
   raise-sso:
     cmds:
       - sudo docker compose --env-file ./sso.local.env -f containers/redis.docker-compose.yaml up -d

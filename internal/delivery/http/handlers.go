@@ -25,6 +25,11 @@ type HandlerFileStorage struct {
 	Service *restapi.ServiceFileStorage
 }
 
+type HandlerBot struct {
+	Router  *gin.Engine
+	Service *restapi.ServiceBots
+}
+
 func RegisterSSORouter(h *HandlerSSO) *gin.Engine {
 	v1 := h.Router.Group("/v1")
 	{
@@ -146,6 +151,24 @@ func RegisterFileStorageRouter(h *HandlerFileStorage) *gin.Engine {
 			fileRouter.PUT("/", h.Service.UpdateInFileStorage)
 			fileRouter.POST("/temporary_url", h.Service.IssueTemporaryURL)
 			fileRouter.DELETE("/", h.Service.DeleteFromFileStorage)
+		}
+	}
+
+	return h.Router
+}
+
+func RegisterBotRouter(h *HandlerBot) *gin.Engine {
+	v1 := h.Router.Group("/v1")
+	{
+		botRouter := v1.Group("bots")
+		{
+			botRouter.POST("/create", h.Service.CreateBot)
+			botRouter.GET("/updates", h.Service.GetMessages)
+			botRouter.POST("/commands", h.Service.SendAnswers)
+			botRouter.GET("/me", h.Service.GetMyBots)
+			botRouter.GET("/:id", h.Service.GetBotById)
+			botRouter.PUT("/update", h.Service.UpdateBot)
+			botRouter.DELETE("/delete", h.Service.DeleteBot)
 		}
 	}
 

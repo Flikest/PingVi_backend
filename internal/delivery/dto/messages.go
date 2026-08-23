@@ -8,16 +8,15 @@ import (
 )
 
 type Message struct {
-	CommunityType string       `json:"community_type"`
-	ID            snowflake.ID `json:"id"`
-	ChatID        uuid.UUID    `json:"chat_id"`
-	SenderID      uuid.UUID    `json:"sender_id"`
-	Message       string       `json:"message"`
-	IsMy          bool         `json:"is_my"`
-	IsSystem      bool         `json:"is_system"`
-	ReplyToID     snowflake.ID `json:"reply_to_id"`
-	CreatedAt     time.Time    `json:"created_at"`
-	UpdatedAt     time.Time    `json:"updated_at"`
+	ID        snowflake.ID `json:"id"`
+	ChatID    uuid.UUID    `json:"chat_id"`
+	SenderID  uuid.UUID    `json:"sender_id"`
+	Message   string       `json:"message"`
+	IsMy      bool         `json:"is_my"`
+	IsSystem  bool         `json:"is_system"`
+	ReplyToID snowflake.ID `json:"reply_to_id"`
+	CreatedAt time.Time    `json:"created_at"`
+	UpdatedAt time.Time    `json:"updated_at"`
 }
 
 type LinkPreviewResponse struct {
@@ -37,6 +36,17 @@ type AddMessage struct {
 	SenderID uuid.UUID `json:"sender_id"`
 	Message  string    `json:"message"`
 	IsSystem bool      `json:"is_system"`
+}
+
+type LeaveMemberMessage struct {
+	ChatID  uuid.UUID `json:"chat_id"`
+	Message string    `json:"message"`
+}
+
+type KickMemberMessage struct {
+	UserID  uuid.UUID `json:"user_id"`
+	ChatID  uuid.UUID `json:"chat_id"`
+	Message string    `json:"message"`
 }
 
 type UpdateMessage struct {
@@ -59,4 +69,8 @@ type DeleteMessage struct {
 	ID       snowflake.ID `json:"id"`
 	ChatID   uuid.UUID    `json:"chat_id"`
 	SenderID uuid.UUID    `json:"sender_id"`
+}
+
+type DeleteChatMessage struct {
+	ChatID uuid.UUID `json:"chat_id"`
 }

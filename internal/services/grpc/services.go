@@ -19,6 +19,11 @@ type ServicePermissions struct {
 	Repository PermissionsRepository
 }
 
+type ServiceBots struct {
+	Log        *slog.Logger
+	Repository BotsRepository
+}
+
 func NewServiceUserInfo(log *slog.Logger, repository UserInfoRepository) *ServiceUserInfo {
 	return &ServiceUserInfo{
 		Log:        log,
