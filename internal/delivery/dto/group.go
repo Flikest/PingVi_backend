@@ -28,7 +28,7 @@ type JoinGroup struct {
 	InvitationLink string `json:"invitation_link"` // https://домен/group/join/group_id/invited_user_id
 }
 
-type CickGroupMember struct {
+type KickGroupMember struct {
 	MemberID       uuid.UUID `json:"user_id"`
 	KickedMemberID uuid.UUID `json:"kicked_user_id"`
 	GroupID        uuid.UUID `json:"channel_id"`
@@ -53,7 +53,6 @@ type UpdateGroup struct {
 }
 
 type DeleteGroup struct {
-	UserID  uuid.UUID `json:"user_id"`
-	ID      uuid.UUID `json:"id"`
-	OwnerID uuid.UUID `json:"owner_id"`
+	UserID uuid.UUID `json:"user_id"`
+	ID     uuid.UUID `json:"id"`
 }

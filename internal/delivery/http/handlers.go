@@ -67,6 +67,11 @@ func RegisterMessengerRouter(h *HandlerMessenger) *gin.Engine {
 			messageRouter.DELETE("/messages/clear", h.Service.ClearMesagesFromChat)
 		}
 
+		chatsRouter := v1.Group("/chats")
+		{
+			chatsRouter.GET("/me", h.Service.GetStartMyChats)
+		}
+
 		reactionRouter := v1.Group("reactions")
 		{
 			reactionRouter.GET("/reactions/:chat_id", h.Service.GetAllReactionsFromChat)
@@ -75,7 +80,7 @@ func RegisterMessengerRouter(h *HandlerMessenger) *gin.Engine {
 		channelRouter := v1.Group("/channels")
 		{
 			channelRouter.GET("/join/:channel_id/", h.Service.JoinChannel)
-			channelRouter.GET("/cick", h.Service.KickChannelMember)
+			channelRouter.POST("/kick", h.Service.KickChannelMember)
 			channelRouter.GET("/leave/:channel_id/", h.Service.LeaveFromChannel)
 			channelRouter.GET("/:user_id", h.Service.GetChannels)
 			channelRouter.POST("/", h.Service.CreateChannel)
@@ -104,7 +109,7 @@ func RegisterMessengerRouter(h *HandlerMessenger) *gin.Engine {
 
 		roleRouter := v1.Group("/roles")
 		{
-			roleRouter.GET("/permissions/:channel_id/:user_id", h.Service.GetPermissions)
+			roleRouter.GET("/permissions/:channel_id/", h.Service.GetPermissions)
 			roleRouter.POST("/", h.Service.CreateRole)
 			roleRouter.GET("/:channel_id", h.Service.GetAllRoles)
 			roleRouter.PUT("/", h.Service.UpdateRole)
@@ -164,11 +169,19 @@ func RegisterBotRouter(h *HandlerBot) *gin.Engine {
 		{
 			botRouter.POST("/create", h.Service.CreateBot)
 			botRouter.GET("/updates", h.Service.GetMessages)
-			botRouter.POST("/commands", h.Service.SendAnswers)
+			botRouter.POST("/answers", h.Service.SendAnswers)
 			botRouter.GET("/me", h.Service.GetMyBots)
 			botRouter.GET("/:id", h.Service.GetBotById)
 			botRouter.PUT("/update", h.Service.UpdateBot)
-			botRouter.DELETE("/delete", h.Service.DeleteBot)
+			botRouter.DELETE("/delete/:bot_id", h.Service.DeleteBot)
+		}
+
+		commandsRouter := v1.Group("commands")
+		{
+			commandsRouter.POST("/create", h.Service.CreateBotCommand)
+			commandsRouter.GET("/:bot_id", h.Service.GetBotCommands)
+			commandsRouter.PUT("/update", h.Service.UpdateBotCommand)
+			commandsRouter.DELETE("/delete/:bot_id/:command_id", h.Service.DeleteBotCommand)
 		}
 	}
 

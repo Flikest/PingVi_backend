@@ -371,7 +371,7 @@ func (s *ServiceMessenger) KickMemberFromGroup(ctx *gin.Context) {
 		return
 	}
 
-	var body dto.CickGroupMember
+	var body dto.KickGroupMember
 	if err := ctx.BindJSON(&body); err != nil {
 		s.Log.Error("invalid body: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, err)

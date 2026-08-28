@@ -330,17 +330,21 @@ func (s *ServiceSSO) EnableTwoFactorAuth(ctx *gin.Context) {
 // @Failure      500  {object}  map[string]interface{}  "Internal server error"  example({"error":"failed to disable 2FA"})
 // @Router       /disable_2fa [patch]
 func (s *ServiceSSO) DisableTwoFactorAuth(ctx *gin.Context) {
-	body := struct {
-		UserID uuid.UUID `json:"user_id"`
-	}{}
-
-	if err := ctx.BindJSON(&body); err != nil {
-		s.Log.Error("error with binding json: ", "error", err)
-		ctx.JSON(http.StatusBadRequest, err)
+	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		s.Log.Error("error with verify jwt user token: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	user, err := s.Repository.DisableTwoFactorAuth(ctx.Request.Context(), body.UserID)
+	userID, err := uuid.Parse(payload.ID.String())
+	if err != nil {
+		s.Log.Error("error with parsing jwt token from header: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	user, err := s.Repository.DisableTwoFactorAuth(ctx.Request.Context(), userID)
 	if err != nil {
 		s.Log.Error("error with disabling 2 fa: ", "error", err)
 		ctx.JSON(http.StatusInternalServerError, err)

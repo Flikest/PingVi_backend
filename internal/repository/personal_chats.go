@@ -75,6 +75,46 @@ func (r *RepositoryMessenger) SelectPersonalChatMemberIdsByUserId(ctx context.Co
 	return result, nil
 }
 
+func (r *RepositoryMessenger) SelectPersonalChats(ctx context.Context, userID uuid.UUID) ([]dto.PersonalChatResponse, error) {
+	query := r.Session.ContextQuery(
+		ctx,
+		`SELECT * WHERE user1_id=? OR user2_id=?`,
+		[]string{
+			":user1_id",
+			":user2_id",
+		}).
+		BindMap(map[string]interface{}{
+			":user1_id": userID,
+			":user2_id": userID,
+		})
+
+	var personalChats []dto.PersonalChat
+
+	if err := query.SelectRelease(&personalChats); err != nil {
+		r.Log.Error("error with selecting personal chats: ", "error", err)
+		return nil, err
+	}
+
+	var response []dto.PersonalChatResponse
+
+	for _, chat := range personalChats {
+		var id uuid.UUID
+		if chat.User1ID == userID {
+			id = chat.User2ID
+		} else {
+			id = chat.User1ID
+		}
+
+		response = append(response, dto.PersonalChatResponse{
+			ID:        chat.ID,
+			UserID:    id,
+			CreatedAt: chat.CreatedAt,
+		})
+	}
+
+	return response, nil
+}
+
 func (r *RepositoryMessenger) DeletePersonalChat(ctx context.Context, personalChat dto.DeletePersonalChat) (uuid.UUID, error) {
 	deletePersonalChat := r.Session.ContextQuery(
 		ctx,

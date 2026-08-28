@@ -30,12 +30,19 @@ import (
 //	@Success		200				{string}	string					"Permission string"		example("111111")
 //	@Failure		400				{object}	map[string]interface{}	"Invalid IDs"			example({"error":"invalid user id"})
 //	@Failure		500				{object}	map[string]interface{}	"Internal server error"	example({"error":"failed to get permissions"})
-//	@Router			/roles/permissions/{channel_id}/{user_id} [get]
+//	@Router			/roles/permissions/{channel_id} [get]
 func (s *ServiceMessenger) GetPermissions(ctx *gin.Context) {
-	userID, err := uuid.Parse(ctx.Param("user_id"))
+	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
-		s.Log.Error("error with parsing user id uuid: ", "error", err)
-		ctx.JSON(http.StatusBadRequest, err)
+		s.Log.Error("error with verify jwt user token: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID, err := uuid.Parse(payload.ID.String())
+	if err != nil {
+		s.Log.Error("error with parsing jwt token from header: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 

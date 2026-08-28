@@ -250,7 +250,7 @@ func (s *ServiceMessenger) JoinChannel(ctx *gin.Context) {
 //	@Failure		400				{object}	map[string]interface{}			"Invalid request"			example({"error":"invalid body"})
 //	@Failure		403				{object}	map[string]interface{}			"Insufficient permissions"	example({"error":"the user does not have enough rights"})
 //	@Failure		500				{object}	map[string]interface{}			"Internal server error"		example({"error":"failed to kick member"})
-//	@Router			/channels/cick [get]
+//	@Router			/channels/kick [post]
 func (s *ServiceMessenger) KickChannelMember(ctx *gin.Context) {
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
@@ -266,7 +266,7 @@ func (s *ServiceMessenger) KickChannelMember(ctx *gin.Context) {
 		return
 	}
 
-	var bodyRequest dto.CickChannelMemberRequest
+	var bodyRequest dto.KickChannelMemberRequest
 	if err := ctx.BindJSON(&bodyRequest); err != nil {
 		s.Log.Error("invalid body: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, err)

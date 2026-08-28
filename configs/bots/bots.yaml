@@ -1,6 +1,6 @@
 gin:
-  - name: messenger
-    port: 8087
+  - name: bots
+    port: 8089
     enabled: true
     sw:
       enabled: true
@@ -20,7 +20,7 @@ gin:
       timeoutMs: 5000
 
 grpc:
-  - name: permissions
+  - name: bots
     port: 50054
     enabled: true
     enableReflection: true

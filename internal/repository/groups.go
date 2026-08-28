@@ -9,6 +9,25 @@ import (
 	"github.com/google/uuid"
 )
 
+func (r *RepositoryMessenger) IsGroupMuted(ctx context.Context, groupID, userID uuid.UUID) (bool, error) {
+	selectMuted := r.Session.ContextQuery(
+		ctx,
+		`SELECT is_muted FROM messenger_keyspace.group_members WHERE group_id=? AND user_id=?`,
+		[]string{":group_id", ":user_id"}).
+		BindMap(map[string]interface{}{
+			":group_id": groupID,
+			":user_id":  userID,
+		})
+
+	var isMuted bool
+	if err := selectMuted.SelectRelease(&isMuted); err != nil {
+		r.Log.Error("error with selecting owner id: ", "error", err)
+		return false, err
+	}
+
+	return isMuted, nil
+}
+
 func (r *RepositoryMessenger) SelectGroupOwnerID(ctx context.Context, groupID uuid.UUID) (uuid.UUID, error) {
 	selectOwnerID := r.Session.ContextQuery(
 		ctx,
@@ -261,7 +280,7 @@ func (r *RepositoryMessenger) SelectMemberGroup(ctx context.Context, groupID, us
 func (r *RepositoryMessenger) SelectGroup(ctx context.Context, userID uuid.UUID) ([]dto.Group, error) {
 	selectMembers := r.Session.ContextQuery(
 		ctx,
-		`SELECT group_id FROM messenger_keyspace.groups WHERE user_id=?`,
+		`SELECT group_id FROM messenger_keyspace.group_members WHERE user_id=?`,
 		[]string{":user_id"}).
 		BindMap(map[string]interface{}{
 			":user_id": userID,

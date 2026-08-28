@@ -54,12 +54,12 @@ type UpdateChannelInput struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-type CickChannelMemberRequest struct {
+type KickChannelMemberRequest struct {
 	KickedMemberID uuid.UUID `json:"kicked_user_id"`
 	ChannelID      uuid.UUID `json:"channel_id"`
 }
 
-type CickChannelMemberInput struct {
+type KickChannelMemberInput struct {
 	MemberID       uuid.UUID `json:"user_id"`
 	KickedMemberID uuid.UUID `json:"kicked_user_id"`
 	ChannelID      uuid.UUID `json:"channel_id"`

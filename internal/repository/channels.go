@@ -9,6 +9,25 @@ import (
 	"github.com/google/uuid"
 )
 
+func (r *RepositoryMessenger) IsChannelMuted(ctx context.Context, channelID, userID uuid.UUID) (bool, error) {
+	selectMuted := r.Session.ContextQuery(
+		ctx,
+		`SELECT is_muted FROM messenger_keyspace.channel_members WHERE channel_id=? AND user_id=?`,
+		[]string{":group_id", ":user_id"}).
+		BindMap(map[string]interface{}{
+			":group_id": channelID,
+			":user_id":  userID,
+		})
+
+	var isMuted bool
+	if err := selectMuted.SelectRelease(&isMuted); err != nil {
+		r.Log.Error("error with selecting owner id: ", "error", err)
+		return false, err
+	}
+
+	return isMuted, nil
+}
+
 func (r *RepositoryMessenger) SelectChannelOwnerID(ctx context.Context, channelID uuid.UUID) (uuid.UUID, error) {
 	SelectOwnerID := r.Session.ContextQuery(
 		ctx,
