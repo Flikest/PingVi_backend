@@ -36,6 +36,10 @@ type ServiceBots struct {
 	Repository *repository.RepositoryBots
 }
 
+type ServiceExchange struct {
+	Log *slog.Logger
+}
+
 func NewSSOService(s *ServiceSSO) *ServiceSSO {
 	return &ServiceSSO{
 		Log:        s.Log,
