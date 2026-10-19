@@ -20,28 +20,28 @@ const (
 	ActiveChatTTL = 5 * time.Minute
 )
 
-func (h *Hub) setUserOnline(ctx context.Context, userID uuid.UUID) error {
+func (h *MessengerHub) setUserOnline(ctx context.Context, userID uuid.UUID) error {
 	key := fmt.Sprintf(KeyUserOnline, userID)
 	return h.Redis.Set(ctx, key, time.Now().Unix(), OnlineTTL).Err()
 }
 
-func (h *Hub) setUserOffline(ctx context.Context, userID uuid.UUID) error {
+func (h *MessengerHub) setUserOffline(ctx context.Context, userID uuid.UUID) error {
 	key := fmt.Sprintf(KeyUserOnline, userID)
 	return h.Redis.Del(ctx, key).Err()
 }
 
-func (h *Hub) isUserOnline(ctx context.Context, userID uuid.UUID) (bool, error) {
+func (h *MessengerHub) isUserOnline(ctx context.Context, userID uuid.UUID) (bool, error) {
 	key := fmt.Sprintf(KeyUserOnline, userID)
 	exists, err := h.Redis.Exists(ctx, key).Result()
 	return exists == 1, err
 }
 
-func (h *Hub) setUserActiveChat(ctx context.Context, userID, chatID uuid.UUID) error {
+func (h *MessengerHub) setUserActiveChat(ctx context.Context, userID, chatID uuid.UUID) error {
 	key := fmt.Sprintf(KeyUserActiveChat, userID)
 	return h.Redis.Set(ctx, key, chatID.String(), ActiveChatTTL).Err()
 }
 
-func (h *Hub) getUserActiveChat(ctx context.Context, userID uuid.UUID) (uuid.UUID, error) {
+func (h *MessengerHub) getUserActiveChat(ctx context.Context, userID uuid.UUID) (uuid.UUID, error) {
 	key := fmt.Sprintf(KeyUserActiveChat, userID)
 	chatIDStr, err := h.Redis.Get(ctx, key).Result()
 	if err != nil {
@@ -53,17 +53,17 @@ func (h *Hub) getUserActiveChat(ctx context.Context, userID uuid.UUID) (uuid.UUI
 	return uuid.Parse(chatIDStr)
 }
 
-func (h *Hub) setUserTyping(ctx context.Context, userID, chatID uuid.UUID) error {
+func (h *MessengerHub) setUserTyping(ctx context.Context, userID, chatID uuid.UUID) error {
 	key := fmt.Sprintf(KeyUserTyping, userID)
 	return h.Redis.Set(ctx, key, chatID.String(), TypingTTL).Err()
 }
 
-func (h *Hub) clearUserTyping(ctx context.Context, userID uuid.UUID) error {
+func (h *MessengerHub) clearUserTyping(ctx context.Context, userID uuid.UUID) error {
 	key := fmt.Sprintf(KeyUserTyping, userID)
 	return h.Redis.Del(ctx, key).Err()
 }
 
-func (h *Hub) getUserTyping(ctx context.Context, userID uuid.UUID) (uuid.UUID, error) {
+func (h *MessengerHub) getUserTyping(ctx context.Context, userID uuid.UUID) (uuid.UUID, error) {
 	key := fmt.Sprintf(KeyUserTyping, userID)
 	chatIDStr, err := h.Redis.Get(ctx, key).Result()
 	if err != nil {
@@ -75,12 +75,12 @@ func (h *Hub) getUserTyping(ctx context.Context, userID uuid.UUID) (uuid.UUID, e
 	return uuid.Parse(chatIDStr)
 }
 
-func (h *Hub) addUserSubscription(ctx context.Context, userID, subUserID uuid.UUID) error {
+func (h *MessengerHub) addUserSubscription(ctx context.Context, userID, subUserID uuid.UUID) error {
 	key := fmt.Sprintf(KeyUserSubs, userID)
 	return h.Redis.SAdd(ctx, key, subUserID.String()).Err()
 }
 
-func (h *Hub) getUserSubscriptions(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, error) {
+func (h *MessengerHub) getUserSubscriptions(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, error) {
 	key := fmt.Sprintf(KeyUserSubs, userID)
 	members, err := h.Redis.SMembers(ctx, key).Result()
 	if err != nil {
@@ -96,12 +96,12 @@ func (h *Hub) getUserSubscriptions(ctx context.Context, userID uuid.UUID) ([]uui
 	return userIDs, nil
 }
 
-func (h *Hub) removeUserSubscription(ctx context.Context, userID, subUserID uuid.UUID) error {
+func (h *MessengerHub) removeUserSubscription(ctx context.Context, userID, subUserID uuid.UUID) error {
 	key := fmt.Sprintf(KeyUserSubs, userID)
 	return h.Redis.SRem(ctx, key, subUserID.String()).Err()
 }
 
-func (h *Hub) getSubscribedUsersStatus(ctx context.Context, userID uuid.UUID) (map[uuid.UUID]map[string]interface{}, error) {
+func (h *MessengerHub) getSubscribedUsersStatus(ctx context.Context, userID uuid.UUID) (map[uuid.UUID]map[string]interface{}, error) {
 	subs, err := h.getUserSubscriptions(ctx, userID)
 	if err != nil {
 		return nil, err

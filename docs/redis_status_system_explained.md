@@ -136,7 +136,7 @@ chat:typing_users:{chatID}  = ["user1"]  // Set
 
 ### В Go памяти (только для быстрого доступа):
 ```go
-type Hub struct {
+type MessengerHub struct {
     Online map[string]*Client  // Только подключенные WebSocket клиенты
     // Остальное в Redis!
 }

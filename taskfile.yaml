@@ -102,5 +102,21 @@ tasks:
       - sudo docker compose -f containers/livekit.docker-compose.yaml up -d
       - sleep 3
       - go run cmd/sfu/main.go -env prod
+
+  raise-crypto-bridge:
+    cmds:
+      - sudo docker compose --env-file ./exchange.local.env -f containers/postgres.docker-compose.yaml up -d
+      - sleep 3
+      - sudo docker compose --env-file ./infisical.local.env -f containers/ethereum.docker-compose.yaml up -d
+      - sleep 3
+      - go run cmd/crypto_bridge/main.go -env local
+
+  raise-crypto-bridge-prod:
+    cmds:
+      - sudo docker compose --env-file ./sso.prod.env -f containers/postgres.docker-compose.yaml up -d
+      - sleep 3
+      - sudo docker compose --env-file ./infisical.prod.env -f containers/ethereum.docker-compose.yaml up -d
+      - sleep 3
+      - go run cmd/crypto_bridge/main.go -env prod
   
   

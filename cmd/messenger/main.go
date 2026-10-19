@@ -65,7 +65,7 @@ func main() {
 		return
 	}
 
-	hub := servicehttp.NewHub(&servicehttp.Hub{
+	MessengerHub := servicehttp.NewMessengerHub(&servicehttp.MessengerHub{
 		Clients:             make(map[string]*servicehttp.Client),
 		Redis:               redisClient,
 		RepositoryMessenger: repository,
@@ -79,10 +79,10 @@ func main() {
 	}
 
 	service := servicehttp.NewMessengerService(&servicehttp.ServiceMessenger{
-		Log:        log,
-		Repository: repository,
-		Client:     client,
-		Hub:        hub,
+		Log:          log,
+		Repository:   repository,
+		Client:       client,
+		MessengerHub: MessengerHub,
 	})
 
 	_ = deliveryhttp.RegisterMessengerRouter(&deliveryhttp.HandlerMessenger{

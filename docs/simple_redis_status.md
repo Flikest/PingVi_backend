@@ -2,9 +2,9 @@
 
 ## 🎯 Что мы сделали:
 
-### 1. **Добавили Redis клиент прямо в Hub:**
+### 1. **Добавили Redis клиент прямо в MessengerHub:**
 ```go
-type Hub struct {
+type MessengerHub struct {
     clients map[string]*Client      // WebSocket клиенты в памяти
     redis   *redis.Client           // Redis для статусов
     // ... остальное
@@ -15,13 +15,13 @@ type Hub struct {
 - ❌ Нет отдельного `StatusService`
 - ❌ Нет HTTP API для статусов  
 - ❌ Нет сложных структур
-- ✅ Только Redis команды в Hub
+- ✅ Только Redis команды в MessengerHub
 
 ## 🔧 Как это работает:
 
 ### 1. **При подключении (handshake):**
 ```go
-func (h *Hub) onConnect(ctx context.Context, client *Client, subscribeUsers []uuid.UUID) {
+func (h *MessengerHub) onConnect(ctx context.Context, client *Client, subscribeUsers []uuid.UUID) {
     // 1. Сохраняем клиента
     h.clients[client.ID] = client
     
@@ -62,7 +62,7 @@ ws.send({operation: "typing_stop", chat_id: "general"})      // Перестал
 
 **Вася подключается:**
 1. WebSocket handshake → `session-abc`
-2. Hub.onConnect() → Redis: `SET user:online:vasya <timestamp>`
+2. MessengerHub.onConnect() → Redis: `SET user:online:vasya <timestamp>`
 3. Добавляет подписки: `SADD user:subs:vasya petya, masha`
 4. Отправляет Васе статусы Пети и Маши
 
@@ -78,14 +78,14 @@ ws.send({operation: "typing_stop", chat_id: "general"})      // Перестал
 
 ## 📁 Созданные файлы:
 
-1. **`internal/services/http/messages.go`** - обновленный Hub с Redis
+1. **`internal/services/http/messages.go`** - обновленный MessengerHub с Redis
 2. **`internal/services/http/redis_status.go`** - простые Redis методы
 3. **`internal/services/http/services.go`** - убрали StatusService
 4. **`cmd/messenger/main.go`** - обновленная инициализация
 
 ## 🚀 Преимущества:
 
-1. **Просто**: Redis команды прямо в Hub
+1. **Просто**: Redis команды прямо в MessengerHub
 2. **Минимально**: Нет лишних абстракций
 3. **Эффективно**: Все в одном месте
 4. **Понятно**: Легко читать и поддерживать
@@ -93,7 +93,7 @@ ws.send({operation: "typing_stop", chat_id: "general"})      // Перестал
 ## 🎯 ИТОГ:
 
 Теперь у тебя:
-- **Hub** с WebSocket клиентами и Redis
+- **MessengerHub** с WebSocket клиентами и Redis
 - **Redis** хранит все статусы и подписки
 - **WebSocket** для всего общения
 - **Просто** и **понятно** 🎉

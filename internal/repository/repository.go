@@ -31,6 +31,11 @@ type RepositoryBots struct {
 	RDB *redis.Client
 }
 
+type RepositoryWallet struct {
+	Log *slog.Logger
+	DB  *pgxpool.Pool
+}
+
 func NewRepositorySSO(r *RepositorySSO) *RepositorySSO {
 	return &RepositorySSO{
 		Log: r.Log,
@@ -57,5 +62,12 @@ func NewRepositoryBots(r *RepositoryBots) *RepositoryBots {
 		Log: r.Log,
 		DB:  r.DB,
 		RDB: r.RDB,
+	}
+}
+
+func NewRepositoryWallet(r *RepositoryWallet) *RepositoryWallet {
+	return &RepositoryWallet{
+		Log: r.Log,
+		DB:  r.DB,
 	}
 }

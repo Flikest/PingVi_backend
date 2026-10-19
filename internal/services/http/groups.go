@@ -88,7 +88,7 @@ func (s *ServiceMessenger) CreateGroup(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
+	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:   groupID,
 		SenderID: uuid.Nil,
 		Message:  fmt.Sprintf("User %s create this group", response.GetName()),
@@ -158,7 +158,7 @@ func (s *ServiceMessenger) JoinGroup(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
+	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:   groupID,
 		SenderID: uuid.Nil,
 		Message:  fmt.Sprintf("User %s joined the channel", response.GetName()),
@@ -234,7 +234,7 @@ func (s *ServiceMessenger) LeaveGroup(ctx *gin.Context) {
 			return
 		}
 
-		s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
+		s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 			ChatID:   groupID,
 			SenderID: uuid.Nil,
 			Message:  fmt.Sprintf("channel %s was deleted", groupName),
@@ -260,7 +260,7 @@ func (s *ServiceMessenger) LeaveGroup(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onLeaveMember(ctx.Request.Context(), dto.LeaveMemberMessage{
+	s.MessengerHub.onLeaveMember(ctx.Request.Context(), dto.LeaveMemberMessage{
 		ChatID:  groupID,
 		Message: fmt.Sprintf("User %s has left the channel", response.GetName()),
 	})
@@ -424,7 +424,7 @@ func (s *ServiceMessenger) KickMemberFromGroup(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onKickMember(ctx.Request.Context(), dto.KickMemberMessage{
+	s.MessengerHub.onKickMember(ctx.Request.Context(), dto.KickMemberMessage{
 		UserID:  body.KickedMemberID,
 		ChatID:  body.GroupID,
 		Message: systemMessage,
@@ -570,7 +570,7 @@ func (s *ServiceMessenger) UpdateGroup(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
+	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:   group.ID,
 		SenderID: uuid.Nil,
 		Message:  fmt.Sprintf("User %s changed the group", response.GetName()),
@@ -637,7 +637,7 @@ func (s *ServiceMessenger) DeleteGroup(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onDeleteChat(ctx.Request.Context(), dto.DeleteChatMessage{
+	s.MessengerHub.onDeleteChat(ctx.Request.Context(), dto.DeleteChatMessage{
 		ChatID: body.ID,
 	})
 

@@ -146,7 +146,7 @@ func GeByBitCandles(instrument, after, interval string) ([]dto.CandleDataset, er
 		interval = "1"
 	}
 
-	resp, err := client.Get(fmt.Sprintf("https://api.bybit.com/v5/market/index-price-kline?symbol=%s&interval=%s&end=%s", strings.ToUpper(instrument), interval, after))
+	resp, err := client.Get(fmt.Sprintf("https://api.bybit.com/v5/market/kline?symbol=%s&interval=%s&end=%s", instrument, interval, after))
 	if err != nil {
 		return nil, err
 	}

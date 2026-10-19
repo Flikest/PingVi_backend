@@ -19,7 +19,7 @@ import (
 type HandlerBots struct {
 	pb.UnimplementedBotsServer
 	Service *servicegrpc.ServiceBots
-	Hub     *servicehttp.BotHub
+	MessengerHub     *servicehttp.BotMessengerHub
 	Log     *slog.Logger
 
 	mu sync.RWMutex
@@ -127,10 +127,10 @@ func (h *HandlerBots) GetBotAnswers(
 				}
 
 				h.mu.Lock()
-				ch, exists := h.Hub.Messages[req.BotID]
+				ch, exists := h.MessengerHub.Messages[req.BotID]
 				if !exists {
 					ch = make(chan []servicehttp.Message, 100)
-					h.Hub.Messages[req.BotID] = ch
+					h.MessengerHub.Messages[req.BotID] = ch
 				}
 				h.mu.Unlock()
 
@@ -148,7 +148,7 @@ func (h *HandlerBots) GetBotAnswers(
 			select {
 			case <-ctx.Done():
 				return
-			case message, ok := <-h.Hub.Answers:
+			case message, ok := <-h.MessengerHub.Answers:
 				if !ok {
 					h.Log.Warn("answers channel closed")
 					return

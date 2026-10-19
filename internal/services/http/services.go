@@ -5,6 +5,7 @@ import (
 
 	pbUserPermissions "github.com/Flikest/PingVi_backend/gen/go/permissions"
 	pbUserInfo "github.com/Flikest/PingVi_backend/gen/go/user_info"
+	"github.com/Flikest/PingVi_backend/internal/infisical"
 	"github.com/Flikest/PingVi_backend/internal/repository"
 )
 
@@ -14,10 +15,10 @@ type ServiceSSO struct {
 }
 
 type ServiceMessenger struct {
-	Log        *slog.Logger
-	Hub        *Hub
-	Client     pbUserInfo.UserInfoClient
-	Repository *repository.RepositoryMessenger
+	Log          *slog.Logger
+	MessengerHub *MessengerHub
+	Client       pbUserInfo.UserInfoClient
+	Repository   *repository.RepositoryMessenger
 }
 
 type ServiceSFU struct {
@@ -31,13 +32,16 @@ type ServiceFileStorage struct {
 }
 
 type ServiceBots struct {
-	BotHub     BotHub
-	Log        *slog.Logger
-	Repository *repository.RepositoryBots
+	BotMessengerHub *BotMessengerHub
+	Log             *slog.Logger
+	Repository      *repository.RepositoryBots
 }
 
-type ServiceExchange struct {
-	Log *slog.Logger
+type ServiceWallet struct {
+	Log        *slog.Logger
+	Repository *repository.RepositoryWallet
+	Hub        *ExchangeHub
+	KMS        *infisical.KMSClient
 }
 
 func NewSSOService(s *ServiceSSO) *ServiceSSO {
@@ -49,9 +53,9 @@ func NewSSOService(s *ServiceSSO) *ServiceSSO {
 
 func NewMessengerService(s *ServiceMessenger) *ServiceMessenger {
 	return &ServiceMessenger{
-		Log:        s.Log,
-		Hub:        s.Hub,
-		Repository: s.Repository,
+		Log:          s.Log,
+		MessengerHub: s.MessengerHub,
+		Repository:   s.Repository,
 	}
 }
 
@@ -71,8 +75,17 @@ func NewFileStorageService(s *ServiceFileStorage) *ServiceFileStorage {
 
 func NewBotsService(s *ServiceBots) *ServiceBots {
 	return &ServiceBots{
-		BotHub:     s.BotHub,
+		BotMessengerHub: s.BotMessengerHub,
+		Log:             s.Log,
+		Repository:      s.Repository,
+	}
+}
+
+func NewWalletService(s *ServiceWallet) *ServiceWallet {
+	return &ServiceWallet{
 		Log:        s.Log,
 		Repository: s.Repository,
+		Hub:        s.Hub,
+		KMS:        s.KMS,
 	}
 }

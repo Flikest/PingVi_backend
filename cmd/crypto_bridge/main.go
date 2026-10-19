@@ -2,57 +2,79 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"time"
+	"flag"
+	"os"
+	"os/signal"
+	"syscall"
 
-	bybit "github.com/bybit-exchange/bybit.go.api"
+	"github.com/Flikest/PingVi_backend/internal/database/postgres"
+	deliveryhttp "github.com/Flikest/PingVi_backend/internal/delivery/http"
+	"github.com/Flikest/PingVi_backend/internal/repository"
+	servicehttp "github.com/Flikest/PingVi_backend/internal/services/http"
+	"github.com/Flikest/PingVi_backend/pkg/logger"
+	"github.com/joho/godotenv"
+	rkboot "github.com/rookie-ninja/rk-boot/v2"
+	rkgin "github.com/rookie-ninja/rk-gin/v2/boot"
 )
 
-type OHLC struct {
-	Time     time.Time `json:"time"`
-	Open     float64   `json:"open"`
-	High     float64   `json:"high"`
-	Low      float64   `json:"low"`
-	Close    float64   `json:"close"`
-	Volume   float64   `json:"volume"`
-	Turnover float64   `json:"Turnover"`
-}
-
 func main() {
+	env := flag.String("env", "local", "enviroment variable")
+	flag.Parse()
 
-	client := bybit.NewBybitHttpClient("", "", bybit.WithBaseURL(bybit.MAINNET))
+	log := logger.NewLogger(*env)
 
-	params := map[string]interface{}{
-		"category": "spot",
-		"symbol":   "BTCUSDT",
-		"interval": "M",
+	if err := godotenv.Load(); err != nil {
+		log.Warn("Error loading .env file", "error", err)
 	}
 
-	resp, err := client.NewUtaBybitServiceWithParams(params).GetMarketKline(context.Background())
-	if err != nil {
-		fmt.Printf("Ошибка при запросе: %v\n", err)
-		return
+	boot := rkboot.NewBoot(rkboot.WithBootConfigPath("./configs/crypto_bridge/crypto_bridge.yaml", nil))
+
+	entry := rkgin.GetGinEntry("crypto_bridge")
+
+	ctx := context.Background()
+
+	db := postgres.MustPostgresDBOpen(&postgres.PostgresConig{
+		Ctx:      ctx,
+		ConnPath: os.Getenv("POSTGRES_CONNECTION_PATH"),
+	})
+
+	reposytory := repository.NewRepositoryWallet(&repository.RepositoryWallet{
+		DB:  db,
+		Log: log,
+	})
+
+	service := servicehttp.NewWalletService(&servicehttp.ServiceWallet{
+		Repository: reposytory,
+		Log:        log,
+	})
+
+	deliveryhttp.RegisterExchangeRouter(&deliveryhttp.HandlerExhcnage{
+		Service: service,
+		Router:  entry.Router,
+	})
+
+	boot.Bootstrap(ctx)
+
+	boot.AddShutdownHookFunc("close-db-connection", func() {
+		log.Info("Closing database connection")
+		db.Close()
+	})
+
+	log.Info("Application started successfully")
+	log.Info("HTTP server listening on http://localhost:8080")
+	log.Info("gRPC server listening on port 50051")
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	select {
+	case <-ctx.Done():
+		log.Info("Context cancelled")
+	case sig := <-sigChan:
+		log.Info("Received signal", "signal", sig)
 	}
 
-	resultMap, ok := resp.Result.(map[string]interface{})
-	if !ok {
-		fmt.Println("Ошибка: Result не является мапой")
-		return
-	}
-
-	candles, _ := resultMap["list"].([]interface{})
-
-	result := []OHLC{}
-
-	for i := range candles {
-		result = append(result, OHLC{
-			Time:     candles[i][0],
-			Open:     i[1],
-			High:     i[2],
-			Low:      i[3],
-			Close:    i[4],
-			Volume:   i[5],
-			Turnover: i[6],
-		})
-	}
+	log.Info("Shutting down application...")
+	boot.WaitForShutdownSig(ctx)
+	log.Info("Application stopped")
 }

@@ -16,7 +16,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type BotHub struct {
+type BotMessengerHub struct {
 	mu       sync.RWMutex
 	Messages map[string]chan []Message
 	Answers  chan []Message
@@ -29,19 +29,19 @@ func (s *ServiceBots) GetMessages(ctx *gin.Context) {
 		return
 	}
 
-	s.BotHub.mu.Lock()
-	if s.BotHub.Messages == nil {
-		s.BotHub.Messages = make(map[string]chan []Message)
+	s.BotMessengerHub.mu.Lock()
+	if s.BotMessengerHub.Messages == nil {
+		s.BotMessengerHub.Messages = make(map[string]chan []Message)
 	}
 
 	botID, _, _ := strings.Cut(botToken, ":")
 
-	messagesChan, ok := s.BotHub.Messages[botID]
+	messagesChan, ok := s.BotMessengerHub.Messages[botID]
 	if !ok {
 		messagesChan = make(chan []Message, 100)
-		s.BotHub.Messages[botToken] = messagesChan
+		s.BotMessengerHub.Messages[botToken] = messagesChan
 	}
-	s.BotHub.mu.Unlock()
+	s.BotMessengerHub.mu.Unlock()
 
 	timeOutContext, cancel := context.WithTimeout(ctx.Request.Context(), 1*time.Minute)
 	defer cancel()
@@ -84,7 +84,7 @@ func (s *ServiceBots) SendAnswers(ctx *gin.Context) {
 		validatedMessages = append(validatedMessages, j)
 	}
 
-	s.BotHub.Answers <- validatedMessages
+	s.BotMessengerHub.Answers <- validatedMessages
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "answers delivered"})
 }

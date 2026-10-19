@@ -71,7 +71,7 @@ func (c *Client) Push(msg Message) bool {
 	}
 }
 
-type Hub struct {
+type MessengerHub struct {
 	Clients             map[string]*Client
 	Redis               *redis.Client
 	RepositoryMessenger *repository.RepositoryMessenger
@@ -81,8 +81,8 @@ type Hub struct {
 	mu sync.RWMutex
 }
 
-func NewHub(h *Hub) *Hub {
-	return &Hub{
+func NewMessengerHub(h *MessengerHub) *MessengerHub {
+	return &MessengerHub{
 		Clients:             h.Clients,
 		Redis:               h.Redis,
 		RepositoryMessenger: h.RepositoryMessenger,
@@ -91,7 +91,7 @@ func NewHub(h *Hub) *Hub {
 	}
 }
 
-func (h *Hub) onConnect(ctx context.Context, client *Client, subscribeUsers []uuid.UUID) {
+func (h *MessengerHub) onConnect(ctx context.Context, client *Client, subscribeUsers []uuid.UUID) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -109,7 +109,7 @@ func (h *Hub) onConnect(ctx context.Context, client *Client, subscribeUsers []uu
 	}
 }
 
-func (h *Hub) onDisconect(ctx context.Context, userID string) {
+func (h *MessengerHub) onDisconect(ctx context.Context, userID string) {
 	h.mu.Lock()
 	client, exist := h.Clients[userID]
 	if exist {
@@ -129,7 +129,7 @@ func (h *Hub) onDisconect(ctx context.Context, userID string) {
 	}
 }
 
-func (h *Hub) onSwitchChat(ctx context.Context, userID, swichedChatID uuid.UUID) {
+func (h *MessengerHub) onSwitchChat(ctx context.Context, userID, swichedChatID uuid.UUID) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -147,12 +147,12 @@ func (h *Hub) onSwitchChat(ctx context.Context, userID, swichedChatID uuid.UUID)
 	}
 }
 
-func (h *Hub) onRead(ctx context.Context, r dto.ReadMessage) {
+func (h *MessengerHub) onRead(ctx context.Context, r dto.ReadMessage) {
 	r.At = time.Now()
 	h.RepositoryMessenger.ReadMessage(ctx, r)
 }
 
-func (h *Hub) onSendMessage(ctx context.Context, msg dto.AddMessage) {
+func (h *MessengerHub) onSendMessage(ctx context.Context, msg dto.AddMessage) {
 	messageID := h.Node.Generate()
 
 	now := time.Now()
@@ -176,7 +176,7 @@ func (h *Hub) onSendMessage(ctx context.Context, msg dto.AddMessage) {
 	})
 }
 
-func (h *Hub) onUpdateMesage(ctx context.Context, msg dto.UpdateMessage) {
+func (h *MessengerHub) onUpdateMesage(ctx context.Context, msg dto.UpdateMessage) {
 	now := time.Now()
 	message := dto.Message{
 		ID:        msg.ID,
@@ -199,7 +199,7 @@ func (h *Hub) onUpdateMesage(ctx context.Context, msg dto.UpdateMessage) {
 	})
 }
 
-func (h *Hub) onSendReaction(ctx context.Context, reaction dto.Reaction) {
+func (h *MessengerHub) onSendReaction(ctx context.Context, reaction dto.Reaction) {
 	reactionID, err := uuid.NewV7()
 	if err != nil {
 		h.Log.Error("error with generate reaction id: ", "error", err)
@@ -223,7 +223,7 @@ func (h *Hub) onSendReaction(ctx context.Context, reaction dto.Reaction) {
 	})
 }
 
-func (h *Hub) onDeleteReaction(ctx context.Context, id, chatID, userID uuid.UUID, messageID snowflake.ID) {
+func (h *MessengerHub) onDeleteReaction(ctx context.Context, id, chatID, userID uuid.UUID, messageID snowflake.ID) {
 	if err := h.RepositoryMessenger.DeleteReaction(ctx, id); err != nil {
 		h.Log.Error("error with delete reaction", "error", err)
 		return
@@ -239,7 +239,7 @@ func (h *Hub) onDeleteReaction(ctx context.Context, id, chatID, userID uuid.UUID
 	})
 }
 
-func (h *Hub) onDeleteMessage(ctx context.Context, msg dto.DeleteMessage) {
+func (h *MessengerHub) onDeleteMessage(ctx context.Context, msg dto.DeleteMessage) {
 	if err := h.RepositoryMessenger.DeleteMessage(ctx, msg.ID, msg.ChatID, msg.SenderID); err != nil {
 		h.Log.Error("error with deleting message", "error", err)
 		return
@@ -253,7 +253,7 @@ func (h *Hub) onDeleteMessage(ctx context.Context, msg dto.DeleteMessage) {
 	})
 }
 
-func (h *Hub) onKickMember(ctx context.Context, msg dto.KickMemberMessage) {
+func (h *MessengerHub) onKickMember(ctx context.Context, msg dto.KickMemberMessage) {
 	messageID := h.Node.Generate()
 
 	if err := h.RepositoryMessenger.InsertMessage(ctx, dto.Message{
@@ -279,7 +279,7 @@ func (h *Hub) onKickMember(ctx context.Context, msg dto.KickMemberMessage) {
 	})
 }
 
-func (h *Hub) onLeaveMember(ctx context.Context, msg dto.LeaveMemberMessage) {
+func (h *MessengerHub) onLeaveMember(ctx context.Context, msg dto.LeaveMemberMessage) {
 	messageID := h.Node.Generate()
 
 	if err := h.RepositoryMessenger.InsertMessage(ctx, dto.Message{
@@ -305,7 +305,7 @@ func (h *Hub) onLeaveMember(ctx context.Context, msg dto.LeaveMemberMessage) {
 	})
 }
 
-func (h *Hub) onDeleteChat(ctx context.Context, msg dto.DeleteChatMessage) {
+func (h *MessengerHub) onDeleteChat(ctx context.Context, msg dto.DeleteChatMessage) {
 	go h.broadcast(ctx, Message{
 		Operation: "delete_chat",
 		Message: dto.Message{
@@ -314,7 +314,7 @@ func (h *Hub) onDeleteChat(ctx context.Context, msg dto.DeleteChatMessage) {
 	})
 }
 
-func (h *Hub) broadcast(ctx context.Context, message Message) {
+func (h *MessengerHub) broadcast(ctx context.Context, message Message) {
 	participants, err := h.RepositoryMessenger.SelectAllMembersGroup(ctx, message.Message.ChatID)
 	if err != nil {
 		h.Log.Error("failed to retrieve all messages from the chat", "error", err)
@@ -336,7 +336,7 @@ func (h *Hub) broadcast(ctx context.Context, message Message) {
 	}
 }
 
-func (h *Hub) sendInitialStatuses(ctx context.Context, userID uuid.UUID, client *Client) {
+func (h *MessengerHub) sendInitialStatuses(ctx context.Context, userID uuid.UUID, client *Client) {
 	if h.Redis == nil {
 		return
 	}
@@ -359,7 +359,7 @@ func (h *Hub) sendInitialStatuses(ctx context.Context, userID uuid.UUID, client 
 	}
 }
 
-func (h *Hub) notifySubscribers(ctx context.Context, userID uuid.UUID, statusType string, chatID uuid.UUID) {
+func (h *MessengerHub) notifySubscribers(ctx context.Context, userID uuid.UUID, statusType string, chatID uuid.UUID) {
 	if h.Redis == nil {
 		return
 	}
@@ -404,7 +404,7 @@ func (s *ServiceMessenger) ReadMessageFromClient(ctx context.Context, client *Cl
 	readCtx, cancel := context.WithCancel(ctx)
 	defer func() {
 		cancel()
-		s.Hub.onDisconect(ctx, client.ID)
+		s.MessengerHub.onDisconect(ctx, client.ID)
 	}()
 
 	go func() {
@@ -418,28 +418,28 @@ func (s *ServiceMessenger) ReadMessageFromClient(ctx context.Context, client *Cl
 			if readCtx.Err() != nil {
 				return
 			}
-			s.Hub.Log.Error("error with reading message", "error", err)
+			s.MessengerHub.Log.Error("error with reading message", "error", err)
 			return
 		}
 
 		switch msg.Operation {
 		case "switch_community":
-			s.Hub.onSwitchChat(readCtx, msg.Message.SenderID, msg.Message.ChatID)
+			s.MessengerHub.onSwitchChat(readCtx, msg.Message.SenderID, msg.Message.ChatID)
 		case "read":
-			s.Hub.onRead(readCtx, dto.ReadMessage{
+			s.MessengerHub.onRead(readCtx, dto.ReadMessage{
 				ChatID:    msg.Message.ChatID,
 				UserID:    msg.Message.SenderID,
 				MessageID: msg.Message.ID,
 				At:        time.Now(),
 			})
 		case "send":
-			s.Hub.onSendMessage(readCtx, dto.AddMessage{
+			s.MessengerHub.onSendMessage(readCtx, dto.AddMessage{
 				ChatID:   msg.Message.ChatID,
 				SenderID: msg.Message.SenderID,
 				Message:  msg.Message.Message,
 			})
 		case "update":
-			s.Hub.onUpdateMesage(readCtx, dto.UpdateMessage{
+			s.MessengerHub.onUpdateMesage(readCtx, dto.UpdateMessage{
 				ID:        msg.Message.ID,
 				ChatID:    msg.Message.ChatID,
 				SenderID:  msg.Message.SenderID,
@@ -448,13 +448,13 @@ func (s *ServiceMessenger) ReadMessageFromClient(ctx context.Context, client *Cl
 				CreatedAt: msg.Message.CreatedAt,
 			})
 		case "delete":
-			s.Hub.onDeleteMessage(readCtx, dto.DeleteMessage{
+			s.MessengerHub.onDeleteMessage(readCtx, dto.DeleteMessage{
 				ID:       msg.Message.ID,
 				ChatID:   msg.Message.ChatID,
 				SenderID: msg.Message.SenderID,
 			})
 		case "send_reaction":
-			s.Hub.onSendReaction(readCtx, dto.Reaction{
+			s.MessengerHub.onSendReaction(readCtx, dto.Reaction{
 				ChatID:    msg.Message.ChatID,
 				MessageID: msg.Message.ID,
 				UserID:    msg.Message.SenderID,
@@ -462,15 +462,15 @@ func (s *ServiceMessenger) ReadMessageFromClient(ctx context.Context, client *Cl
 				SendedAt:  time.Now(),
 			})
 		case "delete_reaction":
-			s.Hub.onDeleteReaction(readCtx, msg.Reaction.ID, msg.Message.ChatID, msg.Message.SenderID, msg.Message.ID)
+			s.MessengerHub.onDeleteReaction(readCtx, msg.Reaction.ID, msg.Message.ChatID, msg.Message.SenderID, msg.Message.ID)
 		case "typing_start":
-			if s.Hub.Redis != nil {
-				s.Hub.setUserTyping(readCtx, msg.Message.SenderID, msg.Message.ChatID)
-				go s.Hub.notifySubscribers(readCtx, msg.Message.SenderID, "typing", msg.Message.ChatID)
+			if s.MessengerHub.Redis != nil {
+				s.MessengerHub.setUserTyping(readCtx, msg.Message.SenderID, msg.Message.ChatID)
+				go s.MessengerHub.notifySubscribers(readCtx, msg.Message.SenderID, "typing", msg.Message.ChatID)
 			}
 		case "typing_stop":
-			if s.Hub.Redis != nil {
-				s.Hub.clearUserTyping(readCtx, msg.Message.SenderID)
+			if s.MessengerHub.Redis != nil {
+				s.MessengerHub.clearUserTyping(readCtx, msg.Message.SenderID)
 			}
 		}
 	}
@@ -548,7 +548,7 @@ func (s *ServiceMessenger) Handshake(ctx *gin.Context) {
 
 	reqCtx := ctx.Request.Context()
 
-	s.Hub.onConnect(reqCtx, client, subscribers)
+	s.MessengerHub.onConnect(reqCtx, client, subscribers)
 
 	go s.writeMessageToClient(reqCtx, client)
 

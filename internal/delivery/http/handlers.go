@@ -30,6 +30,11 @@ type HandlerBot struct {
 	Service *restapi.ServiceBots
 }
 
+type HandlerExhcnage struct {
+	Router  *gin.Engine
+	Service *restapi.ServiceWallet
+}
+
 func RegisterSSORouter(h *HandlerSSO) *gin.Engine {
 	v1 := h.Router.Group("/v1")
 	{
@@ -186,4 +191,28 @@ func RegisterBotRouter(h *HandlerBot) *gin.Engine {
 	}
 
 	return h.Router
+}
+
+func RegisterExchangeRouter(h *HandlerExhcnage) {
+	v1 := h.Router.Group("/v1")
+	{
+		exchangeRouter := v1.Group("/exchange")
+		{
+			exchangeRouter.GET("/balance/:account_type", h.Service.GetBalance)
+			exchangeRouter.GET("/transactions", h.Service.GetTransactions)
+			exchangeRouter.POST("/create", h.Service.CreateWallet)
+			exchangeRouter.GET("/snapshots", h.Service.GetSnapshot)
+			exchangeRouter.POST("/transaction/send", h.Service.SendTransaction)
+			exchangeRouter.GET("/swop/list_currencies_conversion/:exchange_name", h.Service.GetListCurrenciesConversion)
+			exchangeRouter.POST("/swop/convert_quote", h.Service.GetConvertQuote)
+			exchangeRouter.POST("/swop/convert", h.Service.ConfirmConvertQuote)
+			exchangeRouter.POST("/ws", h.Service.Handshake)
+			exchangeRouter.GET("/instruments/:instrument", h.Service.Searchinstruments)
+			exchangeRouter.GET("/canldes/:instrument/:exchange/:interval/:after", h.Service.GetCandles)
+			exchangeRouter.GET("/order_book/:instrument/:exchange/:interval/:after", h.Service.GetOrderBook)
+			exchangeRouter.POST("/api_keys/add", h.Service.AddExchangeApiKeys)
+			exchangeRouter.PUT("/api_keys/update", h.Service.UpdateExchangeApiKeys)
+			exchangeRouter.DELETE("/api_keys/delete", h.Service.DeleteExchangeApiKeys)
+		}
+	}
 }

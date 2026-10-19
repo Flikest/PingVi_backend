@@ -132,21 +132,21 @@ func (s *ServiceMessenger) CreateChannel(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
+	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:   channelID,
 		SenderID: uuid.Nil,
 		Message:  fmt.Sprintf("User %s create this channel", response.GetName()),
 		IsSystem: true,
 	})
 
-	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
+	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:   channelID,
 		SenderID: uuid.Nil,
 		Message:  "General topic was created",
 		IsSystem: true,
 	})
 
-	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
+	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:   channelID,
 		SenderID: uuid.Nil,
 		Message:  "General directory was created",
@@ -224,7 +224,7 @@ func (s *ServiceMessenger) JoinChannel(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
+	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:   channelID,
 		SenderID: uuid.Nil,
 		Message:  fmt.Sprintf("User %s joined the channel", response.GetName()),
@@ -301,7 +301,7 @@ func (s *ServiceMessenger) KickChannelMember(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onKickMember(ctx.Request.Context(), dto.KickMemberMessage{
+	s.MessengerHub.onKickMember(ctx.Request.Context(), dto.KickMemberMessage{
 		ChatID:  bodyRequest.ChannelID,
 		Message: fmt.Sprintf("User %s was kicked from the channel", response.GetName()),
 	})
@@ -401,7 +401,7 @@ func (s *ServiceMessenger) LeaveFromChannel(ctx *gin.Context) {
 			return
 		}
 
-		s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
+		s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 			ChatID:   channelID,
 			SenderID: uuid.Nil,
 			Message:  fmt.Sprintf("channel %s was deleted", channelName),
@@ -427,7 +427,7 @@ func (s *ServiceMessenger) LeaveFromChannel(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onLeaveMember(ctx.Request.Context(), dto.LeaveMemberMessage{
+	s.MessengerHub.onLeaveMember(ctx.Request.Context(), dto.LeaveMemberMessage{
 		ChatID:  channelID,
 		Message: fmt.Sprintf("User %s has left the channel", response.GetName()),
 	})
@@ -576,7 +576,7 @@ func (s *ServiceMessenger) UpdateChannel(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
+	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:   channel.ID,
 		SenderID: uuid.Nil,
 		Message:  fmt.Sprintf("User %s changed the group", response.GetName()),
@@ -662,7 +662,7 @@ func (s *ServiceMessenger) Deletechannel(ctx *gin.Context) {
 		return
 	}
 
-	s.Hub.onDeleteChat(ctx.Request.Context(), dto.DeleteChatMessage{
+	s.MessengerHub.onDeleteChat(ctx.Request.Context(), dto.DeleteChatMessage{
 		ChatID: body.ID,
 	})
 
