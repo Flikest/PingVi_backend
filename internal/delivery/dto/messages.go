@@ -19,6 +19,15 @@ type Message struct {
 	UpdatedAt time.Time    `json:"updated_at"`
 }
 
+type MessageFromClient struct {
+	ID        snowflake.ID `json:"id"`
+	ChatID    uuid.UUID    `json:"chat_id"`
+	Message   string       `json:"message"`
+	ReplyToID snowflake.ID `json:"reply_to_id"`
+	CreatedAt time.Time    `json:"created_at"`
+	UpdatedAt time.Time    `json:"updated_at"`
+}
+
 type LinkPreviewResponse struct {
 	Type    string `json:"type"`
 	Message string `json:"message"`

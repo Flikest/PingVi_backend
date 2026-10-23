@@ -37,6 +37,8 @@ type KickGroupMember struct {
 type GroupMember struct {
 	GroupID  uuid.UUID `json:"group_id"`
 	UserID   uuid.UUID `json:"user_id"`
+	Name     string    `json:"name"`
+	Avatar   string    `json:"avatar"`
 	IsMuted  bool      `json:"is_muted"`
 	IsAdmin  bool      `json:"is_admin"`
 	JoinedAt time.Time `json:"joined_at"`

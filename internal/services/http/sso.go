@@ -664,3 +664,20 @@ func (s *ServiceSSO) DeleteUser(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, id)
 }
+
+func (s *ServiceSSO) DeleteSession(ctx *gin.Context) {
+	sessionID := ctx.Param("session_id")
+	if sessionID == "" {
+		s.Log.Error("the client did not send the uuid user ID")
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "client ID is a required field"})
+		return
+	}
+
+	if err := s.Repository.DeleteSessionByID(ctx.Request.Context(), sessionID); err != nil {
+		s.Log.Error("error with deleting session by id: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, sessionID)
+}

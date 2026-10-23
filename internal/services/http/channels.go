@@ -496,6 +496,54 @@ func (s *ServiceMessenger) GetChannels(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, channels)
 }
 
+func (s *ServiceMessenger) GetChannelMembers(ctx *gin.Context) {
+	channelID, err := uuid.Parse(ctx.Param("channel_id"))
+	if err != nil {
+		s.Log.Error("error with parsing channel id uuid: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, err)
+		return
+	}
+
+	members, err := s.Repository.SelectChannelMembers(ctx.Request.Context(), channelID)
+	if err != nil {
+		s.Log.Error("error with selecting channel members: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	memberIDs := make([]string, 0, len(members))
+	for _, member := range members {
+		memberIDs = append(memberIDs, member.UserID.String())
+	}
+
+	usersResp, err := s.Client.GetUsersByIds(ctx.Request.Context(), &pb.GetUserByIDRequest{UserIds: memberIDs})
+	if err != nil {
+		s.Log.Error("error with selecting members info: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	usersByID := make(map[string]dto.User, len(usersResp.Users))
+	for _, u := range usersResp.Users {
+		userID, err := uuid.Parse(u.Id)
+		if err != nil {
+			s.Log.Error("error with parse uuid userID: ", "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		usersByID[u.Id] = dto.User{ID: userID, Name: u.Name, Avatar: u.Avatar}
+	}
+
+	for i := range members {
+		if u, ok := usersByID[members[i].UserID.String()]; ok {
+			members[i].Nickname = u.Name
+			members[i].Avatar = u.Avatar[0]
+		}
+	}
+
+	ctx.JSON(http.StatusOK, members)
+}
+
 // UpdateChannel godoc
 //
 //	@Summary		Update channel information

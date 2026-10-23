@@ -418,7 +418,13 @@ func (s *ServiceMessenger) ReadMessageFromClient(ctx context.Context, client *Cl
 			if readCtx.Err() != nil {
 				return
 			}
-			s.MessengerHub.Log.Error("error with reading message", "error", err)
+			s.Log.Error("error with reading message", "error", err)
+			return
+		}
+
+		clientID, err := uuid.Parse(client.ID)
+		if err != nil {
+			s.Log.Error("error with parse uuid user id: ", "error", err)
 			return
 		}
 
@@ -428,21 +434,21 @@ func (s *ServiceMessenger) ReadMessageFromClient(ctx context.Context, client *Cl
 		case "read":
 			s.MessengerHub.onRead(readCtx, dto.ReadMessage{
 				ChatID:    msg.Message.ChatID,
-				UserID:    msg.Message.SenderID,
+				UserID:    clientID,
 				MessageID: msg.Message.ID,
 				At:        time.Now(),
 			})
 		case "send":
 			s.MessengerHub.onSendMessage(readCtx, dto.AddMessage{
 				ChatID:   msg.Message.ChatID,
-				SenderID: msg.Message.SenderID,
+				SenderID: clientID,
 				Message:  msg.Message.Message,
 			})
 		case "update":
 			s.MessengerHub.onUpdateMesage(readCtx, dto.UpdateMessage{
 				ID:        msg.Message.ID,
 				ChatID:    msg.Message.ChatID,
-				SenderID:  msg.Message.SenderID,
+				SenderID:  clientID,
 				Message:   msg.Message.Message,
 				ReplyToID: msg.Message.ReplyToID,
 				CreatedAt: msg.Message.CreatedAt,
@@ -451,18 +457,18 @@ func (s *ServiceMessenger) ReadMessageFromClient(ctx context.Context, client *Cl
 			s.MessengerHub.onDeleteMessage(readCtx, dto.DeleteMessage{
 				ID:       msg.Message.ID,
 				ChatID:   msg.Message.ChatID,
-				SenderID: msg.Message.SenderID,
+				SenderID: clientID,
 			})
 		case "send_reaction":
 			s.MessengerHub.onSendReaction(readCtx, dto.Reaction{
 				ChatID:    msg.Message.ChatID,
 				MessageID: msg.Message.ID,
-				UserID:    msg.Message.SenderID,
+				UserID:    clientID,
 				Reaction:  msg.Reaction.Reaction,
 				SendedAt:  time.Now(),
 			})
 		case "delete_reaction":
-			s.MessengerHub.onDeleteReaction(readCtx, msg.Reaction.ID, msg.Message.ChatID, msg.Message.SenderID, msg.Message.ID)
+			s.MessengerHub.onDeleteReaction(readCtx, msg.Reaction.ID, msg.Message.ChatID, clientID, msg.Message.ID)
 		case "typing_start":
 			if s.MessengerHub.Redis != nil {
 				s.MessengerHub.setUserTyping(readCtx, msg.Message.SenderID, msg.Message.ChatID)
@@ -470,7 +476,7 @@ func (s *ServiceMessenger) ReadMessageFromClient(ctx context.Context, client *Cl
 			}
 		case "typing_stop":
 			if s.MessengerHub.Redis != nil {
-				s.MessengerHub.clearUserTyping(readCtx, msg.Message.SenderID)
+				s.MessengerHub.clearUserTyping(readCtx, clientID)
 			}
 		}
 	}

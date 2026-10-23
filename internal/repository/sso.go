@@ -242,8 +242,8 @@ func (r *RepositorySSO) DeleteSessionByID(ctx context.Context, sessionID string)
 func (r *RepositorySSO) CreateUser(ctx context.Context, u dto.CreateUserRequest) (user dto.User, err error) {
 	insertUserQuery := `
 		INSERT INTO 
-		users (id, name, email, phone_number, password_hash)
-		VALUES ($1, $2, $3, $4, $5)
+		users (id, name, email, password_hash)
+		VALUES ($1, $2, $3, $4)
 		RETURNING *
 	`
 
@@ -260,7 +260,7 @@ func (r *RepositorySSO) CreateUser(ctx context.Context, u dto.CreateUserRequest)
 		return dto.User{}, err
 	}
 
-	row := tx.QueryRow(ctx, insertUserQuery, userID, u.Name, u.Email, u.PhoneNumber, u.Password)
+	row := tx.QueryRow(ctx, insertUserQuery, userID, u.Name, u.Email, u.Password)
 
 	if err := row.Scan(
 		&user.ID,
@@ -505,12 +505,11 @@ func (r *RepositorySSO) UpdateUser(ctx context.Context, ur dto.UpdateUserRequest
         SET name = $2, 
             avatar = $3, 
             email = $4,
-			phone_number = $5,
-            profile_status = $6, 
-            description = $7, 
-            risk_profile = $8, 
-            is_private = $9, 
-            updated_at = $10
+            profile_status = $5, 
+            description = $6, 
+            risk_profile = $7, 
+            is_private = $8, 
+            updated_at = $9
         WHERE id = $1
         RETURNING *
     `
@@ -520,7 +519,6 @@ func (r *RepositorySSO) UpdateUser(ctx context.Context, ur dto.UpdateUserRequest
 		ur.Name,
 		ur.Avatar,
 		ur.Email,
-		ur.PhoneNumber,
 		ur.ProfileStatus,
 		ur.Description,
 		ur.RiskProfile,
@@ -965,6 +963,38 @@ func (r *RepositorySSO) SelectUserByID(ctx context.Context, userID uuid.UUID) (u
 	}
 
 	return user, nil
+}
+
+func (r *RepositorySSO) SelectUsersByIDs(ctx context.Context, userIDs []uuid.UUID) ([]dto.User, error) {
+	if len(userIDs) == 0 {
+		return []dto.User{}, nil
+	}
+
+	const query = `
+        SELECT id, name, avatar
+        FROM users
+        WHERE id = ANY($1::uuid[])
+    `
+
+	rows, err := r.DB.Query(ctx, query, userIDs)
+	if err != nil {
+		return nil, fmt.Errorf("SelectUsersByIDs: query: %w", err)
+	}
+	defer rows.Close()
+
+	users := make([]dto.User, 0, len(userIDs))
+	for rows.Next() {
+		var u dto.User
+		if err := rows.Scan(&u.ID, &u.Name, &u.Avatar); err != nil {
+			return nil, fmt.Errorf("SelectUsersByIDs: scan: %w", err)
+		}
+		users = append(users, u)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("SelectUsersByIDs: rows: %w", err)
+	}
+
+	return users, nil
 }
 
 func (r *RepositorySSO) SelectUserTokens(ctx context.Context, userID uuid.UUID) (dto.UserTokens, error) {

@@ -285,16 +285,51 @@ func (s *ServiceMessenger) LeaveGroup(ctx *gin.Context) {
 func (s *ServiceMessenger) SelectAllMembersGroup(ctx *gin.Context) {
 	groupID, err := uuid.Parse(ctx.Param("group_id"))
 	if err != nil {
-		s.Log.Error("error with parsing group id uuid", "error", err)
-		ctx.JSON(http.StatusBadRequest, err)
+		s.Log.Error("error with parsing group id uuid: ", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	groupMembers, err := s.Repository.SelectAllMembersGroup(ctx.Request.Context(), groupID)
 	if err != nil {
-		s.Log.Error("error with getting all members from group")
-		ctx.JSON(http.StatusInternalServerError, err)
+		s.Log.Error("error with getting all members from group: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+
+	memberIDs := make([]string, 0, len(groupMembers))
+	for _, member := range groupMembers {
+		memberIDs = append(memberIDs, member.UserID.String())
+	}
+
+	if len(memberIDs) == 0 {
+		ctx.JSON(http.StatusOK, groupMembers)
+		return
+	}
+
+	usersResp, err := s.Client.GetUsersByIds(ctx.Request.Context(), &pb.GetUserByIDRequest{UserIds: memberIDs})
+	if err != nil {
+		s.Log.Error("error with selecting members info: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	usersByID := make(map[string]dto.User, len(usersResp.Users))
+	for _, u := range usersResp.Users {
+		userID, err := uuid.Parse(u.Id)
+		if err != nil {
+			s.Log.Error("error with parse uuid userID: ", "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		usersByID[u.Id] = dto.User{ID: userID, Name: u.Name, Avatar: u.Avatar}
+	}
+
+	for i := range groupMembers {
+		if u, ok := usersByID[groupMembers[i].UserID.String()]; ok {
+			groupMembers[i].Name = u.Name
+			groupMembers[i].Avatar = u.Avatar[0]
+		}
 	}
 
 	ctx.JSON(http.StatusOK, groupMembers)

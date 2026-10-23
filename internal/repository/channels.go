@@ -64,7 +64,7 @@ func (r *RepositoryMessenger) SelectChannelIdsByUserId(ctx context.Context, user
 	return chatsID, nil
 }
 
-func (r RepositoryMessenger) SelectChannelMembers(ctx context.Context, id uuid.UUID) ([]uuid.UUID, error) {
+func (r *RepositoryMessenger) SelectChannelMemberIds(ctx context.Context, id uuid.UUID) ([]uuid.UUID, error) {
 	query := r.Session.ContextQuery(
 		ctx,
 		`SELECT user_id FROM messenger_keyspace.channel_members WHERE channel_id=?`,
@@ -80,6 +80,22 @@ func (r RepositoryMessenger) SelectChannelMembers(ctx context.Context, id uuid.U
 	}
 
 	return membersID, nil
+}
+
+func (r *RepositoryMessenger) SelectChannelMembers(ctx context.Context, channelID uuid.UUID) ([]dto.ChannelMember, error) {
+	query := r.Session.ContextQuery(ctx,
+		`SELECT * FROM messenger_keyspace.channel_members WHERE channel_id = $1`,
+		[]string{":channel_id"}).
+		BindMap(map[string]interface{}{
+			":channel_id": channelID,
+		})
+
+	var members []dto.ChannelMember
+	if err := query.SelectRelease(&members); err != nil {
+		r.Log.Error("error with selecting channel members: ", "error", err)
+		return nil, err
+	}
+	return members, nil
 }
 
 func (r *RepositoryMessenger) InsertChannel(ctx context.Context, channel dto.Channel) error {

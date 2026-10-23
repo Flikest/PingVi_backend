@@ -3,7 +3,6 @@ CREATE TABLE IF NOT EXISTS users (
     name VARCHAR(100) NOT NULL,
     avatar TEXT[] DEFAULT ARRAY['https://i.pinimg.com/736x/4e/df/5b/4edf5b10482c6cf5c53bb6f0b919c3fa.jpg'],
     email VARCHAR(255) UNIQUE NOT NULL CHECK (email ~* '^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$'),
-    phone_number VARCHAR(17) UNIQUE NOT NULL,
     profile_status VARCHAR(100),
     description TEXT,
     risk_profile INT CHECK (risk_profile >= 0 AND risk_profile <= 100) DEFAULT 33,

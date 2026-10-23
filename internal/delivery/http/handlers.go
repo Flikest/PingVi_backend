@@ -55,6 +55,7 @@ func RegisterSSORouter(h *HandlerSSO) *gin.Engine {
 			userRouter.PATCH("/enable_2fa", h.Service.EnableTwoFactorAuth)
 			userRouter.PATCH("/disable_2fa", h.Service.DisableTwoFactorAuth)
 			userRouter.DELETE("/", h.Service.DeleteUser)
+			userRouter.DELETE("/session/:session_id", h.Service.DeleteSession)
 		}
 	}
 
@@ -87,6 +88,7 @@ func RegisterMessengerRouter(h *HandlerMessenger) *gin.Engine {
 			channelRouter.GET("/join/:channel_id/", h.Service.JoinChannel)
 			channelRouter.POST("/kick", h.Service.KickChannelMember)
 			channelRouter.GET("/leave/:channel_id/", h.Service.LeaveFromChannel)
+			channelRouter.GET("/member/all/:channel_id", h.Service.GetChannelMembers)
 			channelRouter.GET("/:user_id", h.Service.GetChannels)
 			channelRouter.POST("/", h.Service.CreateChannel)
 			channelRouter.PUT("/", h.Service.UpdateChannel)

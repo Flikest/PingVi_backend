@@ -9,7 +9,6 @@ import (
 )
 
 func main() {
-
 	boot := rkboot.NewBoot()
 
 	entry := rkgin.GetGinEntry("notifications")

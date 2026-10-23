@@ -17,17 +17,6 @@ type Role struct {
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
 }
-
-type ChannelMember struct {
-	ChannelID uuid.UUID `json:"channel_id"`
-	UserID    uuid.UUID `json:"user_id"`
-	IsBot     bool      `json:"is_bot"`
-	IsMuted   bool      `json:"is_muted"`
-	RoleID    uuid.UUID `json:"role_id"`
-	Nickname  string    `json:"nickname"`
-	JoinedAt  time.Time `json:"joined_at"`
-}
-
 type CreateRole struct {
 	UserID        uuid.UUID `json:"user_id"`
 	ChannelID     uuid.UUID `json:"channel_id"`

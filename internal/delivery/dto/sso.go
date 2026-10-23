@@ -7,10 +7,9 @@ import (
 )
 
 type CreateUserRequest struct {
-	Name        string `json:"name"`
-	PhoneNumber string `json:"phone_number"`
-	Email       string `json:"email"`
-	Password    string `json:"password"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type UpdateUserRequest struct {
@@ -18,7 +17,6 @@ type UpdateUserRequest struct {
 	Name          string    `json:"name"`
 	Avatar        []string  `json:"avatar"`
 	Email         string    `json:"email"`
-	PhoneNumber   string    `json:"phone_number"`
 	ProfileStatus string    `json:"profile_status"`
 	Description   string    `json:"description"`
 	RiskProfile   int       `json:"risk_profile"`
@@ -80,7 +78,6 @@ type User struct {
 	Name             string    `json:"name"`
 	Avatar           []string  `json:"avatar"`
 	Email            string    `json:"email"`
-	PhoneNumber      string    `json:"phone_number"`
 	ProfileStatus    string    `json:"profile_status"`
 	Description      string    `json:"description"`
 	RiskProfile      int       `json:"risk_profile"`

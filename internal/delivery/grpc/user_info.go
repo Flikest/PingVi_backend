@@ -75,3 +75,39 @@ func (h *HandlerUserInfo) GetUserIDBySessionID(
 		UserId: userID.String(),
 	}, nil
 }
+
+func (h *HandlerUserInfo) GetUserByID(
+	ctx context.Context,
+	req *pb.GetUserByIDRequest,
+) (*pb.GetUserByIDResponse, error) {
+	var ids []uuid.UUID
+
+	for _, userID := range req.UserIds {
+		id, err := uuid.Parse(userID)
+		if err != nil {
+			h.Log.Error("error with parsing user id: ", "error", err)
+			return nil, status.Error(codes.InvalidArgument, "invalid user id")
+		}
+
+		ids = append(ids, id)
+	}
+
+	var info pb.GetUserByIDResponse
+
+	user, err := h.Service.GetUsersByIds(ctx, ids)
+	if err != nil {
+		h.Log.Error("error with getting user info: ", "error", err)
+		return nil, status.Error(codes.NotFound, "user not found")
+	}
+
+	for _, u := range user {
+		info.Users = append(info.Users, &pb.UsersInfo{
+			Id:     u.ID.String(),
+			Name:   u.Name,
+			Avatar: u.Avatar,
+		})
+	}
+
+	return &info, nil
+
+}

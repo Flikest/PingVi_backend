@@ -18,7 +18,7 @@ func (s *ServiceMessenger) GetSubscribers(ctx context.Context, userID uuid.UUID)
 	}
 
 	for _, id := range channelIDs {
-		userIDs, err := s.Repository.SelectChannelMembers(ctx, id)
+		userIDs, err := s.Repository.SelectChannelMemberIds(ctx, id)
 		if err != nil {
 			s.Log.Error("error with getting members in channel by channel id: ", "error", err)
 			return nil, err

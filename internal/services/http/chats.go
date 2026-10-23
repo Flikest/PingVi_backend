@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/Flikest/PingVi_backend/gen/go/user_info"
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
 	"github.com/Flikest/PingVi_backend/pkg/tokens"
 	"github.com/gin-gonic/gin"
@@ -124,6 +125,22 @@ func (s ServiceMessenger) GetStartMyChats(ctx *gin.Context) {
 				return
 			}
 
+			var ids []string
+
+			for _, v := range personalChats {
+				ids = append(ids, v.UserID.String())
+			}
+
+			response, err := s.Client.GetUsersByIds(ctx.Request.Context(), &user_info.GetUserByIDRequest{UserIds: ids})
+			if err != nil {
+				s.Log.Error("error with getting user by id: ", "error", err)
+				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+
+			personalChats[i].Name = response.Users[i].Name
+			personalChats[i].Avatar = response.Users[i].Avatar[0]
+
 			unreadMesages, err := s.Repository.SelectUnreadCountMessage(ctx.Request.Context(), userID, personalChats[i].ID)
 			if err != nil {
 				s.Log.Error("error with select unread messages count: ", "error", err)
@@ -132,7 +149,7 @@ func (s ServiceMessenger) GetStartMyChats(ctx *gin.Context) {
 			}
 
 			communities = append(communities, dto.StartСommunitiesData{
-				Type:           "personal",
+				Type:           "personal_chat",
 				Communities:    personalChats[i],
 				LastMessage:    lastMessage.Message,
 				IsBot:          false,

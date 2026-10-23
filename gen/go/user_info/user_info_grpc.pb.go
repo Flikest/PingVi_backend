@@ -8,7 +8,6 @@ package user_info
 
 import (
 	context "context"
-
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -22,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	UserInfo_GetUserNameByID_FullMethodName      = "/user_info.UserInfo/GetUserNameByID"
 	UserInfo_GetUserIDBySessionID_FullMethodName = "/user_info.UserInfo/GetUserIDBySessionID"
+	UserInfo_GetUsersByIds_FullMethodName        = "/user_info.UserInfo/GetUsersByIds"
 )
 
 // UserInfoClient is the client API for UserInfo service.
@@ -30,6 +30,7 @@ const (
 type UserInfoClient interface {
 	GetUserNameByID(ctx context.Context, in *GetUserNameByIdRequest, opts ...grpc.CallOption) (*GetUserNameByIdResponse, error)
 	GetUserIDBySessionID(ctx context.Context, in *GetUserIDBySessionIDRequest, opts ...grpc.CallOption) (*GetUserIDBySessionIDResponse, error)
+	GetUsersByIds(ctx context.Context, in *GetUserByIDRequest, opts ...grpc.CallOption) (*GetUserByIDResponse, error)
 }
 
 type userInfoClient struct {
@@ -60,12 +61,23 @@ func (c *userInfoClient) GetUserIDBySessionID(ctx context.Context, in *GetUserID
 	return out, nil
 }
 
+func (c *userInfoClient) GetUsersByIds(ctx context.Context, in *GetUserByIDRequest, opts ...grpc.CallOption) (*GetUserByIDResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserByIDResponse)
+	err := c.cc.Invoke(ctx, UserInfo_GetUsersByIds_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserInfoServer is the server API for UserInfo service.
 // All implementations must embed UnimplementedUserInfoServer
 // for forward compatibility.
 type UserInfoServer interface {
 	GetUserNameByID(context.Context, *GetUserNameByIdRequest) (*GetUserNameByIdResponse, error)
 	GetUserIDBySessionID(context.Context, *GetUserIDBySessionIDRequest) (*GetUserIDBySessionIDResponse, error)
+	GetUsersByIds(context.Context, *GetUserByIDRequest) (*GetUserByIDResponse, error)
 	mustEmbedUnimplementedUserInfoServer()
 }
 
@@ -81,6 +93,9 @@ func (UnimplementedUserInfoServer) GetUserNameByID(context.Context, *GetUserName
 }
 func (UnimplementedUserInfoServer) GetUserIDBySessionID(context.Context, *GetUserIDBySessionIDRequest) (*GetUserIDBySessionIDResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetUserIDBySessionID not implemented")
+}
+func (UnimplementedUserInfoServer) GetUsersByIds(context.Context, *GetUserByIDRequest) (*GetUserByIDResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUsersByIds not implemented")
 }
 func (UnimplementedUserInfoServer) mustEmbedUnimplementedUserInfoServer() {}
 func (UnimplementedUserInfoServer) testEmbeddedByValue()                  {}
@@ -139,6 +154,24 @@ func _UserInfo_GetUserIDBySessionID_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserInfo_GetUsersByIds_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserByIDRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserInfoServer).GetUsersByIds(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserInfo_GetUsersByIds_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserInfoServer).GetUsersByIds(ctx, req.(*GetUserByIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserInfo_ServiceDesc is the grpc.ServiceDesc for UserInfo service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -153,6 +186,10 @@ var UserInfo_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUserIDBySessionID",
 			Handler:    _UserInfo_GetUserIDBySessionID_Handler,
+		},
+		{
+			MethodName: "GetUsersByIds",
+			Handler:    _UserInfo_GetUsersByIds_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

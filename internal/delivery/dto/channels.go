@@ -24,6 +24,17 @@ type CreateChannelRequest struct {
 	IsPublic    bool   `json:"is_public"`
 }
 
+type ChannelMember struct {
+	ChannelID uuid.UUID `json:"channel_id"`
+	UserID    uuid.UUID `json:"user_id"`
+	IsBot     bool      `json:"is_bot"`
+	IsMuted   bool      `json:"is_muted"`
+	RoleID    uuid.UUID `json:"role_id"`
+	Nickname  string    `json:"nickname"`
+	Avatar    string    `json:"avatar"`
+	JoinedAt  time.Time `json:"joined_at"`
+}
+
 type CreateChannelInput struct {
 	ID          uuid.UUID `json:"id"`
 	Name        string    `json:"name"`
