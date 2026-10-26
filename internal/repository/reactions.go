@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
+	"github.com/gocql/gocql"
 	"github.com/google/uuid"
 )
 
@@ -65,7 +66,7 @@ func (r *RepositoryMessenger) SelectReactionById(ctx context.Context, chatID, me
 	return reaction, nil
 }
 
-func (r *RepositoryMessenger) DeleteReaction(ctx context.Context, id uuid.UUID) error {
+func (r *RepositoryMessenger) DeleteReaction(ctx context.Context, id gocql.UUID) error {
 	deleteReaction := r.Session.ContextQuery(
 		ctx,
 		`DELETE FROM messenger_keyspace.reactions WHERE id=?`,

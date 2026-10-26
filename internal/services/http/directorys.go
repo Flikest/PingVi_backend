@@ -7,6 +7,7 @@ import (
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
 	"github.com/Flikest/PingVi_backend/pkg/tokens"
 	"github.com/gin-gonic/gin"
+	"github.com/gocql/gocql"
 	"github.com/google/uuid"
 )
 
@@ -33,7 +34,7 @@ func (s *ServiceMessenger) CreateDirectory(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -127,7 +128,7 @@ func (s *ServiceMessenger) UpdateDirectory(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -189,7 +190,7 @@ func (s *ServiceMessenger) DeleteDirectory(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

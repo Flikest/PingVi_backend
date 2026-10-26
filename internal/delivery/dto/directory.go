@@ -3,33 +3,33 @@ package dto
 import (
 	"time"
 
-	"github.com/google/uuid"
+	"github.com/gocql/gocql"
 )
 
 type Directory struct {
-	ID        uuid.UUID `json:"id"`
-	ChannelID uuid.UUID `json:"channel_id"`
-	Name      string    `json:"name"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID        gocql.UUID `json:"id"`
+	ChannelID gocql.UUID `json:"channel_id"`
+	Name      string     `json:"name"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
 }
 
 type CreateDirectory struct {
-	UserID    uuid.UUID `json:"user_id"`
-	ID        uuid.UUID `json:"id"`
-	ChannelID uuid.UUID `json:"channel_id"`
-	Name      string    `json:"name"`
+	UserID    gocql.UUID `json:"user_id"`
+	ID        gocql.UUID `json:"id"`
+	ChannelID gocql.UUID `json:"channel_id"`
+	Name      string     `json:"name"`
 }
 
 type UpdateDirectory struct {
-	UserID    uuid.UUID `json:"user_id"`
-	ID        uuid.UUID `json:"id"`
-	ChannelID uuid.UUID `json:"channel_id"`
-	Name      string    `json:"name"`
+	UserID    gocql.UUID `json:"user_id"`
+	ID        gocql.UUID `json:"id"`
+	ChannelID gocql.UUID `json:"channel_id"`
+	Name      string     `json:"name"`
 }
 
 type DeleteDirectory struct {
-	UserID    uuid.UUID `json:"user_id"`
-	ChannelID uuid.UUID `json:"channel_id"`
-	ID        uuid.UUID `json:"id"`
+	UserID    gocql.UUID `json:"user_id"`
+	ChannelID gocql.UUID `json:"channel_id"`
+	ID        gocql.UUID `json:"id"`
 }

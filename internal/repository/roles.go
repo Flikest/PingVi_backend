@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (r *RepositoryMessenger) SelectPermissions(ctx context.Context, userID, channelID uuid.UUID) (string, error) {
+func (r *RepositoryMessenger) SelectPermissions(ctx context.Context, userID, channelID gocql.UUID) (string, error) {
 	selectUserRole := r.Session.ContextQuery(
 		ctx,
 		`SELECT role_id FROM messenger_keyspace.channel_members WHERE user_id=? AND channel_id=?`,
@@ -75,7 +75,7 @@ func (r *RepositoryMessenger) InsertChannelRole(ctx context.Context, role dto.Ro
 	return nil
 }
 
-func (r *RepositoryMessenger) SelectRoles(ctx context.Context, channelID uuid.UUID) ([]dto.Role, error) {
+func (r *RepositoryMessenger) SelectRoles(ctx context.Context, channelID gocql.UUID) ([]dto.Role, error) {
 	selectRoles := r.Session.ContextQuery(
 		ctx,
 		`SELECT * FROM messenger_keyspace.channel_roles WHERE channel_id=?`,
@@ -91,7 +91,7 @@ func (r *RepositoryMessenger) SelectRoles(ctx context.Context, channelID uuid.UU
 	return roles, nil
 }
 
-func (r *RepositoryMessenger) SelectRoleName(ctx context.Context, roleID, channelID uuid.UUID) (string, error) {
+func (r *RepositoryMessenger) SelectRoleName(ctx context.Context, roleID, channelID gocql.UUID) (string, error) {
 	selectRole := r.Session.ContextQuery(
 		ctx,
 		`SELECT name FROM messenger_keyspace.channel_roles WHERE id=? AND channel_id=?`,
@@ -110,7 +110,7 @@ func (r *RepositoryMessenger) SelectRoleName(ctx context.Context, roleID, channe
 	return name, nil
 }
 
-func (r *RepositoryMessenger) SelectMemberIDsByRoleID(ctx context.Context, channelID, roleID uuid.UUID) ([]uuid.UUID, error) {
+func (r *RepositoryMessenger) SelectMemberIDsByRoleID(ctx context.Context, channelID, roleID gocql.UUID) ([]uuid.UUID, error) {
 	selectUserIDs := r.Session.ContextQuery(
 		ctx,
 		`
@@ -179,7 +179,7 @@ func (r *RepositoryMessenger) UpdateRole(ctx context.Context, role dto.UpdateRol
 	}, nil
 }
 
-func (r *RepositoryMessenger) SelectEveryoneRoleID(ctx context.Context, channelID uuid.UUID) (uuid.UUID, error) {
+func (r *RepositoryMessenger) SelectEveryoneRoleID(ctx context.Context, channelID gocql.UUID) (gocql.UUID, error) {
 	selectEveryoneRoleID := r.Session.ContextQuery(
 		ctx,
 		`SELECT id FROM messenger_keyspace.channel_roles WHERE channel_id=? AND name=?`,
@@ -189,16 +189,16 @@ func (r *RepositoryMessenger) SelectEveryoneRoleID(ctx context.Context, channelI
 			":name":       "@everyone",
 		})
 
-	var everyoneRoleID uuid.UUID
+	var everyoneRoleID gocql.UUID
 	if err := selectEveryoneRoleID.SelectRelease(&everyoneRoleID); err != nil {
 		r.Log.Error("error with selecting role id on everyone name: ", "error", err)
-		return uuid.Nil, err
+		return gocql.UUID{}, err
 	}
 
 	return everyoneRoleID, nil
 }
 
-func (r *RepositoryMessenger) UpdateChannelMemberRole(ctx context.Context, channelID, userID, roleID uuid.UUID) error {
+func (r *RepositoryMessenger) UpdateChannelMemberRole(ctx context.Context, channelID, userID, roleID gocql.UUID) error {
 	updateUserRole := r.Session.ContextQuery(
 		ctx,
 		`
@@ -220,7 +220,7 @@ func (r *RepositoryMessenger) UpdateChannelMemberRole(ctx context.Context, chann
 	return nil
 }
 
-func (r *RepositoryMessenger) UpdateChannelMembersRole(ctx context.Context, channelID, roleID uuid.UUID, userIDs []uuid.UUID) error {
+func (r *RepositoryMessenger) UpdateChannelMembersRole(ctx context.Context, channelID, roleID gocql.UUID, userIDs []uuid.UUID) error {
 	if len(userIDs) == 0 {
 		return nil
 	}
@@ -235,7 +235,7 @@ func (r *RepositoryMessenger) UpdateChannelMembersRole(ctx context.Context, chan
 	return r.Session.ExecuteBatch(batch.WithContext(ctx))
 }
 
-func (r *RepositoryMessenger) DeleteChannelRoleByID(ctx context.Context, roleID, channelID uuid.UUID) error {
+func (r *RepositoryMessenger) DeleteChannelRoleByID(ctx context.Context, roleID, channelID gocql.UUID) error {
 	deleteRole := r.Session.ContextQuery(
 		ctx,
 		`DELETE FROM messenger_keyspace.channel_roles WHERE id=? AND channel_id=?`,

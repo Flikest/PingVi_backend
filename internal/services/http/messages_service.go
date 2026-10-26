@@ -5,11 +5,11 @@ import (
 	"errors"
 
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
-	"github.com/google/uuid"
+	"github.com/gocql/gocql"
 )
 
-func (s *ServiceMessenger) GetSubscribers(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, error) {
-	var userIDs []uuid.UUID
+func (s *ServiceMessenger) GetSubscribers(ctx context.Context, userID gocql.UUID) ([]gocql.UUID, error) {
+	var userIDs []gocql.UUID
 
 	channelIDs, err := s.Repository.SelectChannelIdsByUserId(ctx, userID)
 	if err != nil {
@@ -51,79 +51,79 @@ func (s *ServiceMessenger) GetSubscribers(ctx context.Context, userID uuid.UUID)
 	return userIDs, nil
 }
 
-func (s *ServiceMessenger) ClearMessagesFromCommunity(ctx context.Context, clearMessage dto.ClearMessage) (uuid.UUID, error) {
+func (s *ServiceMessenger) ClearMessagesFromCommunity(ctx context.Context, clearMessage dto.ClearMessage) (gocql.UUID, error) {
 	switch clearMessage.CommunityType {
 	case "group":
 		isAdmin, err := s.Repository.SelectGroupMemberIsAdmin(ctx, clearMessage.CommunityID, clearMessage.UserID)
 		if err != nil {
 			s.Log.Error("error with selecting rights: ", "error", err)
-			return uuid.Nil, err
+			return gocql.UUID{}, err
 		}
 
 		ownerID, err := s.Repository.SelectGroupOwnerID(ctx, clearMessage.CommunityID)
 		if err != nil {
 			s.Log.Error("error with selecting owner: ", "error", err)
-			return uuid.Nil, err
+			return gocql.UUID{}, err
 		}
 
 		if !isAdmin && ownerID != clearMessage.UserID {
 			s.Log.Warn("not enough rights")
-			return uuid.Nil, errors.New("not enough rights")
+			return gocql.UUID{}, errors.New("not enough rights")
 		}
 
 		if err := s.Repository.DeleteMessagesByChatID(ctx, clearMessage.CommunityID); err != nil {
 			s.Log.Error("error with clearing messages from group: ", "error", err)
-			return uuid.Nil, err
+			return gocql.UUID{}, err
 		}
 
 	case "channel":
 		permissions, err := s.Repository.SelectPermissions(ctx, clearMessage.UserID, clearMessage.CommunityID)
 		if err != nil {
 			s.Log.Error("error with selecting permissions from channel: ", "error", err)
-			return uuid.Nil, err
+			return gocql.UUID{}, err
 		}
 
 		if len(permissions) < 3 || permissions[2] != '1' {
 			s.Log.Warn("not enough rights")
-			return uuid.Nil, errors.New("not enough rights")
+			return gocql.UUID{}, errors.New("not enough rights")
 		}
 
 		topics, err := s.Repository.SelectTopicsByChannelID(ctx, clearMessage.CommunityID)
 		if err != nil {
 			s.Log.Error("error with selecting topics from channel: ", "error", err)
-			return uuid.Nil, err
+			return gocql.UUID{}, err
 		}
 
 		if len(topics) == 0 {
 			s.Log.Warn("no topic found")
-			return uuid.Nil, errors.New("no topic found")
+			return gocql.UUID{}, errors.New("no topic found")
 		}
 
 		if err := s.Repository.DeleteMessagesByChatID(ctx, clearMessage.CommunityID); err != nil {
 			s.Log.Error("error with clearing messages from topic: ", "error", err)
-			return uuid.Nil, err
+			return gocql.UUID{}, err
 		}
 
 	case "personal_chat":
 		user1ID, user2ID, err := s.Repository.SelectPersonalChatUsers(ctx, clearMessage.CommunityID)
 		if err != nil {
 			s.Log.Error("error with selecting user1 and user2 from personal chat", "error", err)
-			return uuid.Nil, err
+			return gocql.UUID{}, err
 		}
 
 		if clearMessage.UserID != user1ID && clearMessage.UserID != user2ID {
 			s.Log.Warn("not enough rights")
-			return uuid.Nil, errors.New("not enough rights")
+			return gocql.UUID{}, errors.New("not enough rights")
 		}
 
 		if err := s.Repository.DeleteMessagesByChatID(ctx, clearMessage.CommunityID); err != nil {
 			s.Log.Error("error with clearing messages from topic: ", "error", err)
-			return uuid.Nil, err
+			return gocql.UUID{}, err
 		}
 
 	default:
 		s.Log.Error("invalid community type")
-		return uuid.Nil, errors.New("invalid community type")
+		return gocql.UUID{}, errors.New("invalid community type")
 	}
 
 	return clearMessage.CommunityID, nil

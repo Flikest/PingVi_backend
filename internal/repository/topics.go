@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
-	"github.com/google/uuid"
+	"github.com/gocql/gocql"
 )
 
 // FIXME: переписать все на слоеную архитектуру, сейчас слой овечает и за бизнес логику и за рабуту с бд
@@ -23,7 +23,7 @@ func (r *RepositoryMessenger) CreateTopic(ctx context.Context, topic dto.CreateT
 		return dto.Topic{}, errors.New("the user does not have enough rights")
 	}
 
-	topicID, err := uuid.NewV7()
+	topicID, err := gocql.RandomUUID()
 	if err != nil {
 		r.Log.Error("erorr with generating topic id:", "error", err)
 		return dto.Topic{}, err
@@ -72,7 +72,7 @@ func (r *RepositoryMessenger) CreateTopic(ctx context.Context, topic dto.CreateT
 	}, nil
 }
 
-func (r *RepositoryMessenger) SelectTopicsFromChannel(ctx context.Context, channelID uuid.UUID) ([]dto.Topic, error) {
+func (r *RepositoryMessenger) SelectTopicsFromChannel(ctx context.Context, channelID gocql.UUID) ([]dto.Topic, error) {
 	selectTopic := r.Session.ContextQuery(
 		ctx,
 		`SELECT * FROM messenger_keyspace.topics WHERE channel_id=?`,
@@ -144,7 +144,7 @@ func (r *RepositoryMessenger) UpdateTopic(ctx context.Context, topic dto.UpdateT
 	}, nil
 }
 
-func (r *RepositoryMessenger) SelectTopicName(ctx context.Context, topicID, channelID uuid.UUID) (string, error) {
+func (r *RepositoryMessenger) SelectTopicName(ctx context.Context, topicID, channelID gocql.UUID) (string, error) {
 	query := r.Session.ContextQuery(
 		ctx,
 		`SELECT name FROM messenger_keyspace.topics WHERE id=? AND channel_id=?`,
@@ -166,16 +166,16 @@ func (r *RepositoryMessenger) SelectTopicName(ctx context.Context, topicID, chan
 	return name, nil
 }
 
-func (r *RepositoryMessenger) DeleteTopic(ctx context.Context, topic dto.DeleteTopic) (uuid.UUID, error) {
+func (r *RepositoryMessenger) DeleteTopic(ctx context.Context, topic dto.DeleteTopic) (gocql.UUID, error) {
 	permission, err := r.SelectPermissions(ctx, topic.UserId, topic.ChannelId)
 	if err != nil {
 		r.Log.Error("error with selecting user permission: ", "error", err)
-		return uuid.Nil, err
+		return gocql.UUID{}, err
 	}
 
 	if permission[5] != '1' {
 		r.Log.Warn("the user does not have enough rights")
-		return uuid.Nil, errors.New("the user does not have enough rights")
+		return gocql.UUID{}, errors.New("the user does not have enough rights")
 	}
 
 	deleteMessages := r.Session.ContextQuery(
@@ -190,7 +190,7 @@ func (r *RepositoryMessenger) DeleteTopic(ctx context.Context, topic dto.DeleteT
 
 	if err := deleteMessages.ExecRelease(); err != nil {
 		r.Log.Error("error with deleting message: ", "error", err)
-		return uuid.Nil, err
+		return gocql.UUID{}, err
 	}
 
 	deleteTopic := r.Session.ContextQuery(
@@ -206,7 +206,7 @@ func (r *RepositoryMessenger) DeleteTopic(ctx context.Context, topic dto.DeleteT
 		})
 	if err := deleteTopic.ExecRelease(); err != nil {
 		r.Log.Error("error with deleting topic: ", "error", err)
-		return uuid.Nil, err
+		return gocql.UUID{}, err
 	}
 
 	return topic.ID, nil

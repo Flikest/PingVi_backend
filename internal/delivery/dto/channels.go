@@ -3,18 +3,18 @@ package dto
 import (
 	"time"
 
-	"github.com/google/uuid"
+	"github.com/gocql/gocql"
 )
 
 type Channel struct {
-	ID          uuid.UUID `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	OwnerID     uuid.UUID `json:"owner_id"`
-	IconURL     string    `json:"icon_url"`
-	IsPublic    bool      `json:"is_public"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID          gocql.UUID `json:"id"`
+	Name        string     `json:"name"`
+	Description string     `json:"description"`
+	OwnerID     gocql.UUID `json:"owner_id"`
+	IconURL     string     `json:"icon_url"`
+	IsPublic    bool       `json:"is_public"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
 }
 
 type CreateChannelRequest struct {
@@ -25,63 +25,63 @@ type CreateChannelRequest struct {
 }
 
 type ChannelMember struct {
-	ChannelID uuid.UUID `json:"channel_id"`
-	UserID    uuid.UUID `json:"user_id"`
-	IsBot     bool      `json:"is_bot"`
-	IsMuted   bool      `json:"is_muted"`
-	RoleID    uuid.UUID `json:"role_id"`
-	Nickname  string    `json:"nickname"`
-	Avatar    string    `json:"avatar"`
-	JoinedAt  time.Time `json:"joined_at"`
+	ChannelID gocql.UUID `json:"channel_id"`
+	UserID    gocql.UUID `json:"user_id"`
+	IsBot     bool       `json:"is_bot"`
+	IsMuted   bool       `json:"is_muted"`
+	RoleID    gocql.UUID `json:"role_id"`
+	Nickname  string     `json:"nickname"`
+	Avatar    string     `json:"avatar"`
+	JoinedAt  time.Time  `json:"joined_at"`
 }
 
 type CreateChannelInput struct {
-	ID          uuid.UUID `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	OwnerID     uuid.UUID `json:"owner_id"`
-	IconURL     string    `json:"icon_url"`
-	IsPublic    bool      `json:"is_public"`
+	ID          gocql.UUID `json:"id"`
+	Name        string     `json:"name"`
+	Description string     `json:"description"`
+	OwnerID     gocql.UUID `json:"owner_id"`
+	IconURL     string     `json:"icon_url"`
+	IsPublic    bool       `json:"is_public"`
 }
 
 type UpdateChannelRequest struct {
-	ID          uuid.UUID `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	OwnerID     uuid.UUID `json:"owner_id"`
-	IconURL     string    `json:"icon_url"`
-	IsPublic    bool      `json:"is_public"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID          gocql.UUID `json:"id"`
+	Name        string     `json:"name"`
+	Description string     `json:"description"`
+	OwnerID     gocql.UUID `json:"owner_id"`
+	IconURL     string     `json:"icon_url"`
+	IsPublic    bool       `json:"is_public"`
+	CreatedAt   time.Time  `json:"created_at"`
 }
 
 type UpdateChannelInput struct {
-	ID          uuid.UUID `json:"id"`
-	UserID      uuid.UUID `json:"user_id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	OwnerID     uuid.UUID `json:"owner_id"`
-	IconURL     string    `json:"icon_url"`
-	IsPublic    bool      `json:"is_public"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID          gocql.UUID `json:"id"`
+	UserID      gocql.UUID `json:"user_id"`
+	Name        string     `json:"name"`
+	Description string     `json:"description"`
+	OwnerID     gocql.UUID `json:"owner_id"`
+	IconURL     string     `json:"icon_url"`
+	IsPublic    bool       `json:"is_public"`
+	CreatedAt   time.Time  `json:"created_at"`
 }
 
 type KickChannelMemberRequest struct {
-	KickedMemberID uuid.UUID `json:"kicked_user_id"`
-	ChannelID      uuid.UUID `json:"channel_id"`
+	KickedMemberID gocql.UUID `json:"kicked_user_id"`
+	ChannelID      gocql.UUID `json:"channel_id"`
 }
 
 type KickChannelMemberInput struct {
-	MemberID       uuid.UUID `json:"user_id"`
-	KickedMemberID uuid.UUID `json:"kicked_user_id"`
-	ChannelID      uuid.UUID `json:"channel_id"`
+	MemberID       gocql.UUID `json:"user_id"`
+	KickedMemberID gocql.UUID `json:"kicked_user_id"`
+	ChannelID      gocql.UUID `json:"channel_id"`
 }
 
 type DeleteChannelRequest struct {
-	ID uuid.UUID `json:"id"`
+	ID gocql.UUID `json:"id"`
 }
 
 type DeleteChannelInput struct {
-	ID      uuid.UUID `json:"id"`
-	UserID  uuid.UUID `json:"user_id"`
-	OwnerID uuid.UUID `json:"owner_id"`
+	ID      gocql.UUID `json:"id"`
+	UserID  gocql.UUID `json:"user_id"`
+	OwnerID gocql.UUID `json:"owner_id"`
 }

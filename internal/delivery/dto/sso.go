@@ -74,19 +74,19 @@ type PasswordResetToken struct {
 }
 
 type User struct {
-	ID               uuid.UUID `json:"id"`
-	Name             string    `json:"name"`
-	Avatar           []string  `json:"avatar"`
-	Email            string    `json:"email"`
-	ProfileStatus    string    `json:"profile_status"`
-	Description      string    `json:"description"`
-	RiskProfile      int       `json:"risk_profile"`
-	IsPrivate        bool      `json:"is_private"`
-	IsActivated      bool      `json:"is_activated"`
-	TwoFactorEnabled bool      `json:"two_factor_enabled"`
-	PasswordHash     string    `json:"password_hash"`
-	CreatedAt        time.Time `json:"created_at"`
-	UpdatedAt        time.Time `json:"updated_at"`
+	ID               uuid.UUID  `json:"id"`
+	Name             string     `json:"name"`
+	Avatar           []string   `json:"avatar"`
+	Email            string     `json:"email"`
+	ProfileStatus    *string    `json:"profile_status"`
+	Description      *string    `json:"description"`
+	RiskProfile      int        `json:"risk_profile"`
+	IsPrivate        bool       `json:"is_private"`
+	IsActivated      bool       `json:"is_activated"`
+	TwoFactorEnabled bool       `json:"two_factor_enabled"`
+	PasswordHash     string     `json:"password_hash"`
+	CreatedAt        time.Time  `json:"created_at"`
+	UpdatedAt        *time.Time `json:"updated_at"`
 }
 
 type UserTokens struct {

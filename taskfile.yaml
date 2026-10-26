@@ -6,20 +6,19 @@ tasks:
       - task: generate  
   
   pre-configuration-scylladb:
-    desc: "Create user for scyllaDB"  
+    desc: "Create user for scyllaDB"
     cmds:
       - echo "Waiting 30 seconds for ScyllaDB to start..."
       - sleep 30
-      
       - sudo docker cp init_auth.cql scylla_node:/init_auth.cql
-      
-      - echo "Applying ScyllaDB configuration from static file..."
-      - sudo docker exec scylla_node cqlsh -u cassandra -p cassandra -f /init_auth.cql
-      
+      - echo "Applying ScyllaDB configuration..."
+      - |
+        sudo docker exec scylla_node cqlsh -u cassandra -p cassandra -f /init_auth.cql \
+        || sudo docker exec scylla_node cqlsh -u cassandra -p 'DISABLED_SECURE_RAND_HASH_123_qwert' -f /init_auth.cql
       - sudo docker exec -u 0 scylla_node rm /init_auth.cql
-      
       - echo "ScyllaDB successfully configured! 🎉"
     silent: false
+
 
   generate-user-info-proto: 
     desc: "Generate code from proto user_info file"  
@@ -43,8 +42,8 @@ tasks:
 
   raise-sso:
     cmds:
-      - sudo docker compose --env-file ./sso.local.env -f containers/redis.docker-compose.yaml up -d
-      - sudo docker compose --env-file ./sso.local.env -f containers/postgres.docker-compose.yaml up -d
+      - sudo docker compose --env-file ./sso.local.env -f redis.docker-compose.yaml up -d
+      - sudo docker compose --env-file ./sso.local.env -f postgres.docker-compose.yaml up -d
       - sleep 3
       - go run cmd/migrator/main.go -env ./sso.local.env -db postgresql
       - sleep 3
@@ -52,7 +51,7 @@ tasks:
 
   raise-sso-prod:
     cmds:
-      - sudo docker compose --env-file ./sso.prod.env -f containers/postgres.docker-compose.yaml up -d
+      - sudo docker compose --env-file ./sso.prod.env -f postgres.docker-compose.yaml up -d
       - sleep 3
       - go run cmd/migrator/main.go -env prod -db postgresql
       - sleep 3
@@ -60,17 +59,17 @@ tasks:
 
   raise-messenger:
     cmds:
-      - sudo docker compose --env-file ./messenger.local.env -f containers/scylla.docker-compose.yaml up -d
+      - sudo docker compose --env-file ./messenger.local.env -f scylla.docker-compose.yaml up -d
       - sleep 1
       - task pre-configuration-scylladb
       - sleep 3
       - go run cmd/migrator/main.go -env ./messenger.local.env -db scylladb
       - sleep 3
-      - go run cmd/messenger/main.go --env local --node_number 1
+      - go run cmd/messenger/main.go --env local
 
   raise-messenger-prod:
     cmds:
-      - sudo docker compose --env-file ./messenger.prod.env -f containers/scylla.docker-compose.yaml up -d
+      - sudo docker compose --env-file ./messenger.prod.env -f scylla.docker-compose.yaml up -d
       - sleep 1
       - task pre-configuration-scylladb
       - sleep 3
@@ -80,42 +79,42 @@ tasks:
 
   raise-file-storage:
     cmds:
-      - sudo docker compose --env-file ./minIO.local.env -f containers/minIO.docker-compose.yaml up -d
+      - sudo docker compose --env-file ./minIO.local.env -f minIO.docker-compose.yaml up -d
       - sleep 3
       - go run cmd/file_storage/main.go -env local
       
   
   raise-file-storage-prod:
     cmds:
-      - sudo docker compose --env-file ./minIO.prod.env -f containers/minIO.docker-compose.yaml up -d
+      - sudo docker compose --env-file ./minIO.prod.env -f minIO.docker-compose.yaml up -d
       - sleep 3
       - go run cmd/file_storage/main.go -env prod
 
   raise-sfu:
     cmds:
-      - sudo docker compose -f containers/livekit.docker-compose.yaml up -d
+      - sudo docker compose -f livekit.docker-compose.yaml up -d
       - sleep 3
       - go run cmd/sfu/main.go -env local
 
   raise-sfu-prod:
     cmds:
-      - sudo docker compose -f containers/livekit.docker-compose.yaml up -d
+      - sudo docker compose -f livekit.docker-compose.yaml up -d
       - sleep 3
       - go run cmd/sfu/main.go -env prod
 
   raise-crypto-bridge:
     cmds:
-      - sudo docker compose --env-file ./exchange.local.env -f containers/postgres.docker-compose.yaml up -d
+      - sudo docker compose --env-file ./exchange.local.env -f postgres.docker-compose.yaml up -d
       - sleep 3
-      - sudo docker compose --env-file ./infisical.local.env -f containers/ethereum.docker-compose.yaml up -d
+      - sudo docker compose --env-file ./infisical.local.env -f infisical.docker-compose.yaml up -d
       - sleep 3
       - go run cmd/crypto_bridge/main.go -env local
 
   raise-crypto-bridge-prod:
     cmds:
-      - sudo docker compose --env-file ./sso.prod.env -f containers/postgres.docker-compose.yaml up -d
+      - sudo docker compose --env-file ./sso.prod.env -f postgres.docker-compose.yaml up -d
       - sleep 3
-      - sudo docker compose --env-file ./infisical.prod.env -f containers/ethereum.docker-compose.yaml up -d
+      - sudo docker compose --env-file ./infisical.prod.env -f ethereum.docker-compose.yaml up -d
       - sleep 3
       - go run cmd/crypto_bridge/main.go -env prod
   

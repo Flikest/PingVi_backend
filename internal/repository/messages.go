@@ -5,10 +5,11 @@ import (
 
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
 	"github.com/bwmarrin/snowflake"
+	"github.com/gocql/gocql"
 	"github.com/google/uuid"
 )
 
-func (r *RepositoryMessenger) SelectUnreadCountMessage(ctx context.Context, userID, chatID uuid.UUID) (int64, error) {
+func (r *RepositoryMessenger) SelectUnreadCountMessage(ctx context.Context, userID, chatID gocql.UUID) (int64, error) {
 	var lastReadID snowflake.ID
 	query := r.Session.ContextQuery(
 		ctx,
@@ -73,7 +74,7 @@ func (r *RepositoryMessenger) SelectUnreadCountMessage(ctx context.Context, user
 	return totalUnread, nil
 }
 
-func (r *RepositoryMessenger) SelectLastMessageByChatID(ctx context.Context, chatID uuid.UUID) (*dto.Message, error) {
+func (r *RepositoryMessenger) SelectLastMessageByChatID(ctx context.Context, chatID gocql.UUID) (*dto.Message, error) {
 	var buckets []int64
 	bucketQuery := r.Session.ContextQuery(
 		ctx,
@@ -122,7 +123,7 @@ func (r *RepositoryMessenger) SelectLastMessageByChatID(ctx context.Context, cha
 	return lastMessage, nil
 }
 
-func (r *RepositoryMessenger) DeleteMessagesByChatID(ctx context.Context, chatID uuid.UUID) error {
+func (r *RepositoryMessenger) DeleteMessagesByChatID(ctx context.Context, chatID gocql.UUID) error {
 	query := r.Session.ContextQuery(
 		ctx,
 		`DELETE FROM messenger_keyspace.messages WHERE chat_id=?`,
@@ -238,7 +239,7 @@ func (r *RepositoryMessenger) UpdateMessage(ctx context.Context, message dto.Mes
 	return nil
 }
 
-func (r *RepositoryMessenger) SelectTopicsByChannelID(ctx context.Context, channelID uuid.UUID) ([]dto.Topic, error) {
+func (r *RepositoryMessenger) SelectTopicsByChannelID(ctx context.Context, channelID gocql.UUID) ([]dto.Topic, error) {
 	selectTopics := r.Session.ContextQuery(
 		ctx,
 		`SELECT id FROM messenger_keyspace.topics WHERE channel_id=?`,
@@ -256,7 +257,7 @@ func (r *RepositoryMessenger) SelectTopicsByChannelID(ctx context.Context, chann
 	return topicsIDs, nil
 }
 
-func (r *RepositoryMessenger) SelectPersonalChatUsers(ctx context.Context, chatID uuid.UUID) (uuid.UUID, uuid.UUID, error) {
+func (r *RepositoryMessenger) SelectPersonalChatUsers(ctx context.Context, chatID gocql.UUID) (gocql.UUID, gocql.UUID, error) {
 	selectUsersFromPersonalChat := r.Session.ContextQuery(
 		ctx,
 		`SELECT user1_id, user2_id FROM messenger_keyspace.personal_chats WHERE id=?`,
@@ -265,16 +266,16 @@ func (r *RepositoryMessenger) SelectPersonalChatUsers(ctx context.Context, chatI
 			":id": chatID,
 		})
 
-	var users struct{ user1ID, user2ID uuid.UUID }
+	var users struct{ user1ID, user2ID gocql.UUID }
 	if err := selectUsersFromPersonalChat.SelectRelease(&users); err != nil {
 		r.Log.Error("error with selecting user1 and user2 from personal chat", "error", err)
-		return uuid.Nil, uuid.Nil, err
+		return gocql.UUID{}, gocql.UUID{}, err
 	}
 
 	return users.user1ID, users.user2ID, nil
 }
 
-func (r *RepositoryMessenger) DeleteMessage(ctx context.Context, messageID snowflake.ID, chatID, senderID uuid.UUID) error {
+func (r *RepositoryMessenger) DeleteMessage(ctx context.Context, messageID snowflake.ID, chatID, senderID gocql.UUID) error {
 	deleteMessage := r.Session.ContextQuery(
 		ctx,
 		`DELETE FROM messenger_keyspace.messages WHERE id=? AND chat_id=? AND sender_id=?`,

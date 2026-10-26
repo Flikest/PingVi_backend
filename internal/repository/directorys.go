@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
+	"github.com/gocql/gocql"
 	"github.com/google/uuid"
 )
 
@@ -92,7 +93,7 @@ func (r *RepositoryMessenger) UpdateDirectory(ctx context.Context, dir dto.Updat
 	}, nil
 }
 
-func (r *RepositoryMessenger) DeleteDirectory(ctx context.Context, dirID uuid.UUID) error {
+func (r *RepositoryMessenger) DeleteDirectory(ctx context.Context, dirID gocql.UUID) error {
 	deleteDirectory := r.Session.ContextQuery(
 		ctx,
 		`DELETE FROM messenger_keyspace.directory WHERE id=?`,

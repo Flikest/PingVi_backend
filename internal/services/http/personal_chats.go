@@ -7,7 +7,7 @@ import (
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
 	"github.com/Flikest/PingVi_backend/pkg/tokens"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+	"github.com/gocql/gocql"
 )
 
 // CreatePersonalChat godoc
@@ -34,7 +34,7 @@ func (s *ServiceMessenger) CreatePersonalChat(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -84,7 +84,7 @@ func (s *ServiceMessenger) DeletePersonalChat(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

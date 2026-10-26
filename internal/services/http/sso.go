@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
+	ph "github.com/Flikest/PingVi_backend/pkg/password_hash"
 	"github.com/Flikest/PingVi_backend/pkg/tokens"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -34,6 +35,10 @@ func (s *ServiceSSO) Logup(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, err)
 		return
 	}
+
+	password, err := ph.Hashing(body.Password)
+
+	body.Password = password
 
 	user, err := s.Repository.CreateUser(ctx.Request.Context(), body)
 	if err != nil {

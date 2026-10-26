@@ -11,7 +11,7 @@ import (
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
 	"github.com/Flikest/PingVi_backend/pkg/tokens"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+	"github.com/gocql/gocql"
 )
 
 // GetPermissions godoc
@@ -39,14 +39,14 @@ func (s *ServiceMessenger) GetPermissions(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	channelID, err := uuid.Parse(ctx.Param("channel_id"))
+	channelID, err := gocql.ParseUUID(ctx.Param("channel_id"))
 	if err != nil {
 		s.Log.Error("error with parsing user id uuid: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, err)
@@ -88,7 +88,7 @@ func (s *ServiceMessenger) CreateRole(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -117,7 +117,7 @@ func (s *ServiceMessenger) CreateRole(ctx *gin.Context) {
 		return
 	}
 
-	roleID, err := uuid.NewV7()
+	roleID, err := gocql.RandomUUID()
 	if err != nil {
 		s.Log.Error("error with generating role id: ", "error", err)
 		ctx.JSON(http.StatusInternalServerError, err)
@@ -155,7 +155,7 @@ func (s *ServiceMessenger) CreateRole(ctx *gin.Context) {
 
 	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:   body.ChannelID,
-		SenderID: uuid.Nil,
+		SenderID: gocql.UUID{},
 		Message:  fmt.Sprintf("User %s created the role %s", response.GetName(), role.Name),
 		IsSystem: true,
 	})
@@ -186,14 +186,14 @@ func (s *ServiceMessenger) GetAllRoles(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	channelID, err := uuid.Parse(ctx.Param("channel_id"))
+	channelID, err := gocql.ParseUUID(ctx.Param("channel_id"))
 	if err != nil {
 		s.Log.Error("error with parsing user id uuid: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, err)
@@ -240,7 +240,7 @@ func (s *ServiceMessenger) UpdateRole(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -305,7 +305,7 @@ func (s *ServiceMessenger) DeleteRole(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -378,7 +378,7 @@ func (s *ServiceMessenger) DeleteRole(ctx *gin.Context) {
 
 	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:   body.ChannelID,
-		SenderID: uuid.Nil,
+		SenderID: gocql.UUID{},
 		Message:  fmt.Sprintf("User %s deleted the role %s", response.GetName(), roleName),
 		IsSystem: true,
 	})

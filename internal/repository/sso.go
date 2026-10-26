@@ -27,7 +27,7 @@ func (r *RepositorySSO) insertUserTokens(ctx context.Context, tx pgx.Tx, userID 
 	var isUserNotSession bool
 
 	selectedSessionDataQuery := `
-		SELECT id, access_token, refresh_token, created_at, access_expires_at, refresh_expires_at, locale
+		SELECT id, access_token, refresh_token, created_at, access_expires_at, refresh_expires_at
 	 	FROM user_tokens 
 	 	WHERE user_id=$1
 	`
@@ -60,7 +60,7 @@ func (r *RepositorySSO) insertUserTokens(ctx context.Context, tx pgx.Tx, userID 
 	if isUserNotSession == true {
 		insertSessionQuery := `
 			INSERT INTO
-			sessions (id, user_id, access_token, refresh_token, created_at, access_expires_at, refresh_expires_at)
+			user_tokens (id, user_id, access_token, refresh_token, created_at, access_expires_at, refresh_expires_at)
 			VALUES ($1, $2, $3, $4, $5, $6, $7)
 		`
 
@@ -91,8 +91,8 @@ func (r *RepositorySSO) insertUserTokens(ctx context.Context, tx pgx.Tx, userID 
 	}
 
 	updateSessionQuery := `
-		UPDATE sessions
-		SET access_token=$2, refresh_token=$3, created_at=$4, access_expires_at=$5, refresh_expires_at=$6, locale=$7
+		UPDATE user_tokens
+		SET access_token=$2, refresh_token=$3, created_at=$4, access_expires_at=$5, refresh_expires_at=$6
 		WHERE id = $1
 	`
 
@@ -106,11 +106,6 @@ func (r *RepositorySSO) insertUserTokens(ctx context.Context, tx pgx.Tx, userID 
 	)
 	if err != nil {
 		r.Log.Error("error with updating user session: ", "error", err)
-		return dto.LogInResponse{}, http.StatusInternalServerError, err
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		r.Log.Error("error with committing transaction: ", "error", err)
 		return dto.LogInResponse{}, http.StatusInternalServerError, err
 	}
 
@@ -271,6 +266,7 @@ func (r *RepositorySSO) CreateUser(ctx context.Context, u dto.CreateUserRequest)
 		&user.Description,
 		&user.RiskProfile,
 		&user.IsPrivate,
+		&user.IsActivated,
 		&user.TwoFactorEnabled,
 		&user.PasswordHash,
 		&user.CreatedAt,
@@ -298,7 +294,7 @@ func (r *RepositorySSO) Login(ctx context.Context, lr dto.LogInRequest) (respons
 		return dto.LogInResponse{}, http.StatusBadRequest, fmt.Errorf("the long and lat and device fields must be filled in")
 	}
 
-	locale, err := geocoder.Geocoder(fmt.Sprintf("%s, %s", lr.Long, lr.Lat), "ru")
+	locale, err := geocoder.Geocoder(fmt.Sprintf("%s,%s", lr.Long, lr.Lat), "ru")
 	if err != nil {
 		r.Log.Error("error with getting user locale: ", "error", err)
 		return dto.LogInResponse{}, http.StatusInternalServerError, err
@@ -317,7 +313,7 @@ func (r *RepositorySSO) Login(ctx context.Context, lr dto.LogInRequest) (respons
 		TwoFactorEnabled bool
 	}{}
 
-	selectedUserDataQuery := "SELECT id, password_hash, two_factor_enabled FROM USERS WHERE email=$1"
+	selectedUserDataQuery := "SELECT id, password_hash, two_factor_enabled FROM users WHERE email=$1"
 	if err := tx.QueryRow(ctx, selectedUserDataQuery, lr.Email).Scan(
 		&userData.ID,
 		&userData.PasswordHash,
@@ -329,6 +325,8 @@ func (r *RepositorySSO) Login(ctx context.Context, lr dto.LogInRequest) (respons
 		r.Log.Error("error with scanning user data: ", "error", err)
 		return dto.LogInResponse{}, http.StatusBadRequest, err
 	}
+
+	fmt.Println(userData.PasswordHash)
 
 	check := passwordhash.Checking(lr.Password, userData.PasswordHash)
 	if check != true {

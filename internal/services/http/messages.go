@@ -2,6 +2,7 @@ package servicehttp
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -16,6 +17,7 @@ import (
 	mimetype "github.com/Flikest/PingVi_backend/pkg/mime_type"
 	"github.com/bwmarrin/snowflake"
 	"github.com/gin-gonic/gin"
+	"github.com/gocql/gocql"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/redis/go-redis/v9"
@@ -28,10 +30,11 @@ var upgrader = websocket.Upgrader{
 }
 
 type Message struct {
-	Operation string       `json:"operation"`
-	Message   dto.Message  `json:"message"`
-	Reaction  dto.Reaction `json:"reaction"`
-	Status    string       `json:"status"`
+	Operation string             `json:"operation"`
+	Message   dto.Message        `json:"message"`
+	Reaction  dto.Reaction       `json:"reaction"`
+	Status    string             `json:"status"`
+	Statuses  []dto.UserPresence `json:"statuses,omitempty"`
 }
 
 type Client struct {
@@ -91,25 +94,27 @@ func NewMessengerHub(h *MessengerHub) *MessengerHub {
 	}
 }
 
-func (h *MessengerHub) onConnect(ctx context.Context, client *Client, subscribeUsers []uuid.UUID) {
+func (h *MessengerHub) onConnect(ctx context.Context, client *Client, subscribeUsers []gocql.UUID) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
 	h.Clients[client.ID] = client
 
-	userID, err := uuid.Parse(client.ID)
+	userID, err := gocql.ParseUUID(client.ID)
 	if err == nil && h.Redis != nil {
-		h.setUserOnline(ctx, userID)
+		key := fmt.Sprintf(KeyUserOnline, userID)
+		h.Redis.Set(ctx, key, time.Now().Unix(), OnlineTTL)
 
 		for _, subUserID := range subscribeUsers {
-			h.addUserSubscription(ctx, userID, subUserID)
+			subKey := fmt.Sprintf(KeyUserSubs, userID)
+			h.Redis.SAdd(ctx, subKey, subUserID.String())
 		}
 
 		go h.sendInitialStatuses(ctx, userID, client)
 	}
 }
 
-func (h *MessengerHub) onDisconect(ctx context.Context, userID string) {
+func (h *MessengerHub) onDisconnect(ctx context.Context, userID string) {
 	h.mu.Lock()
 	client, exist := h.Clients[userID]
 	if exist {
@@ -118,9 +123,11 @@ func (h *MessengerHub) onDisconect(ctx context.Context, userID string) {
 	h.mu.Unlock()
 
 	if h.Redis != nil && exist {
-		userUUID, err := uuid.Parse(userID)
+		userUUID, err := gocql.ParseUUID(userID)
 		if err == nil {
-			h.setUserOffline(ctx, userUUID)
+			key := fmt.Sprintf(KeyUserOnline, userUUID)
+			h.Redis.Del(ctx, key)
+			h.publishUserStatus(ctx, userUUID)
 		}
 	}
 
@@ -129,7 +136,7 @@ func (h *MessengerHub) onDisconect(ctx context.Context, userID string) {
 	}
 }
 
-func (h *MessengerHub) onSwitchChat(ctx context.Context, userID, swichedChatID uuid.UUID) {
+func (h *MessengerHub) onSwitchChat(ctx context.Context, userID, swichedChatID gocql.UUID) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -141,8 +148,9 @@ func (h *MessengerHub) onSwitchChat(ctx context.Context, userID, swichedChatID u
 	}
 
 	if h.Redis != nil && exist {
-		h.setUserActiveChat(ctx, userID, swichedChatID)
-
+		key := fmt.Sprintf(KeyUserActiveChat, userID)
+		h.Redis.Set(ctx, key, swichedChatID.String(), ActiveChatTTL)
+		h.publishUserStatus(ctx, userID)
 		go h.notifySubscribers(ctx, userID, "active_chat", swichedChatID)
 	}
 }
@@ -200,7 +208,7 @@ func (h *MessengerHub) onUpdateMesage(ctx context.Context, msg dto.UpdateMessage
 }
 
 func (h *MessengerHub) onSendReaction(ctx context.Context, reaction dto.Reaction) {
-	reactionID, err := uuid.NewV7()
+	reactionID, err := gocql.RandomUUID()
 	if err != nil {
 		h.Log.Error("error with generate reaction id: ", "error", err)
 	}
@@ -223,7 +231,7 @@ func (h *MessengerHub) onSendReaction(ctx context.Context, reaction dto.Reaction
 	})
 }
 
-func (h *MessengerHub) onDeleteReaction(ctx context.Context, id, chatID, userID uuid.UUID, messageID snowflake.ID) {
+func (h *MessengerHub) onDeleteReaction(ctx context.Context, id, chatID, userID gocql.UUID, messageID snowflake.ID) {
 	if err := h.RepositoryMessenger.DeleteReaction(ctx, id); err != nil {
 		h.Log.Error("error with delete reaction", "error", err)
 		return
@@ -259,7 +267,7 @@ func (h *MessengerHub) onKickMember(ctx context.Context, msg dto.KickMemberMessa
 	if err := h.RepositoryMessenger.InsertMessage(ctx, dto.Message{
 		ID:        messageID,
 		ChatID:    msg.ChatID,
-		SenderID:  uuid.Nil,
+		SenderID:  gocql.UUID{},
 		Message:   msg.Message,
 		IsMy:      false,
 		IsSystem:  true,
@@ -285,7 +293,7 @@ func (h *MessengerHub) onLeaveMember(ctx context.Context, msg dto.LeaveMemberMes
 	if err := h.RepositoryMessenger.InsertMessage(ctx, dto.Message{
 		ID:        messageID,
 		ChatID:    msg.ChatID,
-		SenderID:  uuid.Nil,
+		SenderID:  gocql.UUID{},
 		Message:   msg.Message,
 		IsMy:      false,
 		IsSystem:  true,
@@ -336,75 +344,36 @@ func (h *MessengerHub) broadcast(ctx context.Context, message Message) {
 	}
 }
 
-func (h *MessengerHub) sendInitialStatuses(ctx context.Context, userID uuid.UUID, client *Client) {
+func (h *MessengerHub) sendInitialStatuses(ctx context.Context, userID gocql.UUID, client *Client) {
 	if h.Redis == nil {
 		return
 	}
 
-	statuses, err := h.getSubscribedUsersStatus(ctx, userID)
+	presences, err := h.getSubscribedUsersPresences(ctx, userID)
 	if err != nil {
-		h.Log.Error("failed to get subscribed users status", "error", err)
+		h.Log.Error("failed to get subscribed users presences", "error", err)
 		return
 	}
 
-	for subUserID, _ := range statuses {
-		statusMessage := Message{
-			Operation: "user_status",
-			Message: dto.Message{
-				SenderID: subUserID,
-			},
-		}
-
-		client.Push(statusMessage)
-	}
-}
-
-func (h *MessengerHub) notifySubscribers(ctx context.Context, userID uuid.UUID, statusType string, chatID uuid.UUID) {
-	if h.Redis == nil {
+	if len(presences) == 0 {
 		return
 	}
 
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-
-	for _, client := range h.Clients {
-		clientUserID, err := uuid.Parse(client.ID)
-		if err != nil {
-			continue
-		}
-
-		subs, err := h.getUserSubscriptions(ctx, clientUserID)
-		if err != nil {
-			continue
-		}
-
-		for _, subID := range subs {
-			if subID == userID {
-				statusMessage := Message{
-					Operation: "user_status_update",
-					Message: dto.Message{
-						SenderID: userID,
-						ChatID:   chatID,
-					},
-				}
-				if statusType == "typing" {
-					statusMessage.Status = "typing_start"
-				} else if statusType == "active_chat" {
-					statusMessage.Status = "active_chat_changed"
-				}
-
-				client.Push(statusMessage)
-				break
-			}
-		}
+	statusMessage := Message{
+		Operation: "user_status",
+		Message:   dto.Message{SenderID: userID},
+		Status:    "online",
+		Statuses:  presences,
 	}
+
+	client.Push(statusMessage)
 }
 
 func (s *ServiceMessenger) ReadMessageFromClient(ctx context.Context, client *Client) {
 	readCtx, cancel := context.WithCancel(ctx)
 	defer func() {
 		cancel()
-		s.MessengerHub.onDisconect(ctx, client.ID)
+		s.MessengerHub.onDisconnect(ctx, client.ID)
 	}()
 
 	go func() {
@@ -422,7 +391,7 @@ func (s *ServiceMessenger) ReadMessageFromClient(ctx context.Context, client *Cl
 			return
 		}
 
-		clientID, err := uuid.Parse(client.ID)
+		clientID, err := gocql.ParseUUID(client.ID)
 		if err != nil {
 			s.Log.Error("error with parse uuid user id: ", "error", err)
 			return
@@ -471,7 +440,7 @@ func (s *ServiceMessenger) ReadMessageFromClient(ctx context.Context, client *Cl
 			s.MessengerHub.onDeleteReaction(readCtx, msg.Reaction.ID, msg.Message.ChatID, clientID, msg.Message.ID)
 		case "typing_start":
 			if s.MessengerHub.Redis != nil {
-				s.MessengerHub.setUserTyping(readCtx, msg.Message.SenderID, msg.Message.ChatID)
+				s.MessengerHub.setUserTyping(readCtx, clientID, msg.Message.ChatID)
 				go s.MessengerHub.notifySubscribers(readCtx, msg.Message.SenderID, "typing", msg.Message.ChatID)
 			}
 		case "typing_stop":
@@ -532,7 +501,7 @@ func (s *ServiceMessenger) Handshake(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(response.GetUserId())
+	userID, err := gocql.ParseUUID(response.GetUserId())
 	if err != nil {
 		s.Log.Error("error with parsing user id uuid: ", "error", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "error with parsing user id"})

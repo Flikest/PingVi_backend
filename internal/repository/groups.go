@@ -6,10 +6,9 @@ import (
 
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
 	"github.com/gocql/gocql"
-	"github.com/google/uuid"
 )
 
-func (r *RepositoryMessenger) IsGroupMuted(ctx context.Context, groupID, userID uuid.UUID) (bool, error) {
+func (r *RepositoryMessenger) IsGroupMuted(ctx context.Context, groupID, userID gocql.UUID) (bool, error) {
 	selectMuted := r.Session.ContextQuery(
 		ctx,
 		`SELECT is_muted FROM messenger_keyspace.group_members WHERE group_id=? AND user_id=?`,
@@ -28,7 +27,7 @@ func (r *RepositoryMessenger) IsGroupMuted(ctx context.Context, groupID, userID 
 	return isMuted, nil
 }
 
-func (r *RepositoryMessenger) SelectGroupOwnerID(ctx context.Context, groupID uuid.UUID) (uuid.UUID, error) {
+func (r *RepositoryMessenger) SelectGroupOwnerID(ctx context.Context, groupID gocql.UUID) (gocql.UUID, error) {
 	selectOwnerID := r.Session.ContextQuery(
 		ctx,
 		`SELECT owner_id FROM messenger_keyspace.groups WHERE id=?`,
@@ -37,16 +36,16 @@ func (r *RepositoryMessenger) SelectGroupOwnerID(ctx context.Context, groupID uu
 			":id": groupID,
 		})
 
-	var ownerID uuid.UUID
+	var ownerID gocql.UUID
 	if err := selectOwnerID.SelectRelease(&ownerID); err != nil {
 		r.Log.Error("error with selecting owner id: ", "error", err)
-		return uuid.Nil, err
+		return gocql.UUID{}, err
 	}
 
 	return ownerID, nil
 }
 
-func (r *RepositoryMessenger) SelectGroupIdsByUserId(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, error) {
+func (r *RepositoryMessenger) SelectGroupIdsByUserId(ctx context.Context, userID gocql.UUID) ([]gocql.UUID, error) {
 	query := r.Session.ContextQuery(
 		ctx,
 		`SELECT group_id FROM messenger_keyspace.group_members WHERE user_id=?`,
@@ -55,7 +54,7 @@ func (r *RepositoryMessenger) SelectGroupIdsByUserId(ctx context.Context, userID
 			":user_id": userID,
 		})
 
-	var groupIDs []uuid.UUID
+	var groupIDs []gocql.UUID
 	if err := query.SelectRelease(&groupIDs); err != nil {
 		r.Log.Error("error with selecting user ids from group: ", "error", err)
 		return nil, err
@@ -64,7 +63,7 @@ func (r *RepositoryMessenger) SelectGroupIdsByUserId(ctx context.Context, userID
 	return groupIDs, nil
 }
 
-func (r *RepositoryMessenger) SelectGroupMembers(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error) {
+func (r *RepositoryMessenger) SelectGroupMembers(ctx context.Context, groupID gocql.UUID) ([]gocql.UUID, error) {
 	query := r.Session.ContextQuery(
 		ctx,
 		`SELECT user_id FROM messenger_keyspace.group_members WHERE group_id=?`,
@@ -73,7 +72,7 @@ func (r *RepositoryMessenger) SelectGroupMembers(ctx context.Context, groupID uu
 			":group_id": groupID,
 		})
 
-	var userIDs []uuid.UUID
+	var userIDs []gocql.UUID
 	if err := query.SelectRelease(&userIDs); err != nil {
 		r.Log.Error("error with selecting members from group")
 		return nil, err
@@ -82,7 +81,7 @@ func (r *RepositoryMessenger) SelectGroupMembers(ctx context.Context, groupID uu
 	return userIDs, nil
 }
 
-func (r *RepositoryMessenger) SelectGroupMemberIsAdmin(ctx context.Context, groupID, userID uuid.UUID) (bool, error) {
+func (r *RepositoryMessenger) SelectGroupMemberIsAdmin(ctx context.Context, groupID, userID gocql.UUID) (bool, error) {
 	selectMemberIsAdmin := r.Session.ContextQuery(
 		ctx,
 		`SELECT is_admin FROM messenger_keyspace.group_members WHERE group_id=? AND user_id=?`,
@@ -101,7 +100,7 @@ func (r *RepositoryMessenger) SelectGroupMemberIsAdmin(ctx context.Context, grou
 	return isAdmin, nil
 }
 
-func (r *RepositoryMessenger) SelectGroupExists(ctx context.Context, groupID uuid.UUID) (bool, error) {
+func (r *RepositoryMessenger) SelectGroupExists(ctx context.Context, groupID gocql.UUID) (bool, error) {
 	q := r.Session.ContextQuery(
 		ctx,
 		`SELECT COUNT(*) FROM messenger_keyspace.groups WHERE id=?`,
@@ -176,7 +175,7 @@ func (r *RepositoryMessenger) InsertGroupMember(ctx context.Context, member dto.
 	return nil
 }
 
-func (r *RepositoryMessenger) DeleteGroupMember(ctx context.Context, groupID, userID uuid.UUID) error {
+func (r *RepositoryMessenger) DeleteGroupMember(ctx context.Context, groupID, userID gocql.UUID) error {
 	deleteMember := r.Session.ContextQuery(
 		ctx,
 		`DELETE FROM messenger_keyspace.group_members WHERE group_id=? AND user_id=?`,
@@ -194,7 +193,7 @@ func (r *RepositoryMessenger) DeleteGroupMember(ctx context.Context, groupID, us
 	return nil
 }
 
-func (r *RepositoryMessenger) SelectAllMembersGroup(ctx context.Context, groupID uuid.UUID) ([]dto.GroupMember, error) {
+func (r *RepositoryMessenger) SelectAllMembersGroup(ctx context.Context, groupID gocql.UUID) ([]dto.GroupMember, error) {
 	selectMembersFromGroup := r.Session.ContextQuery(
 		ctx,
 		`SELECT * FROM messenger_keyspace.group_members WHERE group_id=?`,
@@ -214,7 +213,7 @@ func (r *RepositoryMessenger) SelectAllMembersGroup(ctx context.Context, groupID
 	return members, nil
 }
 
-func (r *RepositoryMessenger) SelectGroupNameByID(ctx context.Context, groupID uuid.UUID) (string, error) {
+func (r *RepositoryMessenger) SelectGroupNameByID(ctx context.Context, groupID gocql.UUID) (string, error) {
 	query := r.Session.ContextQuery(
 		ctx,
 		`SELECT name FROM messenger_keyspace.groups WHERE id=?`,
@@ -232,7 +231,7 @@ func (r *RepositoryMessenger) SelectGroupNameByID(ctx context.Context, groupID u
 	return name, nil
 }
 
-func (r *RepositoryMessenger) IsBelongGroup(ctx context.Context, groupID, userID uuid.UUID) (bool, error) {
+func (r *RepositoryMessenger) IsBelongGroup(ctx context.Context, groupID, userID gocql.UUID) (bool, error) {
 	query := r.Session.ContextQuery(
 		ctx,
 		`SELECT user_id FROM messenger_keyspace.group_members WHERE group_id = ? AND user_id = ? LIMIT 1`,
@@ -242,7 +241,7 @@ func (r *RepositoryMessenger) IsBelongGroup(ctx context.Context, groupID, userID
 			":user_id":  userID,
 		})
 
-	var scanUserID uuid.UUID
+	var scanUserID gocql.UUID
 	if err := query.SelectRelease(&scanUserID); err != nil {
 		if errors.Is(err, gocql.ErrNotFound) {
 			return false, nil
@@ -255,7 +254,7 @@ func (r *RepositoryMessenger) IsBelongGroup(ctx context.Context, groupID, userID
 	return true, nil
 }
 
-func (r *RepositoryMessenger) SelectMemberGroup(ctx context.Context, groupID, userID uuid.UUID) (dto.GroupMember, error) {
+func (r *RepositoryMessenger) SelectMemberGroup(ctx context.Context, groupID, userID gocql.UUID) (dto.GroupMember, error) {
 	selectMemberFromGroup := r.Session.ContextQuery(
 		ctx,
 		`SELECT * FROM messenger_keyspace.group_members WHERE group_id=? AND user_id=?`,
@@ -277,7 +276,7 @@ func (r *RepositoryMessenger) SelectMemberGroup(ctx context.Context, groupID, us
 	return member, nil
 }
 
-func (r *RepositoryMessenger) SelectGroup(ctx context.Context, userID uuid.UUID) ([]dto.Group, error) {
+func (r *RepositoryMessenger) SelectGroup(ctx context.Context, userID gocql.UUID) ([]dto.Group, error) {
 	selectMembers := r.Session.ContextQuery(
 		ctx,
 		`SELECT group_id FROM messenger_keyspace.group_members WHERE user_id=?`,
@@ -286,7 +285,7 @@ func (r *RepositoryMessenger) SelectGroup(ctx context.Context, userID uuid.UUID)
 			":user_id": userID,
 		})
 
-	var groupIDs []uuid.UUID
+	var groupIDs []gocql.UUID
 	if err := selectMembers.SelectRelease(&groupIDs); err != nil {
 		r.Log.Error("error with selecting groups id: ", "error", err)
 		return nil, err
@@ -344,7 +343,7 @@ func (r *RepositoryMessenger) UpdateGroup(ctx context.Context, group dto.Group) 
 	return nil
 }
 
-func (r *RepositoryMessenger) DeleteGroupMembersByGroupID(ctx context.Context, groupID uuid.UUID) error {
+func (r *RepositoryMessenger) DeleteGroupMembersByGroupID(ctx context.Context, groupID gocql.UUID) error {
 	deleteMembers := r.Session.ContextQuery(
 		ctx,
 		`DELETE FROM messenger_keyspace.group_members WHERE group_id=?`,
@@ -361,7 +360,7 @@ func (r *RepositoryMessenger) DeleteGroupMembersByGroupID(ctx context.Context, g
 	return nil
 }
 
-func (r *RepositoryMessenger) DeleteGroupByID(ctx context.Context, groupID uuid.UUID) error {
+func (r *RepositoryMessenger) DeleteGroupByID(ctx context.Context, groupID gocql.UUID) error {
 	deleteGroup := r.Session.ContextQuery(
 		ctx,
 		`DELETE FROM messenger_keyspace.groups WHERE id=?`,

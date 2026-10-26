@@ -1,6 +1,7 @@
 package servicehttp
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 
@@ -8,10 +9,11 @@ import (
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
 	"github.com/Flikest/PingVi_backend/pkg/tokens"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+	"github.com/gocql/gocql"
 )
 
 func (s ServiceMessenger) GetStartMyChats(ctx *gin.Context) {
+	fmt.Println(ctx.Request.Header.Get("Authorization"))
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
 		s.Log.Error("error with verify jwt user token: ", "error", err)
@@ -19,7 +21,7 @@ func (s ServiceMessenger) GetStartMyChats(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

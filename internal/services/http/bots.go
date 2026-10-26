@@ -13,6 +13,7 @@ import (
 	randomstring "github.com/Flikest/PingVi_backend/pkg/random_string"
 	"github.com/Flikest/PingVi_backend/pkg/tokens"
 	"github.com/gin-gonic/gin"
+	"github.com/gocql/gocql"
 	"github.com/google/uuid"
 )
 
@@ -69,7 +70,7 @@ func (s *ServiceBots) SendAnswers(ctx *gin.Context) {
 
 	left, _, _ := strings.Cut(botToken, ":")
 
-	botID, err := uuid.Parse(left)
+	botID, err := gocql.ParseUUID(left)
 	if err != nil {
 		s.Log.Error("error with parsing uuid bot id: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

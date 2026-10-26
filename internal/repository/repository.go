@@ -40,6 +40,7 @@ func NewRepositorySSO(r *RepositorySSO) *RepositorySSO {
 	return &RepositorySSO{
 		Log: r.Log,
 		DB:  r.DB,
+		RDB: r.RDB,
 	}
 }
 

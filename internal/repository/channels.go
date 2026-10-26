@@ -3,13 +3,15 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
 	"github.com/gocql/gocql"
 	"github.com/google/uuid"
 )
 
-func (r *RepositoryMessenger) IsChannelMuted(ctx context.Context, channelID, userID uuid.UUID) (bool, error) {
+func (r *RepositoryMessenger) IsChannelMuted(ctx context.Context, channelID, userID gocql.UUID) (bool, error) {
 	selectMuted := r.Session.ContextQuery(
 		ctx,
 		`SELECT is_muted FROM messenger_keyspace.channel_members WHERE channel_id=? AND user_id=?`,
@@ -28,7 +30,7 @@ func (r *RepositoryMessenger) IsChannelMuted(ctx context.Context, channelID, use
 	return isMuted, nil
 }
 
-func (r *RepositoryMessenger) SelectChannelOwnerID(ctx context.Context, channelID uuid.UUID) (uuid.UUID, error) {
+func (r *RepositoryMessenger) SelectChannelOwnerID(ctx context.Context, channelID gocql.UUID) (gocql.UUID, error) {
 	SelectOwnerID := r.Session.ContextQuery(
 		ctx,
 		`SELECT owner_id FROM messenger_keyspace.channels WHERE id=?`,
@@ -37,16 +39,16 @@ func (r *RepositoryMessenger) SelectChannelOwnerID(ctx context.Context, channelI
 			":id": channelID,
 		})
 
-	var ownerID uuid.UUID
+	var ownerID gocql.UUID
 	if err := SelectOwnerID.SelectRelease(&ownerID); err != nil {
 		r.Log.Error("error with selecting owner id from channel: ", "error", err)
-		return uuid.Nil, err
+		return gocql.UUID{}, err
 	}
 
 	return ownerID, nil
 }
 
-func (r *RepositoryMessenger) SelectChannelIdsByUserId(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, error) {
+func (r *RepositoryMessenger) SelectChannelIdsByUserId(ctx context.Context, userID gocql.UUID) ([]gocql.UUID, error) {
 	query := r.Session.ContextQuery(
 		ctx,
 		`SELECT channel_id FROM messenger_keyspace.channel_members WHERE user_id=?`,
@@ -55,7 +57,7 @@ func (r *RepositoryMessenger) SelectChannelIdsByUserId(ctx context.Context, user
 			":user_id": userID,
 		})
 
-	var chatsID []uuid.UUID
+	var chatsID []gocql.UUID
 	if err := query.SelectRelease(&chatsID); err != nil {
 		r.Log.Error("error with selecting chats by user id: ", "error", err)
 		return nil, err
@@ -64,7 +66,7 @@ func (r *RepositoryMessenger) SelectChannelIdsByUserId(ctx context.Context, user
 	return chatsID, nil
 }
 
-func (r *RepositoryMessenger) SelectChannelMemberIds(ctx context.Context, id uuid.UUID) ([]uuid.UUID, error) {
+func (r *RepositoryMessenger) SelectChannelMemberIds(ctx context.Context, id gocql.UUID) ([]gocql.UUID, error) {
 	query := r.Session.ContextQuery(
 		ctx,
 		`SELECT user_id FROM messenger_keyspace.channel_members WHERE channel_id=?`,
@@ -73,7 +75,7 @@ func (r *RepositoryMessenger) SelectChannelMemberIds(ctx context.Context, id uui
 			":channel_id": id,
 		})
 
-	var membersID []uuid.UUID
+	var membersID []gocql.UUID
 	if err := query.SelectRelease(&membersID); err != nil {
 		r.Log.Error("error with selecting members by channel id: ", "error", err)
 		return nil, err
@@ -82,7 +84,7 @@ func (r *RepositoryMessenger) SelectChannelMemberIds(ctx context.Context, id uui
 	return membersID, nil
 }
 
-func (r *RepositoryMessenger) SelectChannelMembers(ctx context.Context, channelID uuid.UUID) ([]dto.ChannelMember, error) {
+func (r *RepositoryMessenger) SelectChannelMembers(ctx context.Context, channelID gocql.UUID) ([]dto.ChannelMember, error) {
 	query := r.Session.ContextQuery(ctx,
 		`SELECT * FROM messenger_keyspace.channel_members WHERE channel_id = $1`,
 		[]string{":channel_id"}).
@@ -159,7 +161,7 @@ func (r *RepositoryMessenger) InsertChannelMember(ctx context.Context, member dt
 	return nil
 }
 
-func (r *RepositoryMessenger) IsBelongChannel(ctx context.Context, channelID, userID uuid.UUID) (bool, error) {
+func (r *RepositoryMessenger) IsBelongChannel(ctx context.Context, channelID, userID gocql.UUID) (bool, error) {
 	query := r.Session.ContextQuery(
 		ctx,
 		`SELECT user_id FROM messenger_keyspace.channel_members WHERE channel_id = ? AND user_id = ? LIMIT 1`,
@@ -182,7 +184,7 @@ func (r *RepositoryMessenger) IsBelongChannel(ctx context.Context, channelID, us
 	return true, nil
 }
 
-func (r *RepositoryMessenger) SelectChannelNameByID(ctx context.Context, channelID uuid.UUID) (string, error) {
+func (r *RepositoryMessenger) SelectChannelNameByID(ctx context.Context, channelID gocql.UUID) (string, error) {
 	query := r.Session.ContextQuery(
 		ctx,
 		`SELECT name FROM messenger_keyspace.channels WHERE id=?`,
@@ -200,31 +202,44 @@ func (r *RepositoryMessenger) SelectChannelNameByID(ctx context.Context, channel
 	return name, nil
 }
 
-func (r *RepositoryMessenger) SelectChannels(ctx context.Context, userID uuid.UUID) ([]dto.Channel, error) {
+func (r *RepositoryMessenger) SelectChannels(ctx context.Context, userID gocql.UUID) ([]dto.Channel, error) {
+	// 1. Получаем ID каналов, в которых состоит пользователь
 	selectMembers := r.Session.ContextQuery(
 		ctx,
-		`SELECT channel_id FROM messenger_keyspace.channel_members WHERE user_id IN ?`,
-		[]string{":user_id"}).
-		BindMap(map[string]interface{}{
-			":user_id": userID,
-		})
+		`SELECT channel_id FROM messenger_keyspace.channel_members WHERE user_id = ?`,
+		nil,
+	).Bind(userID)
 
-	var userIDs []string
-	if err := selectMembers.SelectRelease(&userIDs); err != nil {
+	var channelIDs []gocql.UUID
+	if err := selectMembers.SelectRelease(&channelIDs); err != nil {
 		r.Log.Error("error with selecting members by id: ", "error", err)
 		return nil, err
 	}
 
-	query := r.Session.Query(
-		`SELECT * FROM messenger_keyspace.channels WHERE id=?`,
-		[]string{":id"}).
-		BindMap(map[string]interface{}{
-			":id": userIDs,
-		})
+	// Если каналов нет — возвращаем пустой срез
+	if len(channelIDs) == 0 {
+		return []dto.Channel{}, nil
+	}
+
+	// 2. Строим плейсхолдеры: ?, ?, ?, ...
+	placeholders := make([]string, len(channelIDs))
+	args := make([]interface{}, len(channelIDs))
+	for i, id := range channelIDs {
+		placeholders[i] = "?"
+		args[i] = id
+	}
+
+	queryStr := fmt.Sprintf(
+		`SELECT * FROM messenger_keyspace.channels WHERE id IN (%s)`,
+		strings.Join(placeholders, ", "),
+	)
+
+	// 3. Получаем сами каналы по списку ID
+	query := r.Session.ContextQuery(ctx, queryStr, nil).Bind(args...)
 
 	var channels []dto.Channel
 	if err := query.SelectRelease(&channels); err != nil {
-		r.Log.Error("error with selecting channels: ", "error", err)
+		r.Log.Error("error with select channels from db: ", "error", err)
 		return nil, err
 	}
 
@@ -262,7 +277,7 @@ func (r *RepositoryMessenger) UpdateChannel(ctx context.Context, channel dto.Cha
 	return nil
 }
 
-func (r *RepositoryMessenger) DeleteChannelMemberByUserID(ctx context.Context, channelID, userID uuid.UUID) error {
+func (r *RepositoryMessenger) DeleteChannelMemberByUserID(ctx context.Context, channelID, userID gocql.UUID) error {
 	deleteMember := r.Session.ContextQuery(
 		ctx,
 		`DELETE FROM messenger_keyspace.channel_members WHERE user_id=? AND channel_id=?`,
@@ -283,7 +298,7 @@ func (r *RepositoryMessenger) DeleteChannelMemberByUserID(ctx context.Context, c
 	return nil
 }
 
-func (r *RepositoryMessenger) DeleteChannelMember(ctx context.Context, channelID, memberID uuid.UUID) error {
+func (r *RepositoryMessenger) DeleteChannelMember(ctx context.Context, channelID, memberID gocql.UUID) error {
 	deleteMember := r.Session.ContextQuery(
 		ctx,
 		`DELETE FROM messenger_keyspace.channel_members WHERE channel_id=? and user_id=?`,
@@ -304,7 +319,7 @@ func (r *RepositoryMessenger) DeleteChannelMember(ctx context.Context, channelID
 	return nil
 }
 
-func (r *RepositoryMessenger) DeleteChannelRolesByChannelID(ctx context.Context, channelID uuid.UUID) error {
+func (r *RepositoryMessenger) DeleteChannelRolesByChannelID(ctx context.Context, channelID gocql.UUID) error {
 	deleteRole := r.Session.ContextQuery(
 		ctx,
 		`DELETE FROM messenger_keyspace.channel_roles WHERE channel_id = ?`,
@@ -321,7 +336,7 @@ func (r *RepositoryMessenger) DeleteChannelRolesByChannelID(ctx context.Context,
 	return nil
 }
 
-func (r *RepositoryMessenger) DeleteChannelTopicsByChannelID(ctx context.Context, channelID uuid.UUID) error {
+func (r *RepositoryMessenger) DeleteChannelTopicsByChannelID(ctx context.Context, channelID gocql.UUID) error {
 	deleteTopics := r.Session.ContextQuery(
 		ctx,
 		`DELETE FROM messenger_keyspace.topics WHERE channel_id=?`,
@@ -338,7 +353,7 @@ func (r *RepositoryMessenger) DeleteChannelTopicsByChannelID(ctx context.Context
 	return nil
 }
 
-func (r *RepositoryMessenger) DeleteChannelMembersByChannelID(ctx context.Context, channelID uuid.UUID) error {
+func (r *RepositoryMessenger) DeleteChannelMembersByChannelID(ctx context.Context, channelID gocql.UUID) error {
 	deleteMember := r.Session.ContextQuery(
 		ctx,
 		`DELETE FROM messenger_keyspace.channel_members WHERE channel_id=?`,
@@ -357,7 +372,7 @@ func (r *RepositoryMessenger) DeleteChannelMembersByChannelID(ctx context.Contex
 	return nil
 }
 
-func (r *RepositoryMessenger) DeleteChannelByID(ctx context.Context, channelID uuid.UUID) error {
+func (r *RepositoryMessenger) DeleteChannelByID(ctx context.Context, channelID gocql.UUID) error {
 	deleteChannel := r.Session.ContextQuery(
 		ctx,
 		`

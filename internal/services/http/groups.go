@@ -11,6 +11,7 @@ import (
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
 	"github.com/Flikest/PingVi_backend/pkg/tokens"
 	"github.com/gin-gonic/gin"
+	"github.com/gocql/gocql"
 	"github.com/google/uuid"
 )
 
@@ -38,7 +39,7 @@ func (s *ServiceMessenger) CreateGroup(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -54,7 +55,7 @@ func (s *ServiceMessenger) CreateGroup(ctx *gin.Context) {
 
 	body.OwnerID = userID
 
-	groupID, err := uuid.NewV7()
+	groupID, err := gocql.RandomUUID()
 	if err != nil {
 		s.Log.Error("error with generating group id: ", "error", err)
 		ctx.JSON(http.StatusInternalServerError, err)
@@ -90,7 +91,7 @@ func (s *ServiceMessenger) CreateGroup(ctx *gin.Context) {
 
 	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:   groupID,
-		SenderID: uuid.Nil,
+		SenderID: gocql.UUID{},
 		Message:  fmt.Sprintf("User %s create this group", response.GetName()),
 		IsSystem: true,
 	})
@@ -122,14 +123,14 @@ func (s *ServiceMessenger) JoinGroup(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	groupID, err := uuid.Parse(ctx.Param("group_id"))
+	groupID, err := gocql.ParseUUID(ctx.Param("group_id"))
 	if err != nil {
 		s.Log.Error("error with parsing group id uuid", "error", err)
 		ctx.JSON(http.StatusBadRequest, err)
@@ -160,7 +161,7 @@ func (s *ServiceMessenger) JoinGroup(ctx *gin.Context) {
 
 	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:   groupID,
-		SenderID: uuid.Nil,
+		SenderID: gocql.UUID{},
 		Message:  fmt.Sprintf("User %s joined the channel", response.GetName()),
 		IsSystem: true,
 	})
@@ -186,7 +187,7 @@ func (s *ServiceMessenger) JoinGroup(ctx *gin.Context) {
 //	@Failure		500				{object}	map[string]interface{}	"Internal server error"	example({"error":"failed to leave group"})
 //	@Router			/groups/leave/{group_id} [get]
 func (s *ServiceMessenger) LeaveGroup(ctx *gin.Context) {
-	groupID, err := uuid.Parse(ctx.Param("group_id"))
+	groupID, err := gocql.ParseUUID(ctx.Param("group_id"))
 	if err != nil {
 		s.Log.Error("error with parsing group id uuid", "error", err)
 		ctx.JSON(http.StatusBadRequest, err)
@@ -200,7 +201,7 @@ func (s *ServiceMessenger) LeaveGroup(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -236,7 +237,7 @@ func (s *ServiceMessenger) LeaveGroup(ctx *gin.Context) {
 
 		s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 			ChatID:   groupID,
-			SenderID: uuid.Nil,
+			SenderID: gocql.UUID{},
 			Message:  fmt.Sprintf("channel %s was deleted", groupName),
 			IsSystem: true,
 		})
@@ -283,7 +284,7 @@ func (s *ServiceMessenger) LeaveGroup(ctx *gin.Context) {
 //	@Failure		500				{object}	map[string]interface{}	"Internal server error"	example({"error":"failed to get members"})
 //	@Router			/groups/member/all/{group_id} [get]
 func (s *ServiceMessenger) SelectAllMembersGroup(ctx *gin.Context) {
-	groupID, err := uuid.Parse(ctx.Param("group_id"))
+	groupID, err := gocql.ParseUUID(ctx.Param("group_id"))
 	if err != nil {
 		s.Log.Error("error with parsing group id uuid: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -351,14 +352,14 @@ func (s *ServiceMessenger) SelectAllMembersGroup(ctx *gin.Context) {
 //	@Failure		500				{object}	map[string]interface{}	"Internal server error"	example({"error":"failed to get member"})
 //	@Router			/groups/member/{group_id} [get]
 func (s *ServiceMessenger) SelectMemberGroup(ctx *gin.Context) {
-	groupID, err := uuid.Parse(ctx.Param("group_id"))
+	groupID, err := gocql.ParseUUID(ctx.Param("group_id"))
 	if err != nil {
 		s.Log.Error("error with parsing group id uuid", "error", err)
 		ctx.JSON(http.StatusBadRequest, err)
 		return
 	}
 
-	userID, err := uuid.Parse(ctx.Param("user_id"))
+	userID, err := gocql.ParseUUID(ctx.Param("user_id"))
 	if err != nil {
 		s.Log.Error("error with parse user id uuid: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, err)
@@ -399,7 +400,7 @@ func (s *ServiceMessenger) KickMemberFromGroup(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -487,7 +488,7 @@ func (s *ServiceMessenger) SelectGroup(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -530,7 +531,7 @@ func (s *ServiceMessenger) UpdateGroup(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -607,7 +608,7 @@ func (s *ServiceMessenger) UpdateGroup(ctx *gin.Context) {
 
 	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:   group.ID,
-		SenderID: uuid.Nil,
+		SenderID: gocql.UUID{},
 		Message:  fmt.Sprintf("User %s changed the group", response.GetName()),
 		IsSystem: true,
 	})

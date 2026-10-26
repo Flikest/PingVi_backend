@@ -11,6 +11,7 @@ import (
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
 	"github.com/Flikest/PingVi_backend/pkg/tokens"
 	"github.com/gin-gonic/gin"
+	"github.com/gocql/gocql"
 	"github.com/google/uuid"
 )
 
@@ -39,7 +40,7 @@ func (s *ServiceMessenger) CreateChannel(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -53,14 +54,14 @@ func (s *ServiceMessenger) CreateChannel(ctx *gin.Context) {
 		return
 	}
 
-	channelID, err := uuid.NewV7()
+	channelID, err := gocql.RandomUUID()
 	if err != nil {
 		s.Log.Error("error with generating channel id: ", "error", err)
 		ctx.JSON(http.StatusInternalServerError, err)
 		return
 	}
 
-	ownerRoleID, err := uuid.NewV7()
+	ownerRoleID, err := gocql.RandomUUID()
 	if err != nil {
 		s.Log.Error("error with generating role id: ", "error", err)
 		ctx.JSON(http.StatusInternalServerError, err)
@@ -134,21 +135,21 @@ func (s *ServiceMessenger) CreateChannel(ctx *gin.Context) {
 
 	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:   channelID,
-		SenderID: uuid.Nil,
+		SenderID: gocql.UUID{},
 		Message:  fmt.Sprintf("User %s create this channel", response.GetName()),
 		IsSystem: true,
 	})
 
 	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:   channelID,
-		SenderID: uuid.Nil,
+		SenderID: gocql.UUID{},
 		Message:  "General topic was created",
 		IsSystem: true,
 	})
 
 	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:   channelID,
-		SenderID: uuid.Nil,
+		SenderID: gocql.UUID{},
 		Message:  "General directory was created",
 		IsSystem: true,
 	})
@@ -181,14 +182,14 @@ func (s *ServiceMessenger) JoinChannel(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	channelID, err := uuid.Parse(ctx.Param("channel_id"))
+	channelID, err := gocql.ParseUUID(ctx.Param("channel_id"))
 	if err != nil {
 		s.Log.Error("error with parsing user id uuid: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, err)
@@ -226,7 +227,7 @@ func (s *ServiceMessenger) JoinChannel(ctx *gin.Context) {
 
 	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:   channelID,
-		SenderID: uuid.Nil,
+		SenderID: gocql.UUID{},
 		Message:  fmt.Sprintf("User %s joined the channel", response.GetName()),
 		IsSystem: true,
 	})
@@ -259,7 +260,7 @@ func (s *ServiceMessenger) KickChannelMember(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -328,7 +329,7 @@ func (s *ServiceMessenger) KickChannelMember(ctx *gin.Context) {
 //	@Failure		500				{object}	map[string]interface{}	"Internal server error"		example({"error":"failed to leave channel"})
 //	@Router			/channels/leave/{channel_id} [get]
 func (s *ServiceMessenger) LeaveFromChannel(ctx *gin.Context) {
-	channelID, err := uuid.Parse(ctx.Param("channel_id"))
+	channelID, err := gocql.ParseUUID(ctx.Param("channel_id"))
 	if err != nil {
 		s.Log.Error("error with parsing user id uuid: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, err)
@@ -342,7 +343,7 @@ func (s *ServiceMessenger) LeaveFromChannel(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -403,7 +404,7 @@ func (s *ServiceMessenger) LeaveFromChannel(ctx *gin.Context) {
 
 		s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 			ChatID:   channelID,
-			SenderID: uuid.Nil,
+			SenderID: gocql.UUID{},
 			Message:  fmt.Sprintf("channel %s was deleted", channelName),
 			IsSystem: true,
 		})
@@ -497,7 +498,7 @@ func (s *ServiceMessenger) GetChannels(ctx *gin.Context) {
 }
 
 func (s *ServiceMessenger) GetChannelMembers(ctx *gin.Context) {
-	channelID, err := uuid.Parse(ctx.Param("channel_id"))
+	channelID, err := gocql.ParseUUID(ctx.Param("channel_id"))
 	if err != nil {
 		s.Log.Error("error with parsing channel id uuid: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, err)
@@ -569,7 +570,7 @@ func (s *ServiceMessenger) UpdateChannel(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -626,7 +627,7 @@ func (s *ServiceMessenger) UpdateChannel(ctx *gin.Context) {
 
 	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:   channel.ID,
-		SenderID: uuid.Nil,
+		SenderID: gocql.UUID{},
 		Message:  fmt.Sprintf("User %s changed the group", response.GetName()),
 		IsSystem: true,
 	})
@@ -659,7 +660,7 @@ func (s *ServiceMessenger) Deletechannel(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

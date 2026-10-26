@@ -3,43 +3,43 @@ package dto
 import (
 	"time"
 
-	"github.com/google/uuid"
+	"github.com/gocql/gocql"
 )
 
 type Role struct {
-	ID            uuid.UUID `json:"id"`
-	ChannelID     uuid.UUID `json:"channel_id"`
-	Name          string    `json:"name"`
-	Color         string    `json:"color"`
-	Permissions   string    `json:"permissions"`
-	IsMentionable bool      `json:"is_mentionable"`
-	IsDefault     bool      `json:"is_default"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	ID            gocql.UUID `json:"id"`
+	ChannelID     gocql.UUID `json:"channel_id"`
+	Name          string     `json:"name"`
+	Color         string     `json:"color"`
+	Permissions   string     `json:"permissions"`
+	IsMentionable bool       `json:"is_mentionable"`
+	IsDefault     bool       `json:"is_default"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
 }
 type CreateRole struct {
-	UserID        uuid.UUID `json:"user_id"`
-	ChannelID     uuid.UUID `json:"channel_id"`
-	Name          string    `json:"name"`
-	Color         string    `json:"color"`
-	Permissions   string    `json:"permissions"`
-	IsMentionable bool      `json:"is_mentionable"`
-	IsDefault     bool      `json:"is_default"`
+	UserID        gocql.UUID `json:"user_id"`
+	ChannelID     gocql.UUID `json:"channel_id"`
+	Name          string     `json:"name"`
+	Color         string     `json:"color"`
+	Permissions   string     `json:"permissions"`
+	IsMentionable bool       `json:"is_mentionable"`
+	IsDefault     bool       `json:"is_default"`
 }
 
 type UpdateRole struct {
-	UserID        uuid.UUID `json:"user_id"`
-	ID            uuid.UUID `json:"id"`
-	ChannelID     uuid.UUID `json:"channel_id"`
-	Name          string    `json:"name"`
-	Color         string    `json:"color"`
-	Permissions   string    `json:"permissions"`
-	IsMentionable bool      `json:"is_mentionable"`
-	IsDefault     bool      `json:"is_default"`
+	UserID        gocql.UUID `json:"user_id"`
+	ID            gocql.UUID `json:"id"`
+	ChannelID     gocql.UUID `json:"channel_id"`
+	Name          string     `json:"name"`
+	Color         string     `json:"color"`
+	Permissions   string     `json:"permissions"`
+	IsMentionable bool       `json:"is_mentionable"`
+	IsDefault     bool       `json:"is_default"`
 }
 
 type DeleteRole struct {
-	UserID    uuid.UUID `json:"user_id"`
-	RoleID    uuid.UUID `json:"role_id"`
-	ChannelID uuid.UUID `json:"channel_id"`
+	UserID    gocql.UUID `json:"user_id"`
+	RoleID    gocql.UUID `json:"role_id"`
+	ChannelID gocql.UUID `json:"channel_id"`
 }

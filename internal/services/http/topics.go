@@ -9,7 +9,7 @@ import (
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
 	"github.com/Flikest/PingVi_backend/pkg/tokens"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+	"github.com/gocql/gocql"
 )
 
 // CreateTopic godoc
@@ -36,7 +36,7 @@ func (s *ServiceMessenger) CreateTopic(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -78,7 +78,7 @@ func (s *ServiceMessenger) CreateTopic(ctx *gin.Context) {
 
 	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:   body.ChannelId,
-		SenderID: uuid.Nil,
+		SenderID: gocql.UUID{},
 		Message:  systemMessage,
 		IsSystem: true,
 	})
@@ -109,14 +109,14 @@ func (s *ServiceMessenger) GetAllTopics(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	channelID, err := uuid.Parse(ctx.Param("channel_id"))
+	channelID, err := gocql.ParseUUID(ctx.Param("channel_id"))
 	if err != nil {
 		s.Log.Error("error with parsing user id uuid: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, err)
@@ -162,7 +162,7 @@ func (s *ServiceMessenger) UpdateTopic(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -211,7 +211,7 @@ func (s *ServiceMessenger) DeleteTopic(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(payload.ID.String())
+	userID, err := gocql.ParseUUID(payload.ID.String())
 	if err != nil {
 		s.Log.Error("error with parsing jwt token from header: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -250,7 +250,7 @@ func (s *ServiceMessenger) DeleteTopic(ctx *gin.Context) {
 
 	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
 		ChatID:   body.ChannelId,
-		SenderID: uuid.Nil,
+		SenderID: gocql.UUID{},
 		Message:  fmt.Sprintf("User %s deleted the topic name %s", response.GetName(), topicName),
 		IsSystem: true,
 	})

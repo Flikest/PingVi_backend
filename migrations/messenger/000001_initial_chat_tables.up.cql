@@ -59,6 +59,10 @@ CREATE TABLE IF NOT EXISTS personal_chats (
     updated_at timestamp
 );
 
+CREATE INDEX ON messenger_keyspace.personal_chats (user1_id);
+CREATE INDEX ON messenger_keyspace.personal_chats (user2_id);
+
+
 CREATE TABLE IF NOT EXISTS groups (
     id uuid PRIMARY KEY,
     name text,

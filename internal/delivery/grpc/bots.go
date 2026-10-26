@@ -13,14 +13,14 @@ import (
 	servicegrpc "github.com/Flikest/PingVi_backend/internal/services/grpc"
 	servicehttp "github.com/Flikest/PingVi_backend/internal/services/http"
 	"github.com/bwmarrin/snowflake"
-	"github.com/google/uuid"
+	"github.com/gocql/gocql"
 )
 
 type HandlerBots struct {
 	pb.UnimplementedBotsServer
-	Service *servicegrpc.ServiceBots
-	MessengerHub     *servicehttp.BotMessengerHub
-	Log     *slog.Logger
+	Service      *servicegrpc.ServiceBots
+	MessengerHub *servicehttp.BotMessengerHub
+	Log          *slog.Logger
 
 	mu sync.RWMutex
 }
@@ -54,13 +54,13 @@ func (h *HandlerBots) GetBotAnswers(
 					continue
 				}
 
-				chatID, err := uuid.Parse(req.MessageData.Message.ChatId)
+				chatID, err := gocql.ParseUUID(req.MessageData.Message.ChatId)
 				if err != nil {
 					h.Log.Error("error with parsing uuid chat id", "error", err, "chatId", req.MessageData.Message.ChatId)
 					continue
 				}
 
-				senderID, err := uuid.Parse(req.MessageData.Message.SenderId)
+				senderID, err := gocql.ParseUUID(req.MessageData.Message.SenderId)
 				if err != nil {
 					h.Log.Error("error with parsing uuid sender id", "error", err, "senderId", req.MessageData.Message.SenderId)
 					continue
@@ -102,7 +102,7 @@ func (h *HandlerBots) GetBotAnswers(
 					UpdatedAt: updatedAt,
 				}
 
-				reactionID, err := uuid.Parse(req.MessageData.Reaction.Id)
+				reactionID, err := gocql.ParseUUID(req.MessageData.Reaction.Id)
 				if err != nil {
 					h.Log.Error("error with parsing uuid reaction id", "error", err, "reactionId", req.MessageData.Reaction.Id)
 					continue
