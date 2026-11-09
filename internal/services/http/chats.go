@@ -1,7 +1,6 @@
 package servicehttp
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 
@@ -13,7 +12,6 @@ import (
 )
 
 func (s ServiceMessenger) GetStartMyChats(ctx *gin.Context) {
-	fmt.Println(ctx.Request.Header.Get("Authorization"))
 	payload, err := tokens.Verify(ctx.Request.Header.Get("Authorization"), []byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
 		s.Log.Error("error with verify jwt user token: ", "error", err)
@@ -28,16 +26,16 @@ func (s ServiceMessenger) GetStartMyChats(ctx *gin.Context) {
 		return
 	}
 
-	channels, err := s.Repository.SelectChannels(ctx.Request.Context(), userID)
+	groups, err := s.Repository.SelectGroup(ctx.Request.Context(), userID)
 	if err != nil {
-		s.Log.Error("error with select channels from db: ", "error", err)
+		s.Log.Error("error with select groups from db: ", "error", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	groups, err := s.Repository.SelectGroup(ctx.Request.Context(), userID)
+	channels, err := s.Repository.SelectChannels(ctx.Request.Context(), userID)
 	if err != nil {
-		s.Log.Error("error with select groups from db: ", "error", err)
+		s.Log.Error("error with select channels from db: ", "error", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -49,117 +47,148 @@ func (s ServiceMessenger) GetStartMyChats(ctx *gin.Context) {
 		return
 	}
 
-	var communities []dto.StartСommunitiesData
+	communities := make([]dto.StartСommunitiesData, 0, len(groups)+len(channels)+len(personalChats))
 
-	for i := 0; i < max(len(groups), len(channels), len(personalChats)); i++ {
-
-		if len(groups) > 0 {
-			lastMessage, err := s.Repository.SelectLastMessageByChatID(ctx.Request.Context(), groups[i].ID)
-			if err != nil {
-				s.Log.Error("error with select last message by chat id: ", "error", err)
-				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-
-			unreadMesages, err := s.Repository.SelectUnreadCountMessage(ctx.Request.Context(), userID, groups[i].ID)
-			if err != nil {
-				s.Log.Error("error with select unread messages count: ", "error", err)
-				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-
-			isMuted, err := s.Repository.IsGroupMuted(ctx.Request.Context(), groups[i].ID, userID)
-			if err != nil {
-				s.Log.Error("error with select muted in group members: ", "error", err)
-				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-
-			communities = append(communities, dto.StartСommunitiesData{
-				Type:           "group",
-				Communities:    groups[i],
-				LastMessage:    lastMessage.Message,
-				IsBot:          false,
-				IsMuted:        isMuted,
-				UnreadMessages: int(unreadMesages),
-			})
-			groups = groups[1:]
+	// ---------- groups ----------
+	for _, group := range groups {
+		lastMessage, err := s.Repository.SelectLastMessageByChatID(ctx.Request.Context(), group.ID)
+		if err != nil {
+			s.Log.Error("error with select last message by chat id: ", "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
 		}
 
-		if len(channels) > 0 {
-			lastMessage, err := s.Repository.SelectLastMessageByChatID(ctx.Request.Context(), channels[i].ID)
-			if err != nil {
-				s.Log.Error("error with select last message by chat id: ", "error", err)
-				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-
-			unreadMesages, err := s.Repository.SelectUnreadCountMessage(ctx.Request.Context(), userID, channels[i].ID)
-			if err != nil {
-				s.Log.Error("error with select unread messages count: ", "error", err)
-				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-
-			isMuted, err := s.Repository.IsChannelMuted(ctx.Request.Context(), channels[i].ID, userID)
-			if err != nil {
-				s.Log.Error("error with select muted in channel members: ", "error", err)
-				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-
-			communities = append(communities, dto.StartСommunitiesData{
-				Type:           "channel",
-				Communities:    channels[i],
-				LastMessage:    lastMessage.Message,
-				IsBot:          false,
-				IsMuted:        isMuted,
-				UnreadMessages: int(unreadMesages),
-			})
-			channels = channels[1:]
+		unread, err := s.Repository.SelectUnreadCountMessage(ctx.Request.Context(), userID, group.ID)
+		if err != nil {
+			s.Log.Error("error with select unread messages count: ", "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
 		}
 
-		if len(personalChats) > 0 {
-			lastMessage, err := s.Repository.SelectLastMessageByChatID(ctx.Request.Context(), personalChats[i].ID)
-			if err != nil {
-				s.Log.Error("error with select last message by chat id: ", "error", err)
-				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-
-			var ids []string
-
-			for _, v := range personalChats {
-				ids = append(ids, v.UserID.String())
-			}
-
-			response, err := s.Client.GetUsersByIds(ctx.Request.Context(), &user_info.GetUserByIDRequest{UserIds: ids})
-			if err != nil {
-				s.Log.Error("error with getting user by id: ", "error", err)
-				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-
-			personalChats[i].Name = response.Users[i].Name
-			personalChats[i].Avatar = response.Users[i].Avatar[0]
-
-			unreadMesages, err := s.Repository.SelectUnreadCountMessage(ctx.Request.Context(), userID, personalChats[i].ID)
-			if err != nil {
-				s.Log.Error("error with select unread messages count: ", "error", err)
-				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-
-			communities = append(communities, dto.StartСommunitiesData{
-				Type:           "personal_chat",
-				Communities:    personalChats[i],
-				LastMessage:    lastMessage.Message,
-				IsBot:          false,
-				IsMuted:        false,
-				UnreadMessages: int(unreadMesages),
-			})
-			personalChats = personalChats[1:]
+		isMuted, err := s.Repository.IsGroupMuted(ctx.Request.Context(), group.ID, userID)
+		if err != nil {
+			s.Log.Error("error with select muted in group members: ", "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
 		}
+
+		lastMsgText := ""
+		if lastMessage != nil {
+			lastMsgText = lastMessage.Message
+		}
+
+		communities = append(communities, dto.StartСommunitiesData{
+			Type:           "group",
+			Communities:    group,
+			LastMessage:    lastMsgText,
+			IsBot:          false,
+			IsMuted:        isMuted,
+			UnreadMessages: int(unread),
+		})
+	}
+
+	// ---------- channels ----------
+	for _, channel := range channels {
+		lastMessage, err := s.Repository.SelectLastMessageByChatID(ctx.Request.Context(), channel.ID)
+		if err != nil {
+			s.Log.Error("error with select last message by chat id: ", "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		unread, err := s.Repository.SelectUnreadCountMessage(ctx.Request.Context(), userID, channel.ID)
+		if err != nil {
+			s.Log.Error("error with select unread messages count: ", "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		isMuted, err := s.Repository.IsChannelMuted(ctx.Request.Context(), channel.ID, userID)
+		if err != nil {
+			s.Log.Error("error with select muted in channel members: ", "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		lastMsgText := ""
+		if lastMessage != nil {
+			lastMsgText = lastMessage.Message
+		}
+
+		communities = append(communities, dto.StartСommunitiesData{
+			Type:           "channel",
+			Communities:    channel,
+			LastMessage:    lastMsgText,
+			IsBot:          false,
+			IsMuted:        isMuted,
+			UnreadMessages: int(unread),
+		})
+	}
+
+	// ---------- personal chats ----------
+	// Запрашиваем всех собеседников ОДНИМ gRPC-вызовом
+	// и раскладываем нужные поля в мапу (не завязываемся на тип user_info.*).
+	type userInfo struct {
+		Name   string
+		Avatar string
+	}
+	userMap := make(map[string]userInfo, len(personalChats))
+
+	if len(personalChats) > 0 {
+		ids := make([]string, 0, len(personalChats))
+		for _, pc := range personalChats {
+			ids = append(ids, pc.UserID.String())
+		}
+
+		resp, err := s.Client.GetUsersByIds(ctx.Request.Context(), &user_info.GetUserByIDRequest{UserIds: ids})
+		if err != nil {
+			s.Log.Error("error with getting users by ids: ", "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		for _, u := range resp.Users {
+			avatar := ""
+			if len(u.Avatar) > 0 {
+				avatar = u.Avatar[0]
+			}
+			userMap[u.Id] = userInfo{Name: u.Name, Avatar: avatar}
+		}
+	}
+
+	for _, pc := range personalChats {
+		lastMessage, err := s.Repository.SelectLastMessageByChatID(ctx.Request.Context(), pc.ID)
+		if err != nil {
+			s.Log.Error("error with select last message by chat id: ", "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		unread, err := s.Repository.SelectUnreadCountMessage(ctx.Request.Context(), userID, pc.ID)
+		if err != nil {
+			s.Log.Error("error with select unread messages count: ", "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		if u, ok := userMap[pc.UserID.String()]; ok {
+			pc.Name = u.Name
+			pc.Avatar = u.Avatar
+		}
+
+		lastMsgText := ""
+		if lastMessage != nil {
+			lastMsgText = lastMessage.Message
+		}
+
+		communities = append(communities, dto.StartСommunitiesData{
+			Type:           "personal_chat",
+			Communities:    pc,
+			LastMessage:    lastMsgText,
+			IsBot:          false,
+			IsMuted:        false,
+			UnreadMessages: int(unread),
+		})
 	}
 
 	ctx.JSON(http.StatusOK, communities)

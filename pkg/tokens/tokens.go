@@ -103,9 +103,15 @@ func GenerateTemporaryToken() (string, error) {
 }
 
 func Verify(tokenString string, secret []byte) (*CustomClaimsAccess, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &CustomClaimsAccess{}, func(token *jwt.Token) (interface{}, error) {
+	if tokenString == "" {
+		return nil, fmt.Errorf("empty token")
+	}
+
+	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
+
+	token, err := parser.ParseWithClaims(tokenString, &CustomClaimsAccess{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("Invalid signature method: %v", token.Header["alg"])
+			return nil, fmt.Errorf("invalid signature method: %v", token.Header["alg"])
 		}
 		return secret, nil
 	})
@@ -115,7 +121,7 @@ func Verify(tokenString string, secret []byte) (*CustomClaimsAccess, error) {
 
 	claims, ok := token.Claims.(*CustomClaimsAccess)
 	if !ok || claims == nil {
-		return nil, fmt.Errorf("unable to convert token statements")
+		return nil, fmt.Errorf("unable to convert token claims")
 	}
 
 	return claims, nil

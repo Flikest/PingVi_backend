@@ -10,6 +10,7 @@ import (
 	"github.com/Flikest/PingVi_backend/internal/repository"
 	servicehttp "github.com/Flikest/PingVi_backend/internal/services/http"
 	"github.com/Flikest/PingVi_backend/pkg/logger"
+	"github.com/joho/godotenv"
 	rkboot "github.com/rookie-ninja/rk-boot/v2"
 	rkgin "github.com/rookie-ninja/rk-gin/v2/boot"
 )
@@ -38,6 +39,11 @@ func main() {
 		panic("Failed to get minio config 😭😭😭")
 	}
 
+	if err := godotenv.Load("./minIO.local.env"); err != nil {
+		log.Error("error with loading enviroments: ", "error", err)
+		panic("Failed to load enviroment 😭😭😭")
+	}
+
 	boot := rkboot.NewBoot(rkboot.WithBootConfigPath("./configs/file_storage/file_storage.yaml", nil))
 
 	entry := rkgin.GetGinEntry("file_storage")
@@ -49,6 +55,10 @@ func main() {
 		UseSSL:   config.MinIOClient.UseSSL,
 		Logger:   log,
 	})
+	if err != nil {
+		log.Error("failed to create MinIO client", "error", err)
+		panic(err)
+	}
 
 	repository := repository.NewReposossoryFileStorage(&repository.RepositoryFileStorage{
 		Log:         log,

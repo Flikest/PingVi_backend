@@ -1,5 +1,5 @@
 minio_client:
-  endpoint: "http://localhost:9000"
+  endpoint: "localhost:9000"
   use_ssl: false
 
 gin:

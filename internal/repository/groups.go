@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"errors"
 
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
 	"github.com/gocql/gocql"
@@ -18,13 +17,17 @@ func (r *RepositoryMessenger) IsGroupMuted(ctx context.Context, groupID, userID 
 			":user_id":  userID,
 		})
 
-	var isMuted bool
+	var isMuted []bool
 	if err := selectMuted.SelectRelease(&isMuted); err != nil {
 		r.Log.Error("error with selecting owner id: ", "error", err)
 		return false, err
 	}
 
-	return isMuted, nil
+	if len(isMuted) == 0 {
+		return false, nil
+	}
+
+	return isMuted[0], nil
 }
 
 func (r *RepositoryMessenger) SelectGroupOwnerID(ctx context.Context, groupID gocql.UUID) (gocql.UUID, error) {
@@ -36,13 +39,17 @@ func (r *RepositoryMessenger) SelectGroupOwnerID(ctx context.Context, groupID go
 			":id": groupID,
 		})
 
-	var ownerID gocql.UUID
-	if err := selectOwnerID.SelectRelease(&ownerID); err != nil {
+	var ownerIDs []gocql.UUID
+	if err := selectOwnerID.SelectRelease(&ownerIDs); err != nil {
 		r.Log.Error("error with selecting owner id: ", "error", err)
 		return gocql.UUID{}, err
 	}
 
-	return ownerID, nil
+	if len(ownerIDs) == 0 {
+		return gocql.UUID{}, gocql.ErrNotFound
+	}
+
+	return ownerIDs[0], nil
 }
 
 func (r *RepositoryMessenger) SelectGroupIdsByUserId(ctx context.Context, userID gocql.UUID) ([]gocql.UUID, error) {
@@ -91,13 +98,17 @@ func (r *RepositoryMessenger) SelectGroupMemberIsAdmin(ctx context.Context, grou
 			":user_id":  userID,
 		})
 
-	var isAdmin bool
+	var isAdmin []bool
 	if err := selectMemberIsAdmin.SelectRelease(&isAdmin); err != nil {
 		r.Log.Error("error with selecting is_admin: ", "error", err)
 		return false, err
 	}
 
-	return isAdmin, nil
+	if len(isAdmin) == 0 {
+		return false, nil
+	}
+
+	return isAdmin[0], nil
 }
 
 func (r *RepositoryMessenger) SelectGroupExists(ctx context.Context, groupID gocql.UUID) (bool, error) {
@@ -108,13 +119,17 @@ func (r *RepositoryMessenger) SelectGroupExists(ctx context.Context, groupID goc
 		":id": groupID,
 	})
 
-	var count int
-	if err := q.SelectRelease(&count); err != nil {
+	var counts []int64
+	if err := q.SelectRelease(&counts); err != nil {
 		r.Log.Error("error with selecting count group by id: ", "error", err)
 		return false, err
 	}
 
-	return count > 0, nil
+	if len(counts) == 0 {
+		return false, nil
+	}
+
+	return counts[0] > 0, nil
 }
 
 func (r *RepositoryMessenger) InsertGroup(ctx context.Context, group dto.Group) error {
@@ -222,13 +237,17 @@ func (r *RepositoryMessenger) SelectGroupNameByID(ctx context.Context, groupID g
 			":id": groupID,
 		})
 
-	var name string
-	if err := query.SelectRelease(name); err != nil {
+	var names []string
+	if err := query.SelectRelease(&names); err != nil {
 		r.Log.Error("error with selecting group name by id: ", "error", err)
 		return "", err
 	}
 
-	return name, nil
+	if len(names) == 0 {
+		return "", gocql.ErrNotFound
+	}
+
+	return names[0], nil
 }
 
 func (r *RepositoryMessenger) IsBelongGroup(ctx context.Context, groupID, userID gocql.UUID) (bool, error) {
@@ -241,17 +260,13 @@ func (r *RepositoryMessenger) IsBelongGroup(ctx context.Context, groupID, userID
 			":user_id":  userID,
 		})
 
-	var scanUserID gocql.UUID
-	if err := query.SelectRelease(&scanUserID); err != nil {
-		if errors.Is(err, gocql.ErrNotFound) {
-			return false, nil
-		}
-
+	var userIDs []gocql.UUID
+	if err := query.SelectRelease(&userIDs); err != nil {
 		r.Log.Error("error with checking belonging to group: ", "error", err)
 		return false, err
 	}
 
-	return true, nil
+	return len(userIDs) > 0, nil
 }
 
 func (r *RepositoryMessenger) SelectMemberGroup(ctx context.Context, groupID, userID gocql.UUID) (dto.GroupMember, error) {
@@ -267,13 +282,17 @@ func (r *RepositoryMessenger) SelectMemberGroup(ctx context.Context, groupID, us
 			":user_id":  userID,
 		})
 
-	var member dto.GroupMember
-	if err := selectMemberFromGroup.SelectRelease(&member); err != nil {
+	var members []dto.GroupMember
+	if err := selectMemberFromGroup.SelectRelease(&members); err != nil {
 		r.Log.Error("error with selecting member from group: ", "error", err)
 		return dto.GroupMember{}, err
 	}
 
-	return member, nil
+	if len(members) == 0 {
+		return dto.GroupMember{}, gocql.ErrNotFound
+	}
+
+	return members[0], nil
 }
 
 func (r *RepositoryMessenger) SelectGroup(ctx context.Context, userID gocql.UUID) ([]dto.Group, error) {
@@ -295,18 +314,29 @@ func (r *RepositoryMessenger) SelectGroup(ctx context.Context, userID gocql.UUID
 		return []dto.Group{}, nil
 	}
 
-	var groups []dto.Group
-	query := r.Session.ContextQuery(
-		ctx,
-		`SELECT * FROM messenger_keyspace.groups WHERE group_id IN ?`,
-		[]string{":group_ids"}).
-		BindMap(map[string]interface{}{
-			":group_ids": groupIDs,
-		})
+	groups := make([]dto.Group, 0, len(groupIDs))
+	for _, groupID := range groupIDs {
+		query := r.Session.ContextQuery(
+			ctx,
+			`SELECT id, name, avatar_links, owner_id, is_public, created_at, updated_at
+             FROM messenger_keyspace.groups WHERE id=?`,
+			[]string{":id"}).
+			BindMap(map[string]interface{}{
+				":id": groupID,
+			})
 
-	if err := query.SelectRelease(&groups); err != nil {
-		r.Log.Error("error with selecting groups by ids: ", "error", err)
-		return nil, err
+		var groupList []dto.Group
+		if err := query.SelectRelease(&groupList); err != nil {
+			r.Log.Error("error with selecting group by id: ", "error", err)
+			return nil, err
+		}
+
+		if len(groupList) == 0 {
+			r.Log.Warn("group not found, skipping", "group_id", groupID)
+			continue
+		}
+
+		groups = append(groups, groupList[0])
 	}
 
 	return groups, nil

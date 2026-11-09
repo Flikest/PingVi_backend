@@ -556,30 +556,32 @@ func (s *ServiceSSO) SelectUserSessions(ctx *gin.Context) {
 func (s *ServiceSSO) RefreshTokens(ctx *gin.Context) {
 	var oldAccessToken, oldRefreshToken string
 
-	oldAccessToken, oldRefreshToken = ctx.Request.Header.Get("Authorization"), ctx.Request.Header.Get("X-Refresh-Token")
+	oldAccessToken = ctx.Request.Header.Get("Authorization")
+	oldRefreshToken = ctx.Request.Header.Get("X-Refresh-Token")
 
-	payload, err := tokens.Verify(oldAccessToken, []byte(os.Getenv("JWT_SECRET")))
-	if err != nil {
-		s.Log.Error("error with vetify pyload from access token: ", "error", err)
-		ctx.JSON(http.StatusInternalServerError, err.Error())
-	}
-
-	if oldAccessToken == "" && oldRefreshToken == "" {
+	if oldAccessToken == "" || oldRefreshToken == "" {
 		access, err := ctx.Cookie("access_token")
 		if err != nil {
 			s.Log.Error("error with get access_token cookie: ", "error", err)
-			ctx.JSON(http.StatusBadRequest, err.Error())
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "access token is missing"})
 			return
 		}
 
 		refres, err := ctx.Cookie("refresh_token")
 		if err != nil {
 			s.Log.Error("error with get refresh_token cookie: ", "error", err)
-			ctx.JSON(http.StatusBadRequest, err.Error())
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "refresh token is missing"})
 			return
 		}
 
 		oldAccessToken, oldRefreshToken = access, refres
+	}
+
+	payload, err := tokens.Verify(oldAccessToken, []byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		s.Log.Error("error with verify payload from access token: ", "error", err)
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired access token"})
+		return
 	}
 
 	now := time.Now()
@@ -591,13 +593,18 @@ func (s *ServiceSSO) RefreshTokens(ctx *gin.Context) {
 		return
 	}
 
-	if userTokens.RefreshToken != oldRefreshToken {
+	if userTokens.AccessToken == "" || userTokens.RefreshToken != oldRefreshToken {
 		s.Log.Warn("token mismatch")
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "token mismatch"})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "token mismatch"})
 		return
 	}
 
 	accessToken, err := tokens.CreateAccessToken(payload.ID, []byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		s.Log.Error("error with create access token: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
 	refreshToken, err := tokens.CreateRefreshToken(128)
 	if err != nil {
@@ -606,9 +613,21 @@ func (s *ServiceSSO) RefreshTokens(ctx *gin.Context) {
 		return
 	}
 
-	if err := s.Repository.UpdateTokens(ctx.Request.Context(), payload.ID, accessToken, refreshToken, now, now.Add(time.Minute*15), now.AddDate(0, 2, 0)); err != nil {
+	accessExp := now.Add(time.Minute * 15)
+	refreshExp := now.AddDate(0, 2, 0)
+
+	if err := s.Repository.UpdateTokens(
+		ctx.Request.Context(),
+		payload.ID,
+		refreshToken,
+		accessToken,
+		now,
+		refreshExp,
+		accessExp,
+	); err != nil {
 		s.Log.Error("error with update tokens: ", "error", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	ctx.SetCookie(
@@ -623,7 +642,7 @@ func (s *ServiceSSO) RefreshTokens(ctx *gin.Context) {
 
 	ctx.SetCookie(
 		"refresh_token",
-		accessToken,
+		refreshToken,
 		3600*24*60,
 		"/",
 		"localhost",

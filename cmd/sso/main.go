@@ -43,7 +43,7 @@ func main() {
 	log := logger.NewLogger(*env)
 	log.Info("Starting application", "env", *env)
 
-	if err := godotenv.Load(); err != nil {
+	if err := godotenv.Load("./sso.local.env"); err != nil {
 		log.Warn("Error loading .env file", "error", err)
 	}
 

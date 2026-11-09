@@ -116,15 +116,16 @@ func (r *RepositorySSO) insertUserTokens(ctx context.Context, tx pgx.Tx, userID 
 }
 
 func (r *RepositorySSO) SelectUserIDBySessionID(ctx context.Context, sessionID string) (userID uuid.UUID, err error) {
-	userIDStr, err := r.RDB.HGet(ctx, sessionID, "user_id").Result()
+	sessionKey := "session:" + sessionID // ← добавляем префикс
+
+	userIDStr, err := r.RDB.HGet(ctx, sessionKey, "user_id").Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
-			r.Log.Error("session not found", "error", err)
+			r.Log.Error("session not found", "error", err, "session_key", sessionKey)
 			return uuid.Nil, errors.New("session not found")
-		} else {
-			r.Log.Error("error with getting user id from redis: ", "error", err)
-			return uuid.Nil, err
 		}
+		r.Log.Error("error with getting user id from redis: ", "error", err)
+		return uuid.Nil, err
 	}
 
 	userID, err = uuid.Parse(userIDStr)
@@ -132,23 +133,29 @@ func (r *RepositorySSO) SelectUserIDBySessionID(ctx context.Context, sessionID s
 		r.Log.Error("error with parsing user uuid: ", "error", err)
 		return uuid.Nil, err
 	}
-
 	return userID, nil
-
 }
 
 func (r *RepositorySSO) SaveSession(ctx context.Context, session dto.Session) error {
 	sessionKey := "session:" + session.ID.String()
 	userIndexKey := "user_sessions:" + session.UserID.String()
 
+	fields := map[string]interface{}{
+		"id":             session.ID.String(),
+		"user_id":        session.UserID.String(),
+		"user_device":    session.UserDevice,
+		"session_token":  session.SessionToken,
+		"created_at":     session.CreatedAt.Format(time.RFC3339Nano),
+		"locale":         session.Locale,
+		"locale_img_url": session.LocaleImgUrl,
+	}
+
 	pipe := r.RDB.Pipeline()
 
-	pipe.HSet(ctx, sessionKey, session)
-
+	pipe.HSet(ctx, sessionKey, fields)
 	pipe.SAdd(ctx, userIndexKey, session.ID.String())
 
-	_, err := pipe.Exec(ctx)
-	if err != nil {
+	if _, err := pipe.Exec(ctx); err != nil {
 		r.Log.Error("failed to save session and write index", "error", err)
 		return err
 	}
@@ -1002,7 +1009,15 @@ func (r *RepositorySSO) SelectUserTokens(ctx context.Context, userID uuid.UUID) 
 
 	var userTokens dto.UserTokens
 
-	if err := r.DB.QueryRow(ctx, selectQuery, userID).Scan(&userTokens); err != nil {
+	if err := r.DB.QueryRow(ctx, selectQuery, userID).Scan(
+		&userTokens.ID,
+		&userTokens.UserID,
+		&userTokens.AccessToken,
+		&userTokens.RefreshToken,
+		&userTokens.CreatedAt,
+		&userTokens.AccessExpiresAt,
+		&userTokens.RefreshExpiresAt,
+	); err != nil {
 		r.Log.Error("error with selecting user tokens info: ", "error", err)
 		return dto.UserTokens{}, err
 	}
@@ -1010,22 +1025,37 @@ func (r *RepositorySSO) SelectUserTokens(ctx context.Context, userID uuid.UUID) 
 	return userTokens, nil
 }
 
-func (r *RepositorySSO) UpdateTokens(ctx context.Context, userID uuid.UUID, refreshToken, accessToken string, createdAT, expRefresh, expAccess time.Time) error {
+func (r *RepositorySSO) UpdateTokens(
+	ctx context.Context,
+	userID uuid.UUID,
+	refreshToken, accessToken string,
+	createdAT, expRefresh, expAccess time.Time,
+) error {
 	updateQuery := `
 		UPDATE user_tokens
-		SET access_token=$2, refresh_token=$3, created_at=$4, access_expires_at=$5, refresh_expires_at=$6
+		SET access_token=$2,
+		    refresh_token=$3,
+		    created_at=$4,
+		    access_expires_at=$5,
+		    refresh_expires_at=$6
 		WHERE user_id=$1
 	`
 
 	tx, err := r.DB.Begin(ctx)
-
 	if err != nil {
 		r.Log.Error("error with creating transaction: ", "error", err)
 		return err
 	}
 	defer tx.Rollback(ctx)
 
-	_, err = tx.Exec(ctx, updateQuery, userID, accessToken, refreshToken, createdAT, expAccess, expRefresh)
+	_, err = tx.Exec(ctx, updateQuery,
+		userID,
+		accessToken,
+		refreshToken,
+		createdAT,
+		expAccess,
+		expRefresh,
+	)
 	if err != nil {
 		r.Log.Error("error with updating tokens: ", "error", err)
 		return err

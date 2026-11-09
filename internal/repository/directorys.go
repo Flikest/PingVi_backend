@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
@@ -41,6 +42,31 @@ func (r *RepositoryMessenger) CreateDirectory(ctx context.Context, dir dto.Creat
 		Name:      dir.Name,
 		CreatedAt: now,
 	}, nil
+}
+
+func (r *RepositoryMessenger) SelectDirectoryName(ctx context.Context, channelID, directoryID uuid.UUID) (string, error) {
+	selectDirectoryName := r.Session.ContextQuery(
+		ctx,
+		`
+		SELECT name FROM messenger_keyspace.directory
+		WHERE id = :id AND channel_id = :channel_id
+		ALLOW FILTERING
+	`, []string{":id", ":channel_id"}).
+		BindMap(map[string]interface{}{
+			":id":         directoryID,
+			":channel_id": channelID,
+		})
+
+	var name string
+	if err := selectDirectoryName.Scan(&name); err != nil {
+		if err == gocql.ErrNotFound {
+			return "", fmt.Errorf("directory %s not found for channel %s", directoryID, channelID)
+		}
+		r.Log.Error("error when select directory name: ", "error", err)
+		return "", err
+	}
+
+	return name, nil
 }
 
 func (r *RepositoryMessenger) SelectAllDirectorys(ctx context.Context, channel_id uuid.UUID) ([]dto.Directory, error) {

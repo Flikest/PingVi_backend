@@ -2,16 +2,18 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
 	"github.com/bwmarrin/snowflake"
 	"github.com/gocql/gocql"
-	"github.com/google/uuid"
 )
 
 func (r *RepositoryMessenger) SelectUnreadCountMessage(ctx context.Context, userID, chatID gocql.UUID) (int64, error) {
+	// 1. Позиция прочтения пользователя
 	var lastReadID snowflake.ID
-	query := r.Session.ContextQuery(
+
+	readQuery := r.Session.ContextQuery(
 		ctx,
 		`SELECT last_read_message_id FROM messenger_keyspace.user_read_positions WHERE user_id=? AND chat_id=?`,
 		[]string{":user_id", ":chat_id"},
@@ -20,41 +22,56 @@ func (r *RepositoryMessenger) SelectUnreadCountMessage(ctx context.Context, user
 		":chat_id": chatID,
 	})
 
-	var result struct {
-		LastReadMessageID snowflake.ID `db:"last_read_message_id"`
+	var ids []snowflake.ID
+	if err := readQuery.SelectRelease(&ids); err != nil {
+		if errors.Is(err, gocql.ErrNotFound) {
+			r.Log.Warn("no read position found for user, counting all messages as unread",
+				"user_id", userID, "chat_id", chatID)
+			lastReadID = 0
+		} else {
+			r.Log.Warn("failed to read last_read_message_id, counting all as unread",
+				"error", err, "user_id", userID, "chat_id", chatID)
+			lastReadID = 0
+		}
+	} else if len(ids) > 0 {
+		lastReadID = ids[0]
 	}
 
-	if err := query.SelectRelease(&result); err != nil {
-		r.Log.Warn("no read position found for user, counting all messages as unread", "user_id", userID, "chat_id", chatID)
-		lastReadID = 0
-	} else {
-		lastReadID = result.LastReadMessageID
-	}
-
-	var buckets []int64
+	// 2. Все backet_id чата (без DISTINCT)
+	var allBackets []int64
 	bucketQuery := r.Session.ContextQuery(
 		ctx,
-		`SELECT DISTINCT backet_id FROM messenger_keyspace.messages WHERE chat_id=?`,
+		`SELECT backet_id FROM messenger_keyspace.messages WHERE chat_id=? ALLOW FILTERING`,
 		[]string{":chat_id"},
 	).BindMap(map[string]interface{}{
 		":chat_id": chatID,
 	})
 
-	if err := bucketQuery.SelectRelease(&buckets); err != nil {
-		r.Log.Error("error getting distinct backet_ids", "error", err)
+	if err := bucketQuery.SelectRelease(&allBackets); err != nil {
+		r.Log.Error("error getting backet_ids", "error", err)
 		return 0, err
 	}
 
-	if len(buckets) == 0 {
+	if len(allBackets) == 0 {
 		return 0, nil
 	}
 
-	var totalUnread int64 = 0
+	// 3. Дедупликация backet_id в Go
+	seen := make(map[int64]struct{}, len(allBackets))
+	buckets := make([]int64, 0, len(allBackets))
+	for _, b := range allBackets {
+		if _, ok := seen[b]; !ok {
+			seen[b] = struct{}{}
+			buckets = append(buckets, b)
+		}
+	}
 
+	// 4. Считаем непрочитанные по каждому бакету
+	var totalUnread int64
 	for _, bucketID := range buckets {
 		countQuery := r.Session.ContextQuery(
 			ctx,
-			`SELECT COUNT(*) FROM messenger_keyspace.messages 
+			`SELECT COUNT(*) FROM messenger_keyspace.messages
              WHERE chat_id=? AND backet_id=? AND id>?`,
 			[]string{":chat_id", ":backet_id", ":last_read_id"},
 		).BindMap(map[string]interface{}{
@@ -63,12 +80,15 @@ func (r *RepositoryMessenger) SelectUnreadCountMessage(ctx context.Context, user
 			":last_read_id": lastReadID,
 		})
 
-		var count int64
-		if err := countQuery.SelectRelease(&count); err != nil {
-			r.Log.Error("error counting unread messages in bucket", "error", err, "bucket", bucketID)
+		var counts []int64
+		if err := countQuery.SelectRelease(&counts); err != nil {
+			r.Log.Error("error counting unread messages in bucket",
+				"error", err, "bucket", bucketID)
 			return 0, err
 		}
-		totalUnread += count
+		if len(counts) > 0 {
+			totalUnread += counts[0]
+		}
 	}
 
 	return totalUnread, nil
@@ -78,14 +98,14 @@ func (r *RepositoryMessenger) SelectLastMessageByChatID(ctx context.Context, cha
 	var buckets []int64
 	bucketQuery := r.Session.ContextQuery(
 		ctx,
-		`SELECT DISTINCT backet_id FROM messenger_keyspace.messages WHERE chat_id=?`,
+		`SELECT backet_id FROM messenger_keyspace.messages WHERE chat_id = ? ALLOW FILTERING`,
 		[]string{":chat_id"},
 	).BindMap(map[string]interface{}{
 		":chat_id": chatID,
 	})
 
 	if err := bucketQuery.SelectRelease(&buckets); err != nil {
-		r.Log.Error("error getting distinct backet_ids", "error", err)
+		r.Log.Error("error getting backet_ids", "error", err)
 		return nil, err
 	}
 
@@ -93,15 +113,26 @@ func (r *RepositoryMessenger) SelectLastMessageByChatID(ctx context.Context, cha
 		return nil, nil
 	}
 
+	// дедупликация
+	seen := make(map[int64]struct{}, len(buckets))
+	uniqueBuckets := make([]int64, 0, len(buckets))
+	for _, b := range buckets {
+		if _, ok := seen[b]; !ok {
+			seen[b] = struct{}{}
+			uniqueBuckets = append(uniqueBuckets, b)
+		}
+	}
+
 	var lastMessage *dto.Message
 	var maxID snowflake.ID = 0
 
-	for _, bucketID := range buckets {
+	for _, bucketID := range uniqueBuckets {
 		var messages []dto.Message
 		msgQuery := r.Session.ContextQuery(
 			ctx,
-			`SELECT * FROM messenger_keyspace.messages 
-             WHERE chat_id=? AND backet_id=? 
+			`SELECT id, chat_id, backet_id, sender_id, message, reply_to_id, created_at, updated_at
+             FROM messenger_keyspace.messages
+             WHERE chat_id=? AND backet_id=?
              ORDER BY id DESC LIMIT 1`,
 			[]string{":chat_id", ":backet_id"},
 		).BindMap(map[string]interface{}{
@@ -110,7 +141,7 @@ func (r *RepositoryMessenger) SelectLastMessageByChatID(ctx context.Context, cha
 		})
 
 		if err := msgQuery.SelectRelease(&messages); err != nil {
-			r.Log.Error("error getting last message from bucket", "error", err, "bucket", bucketID)
+			r.Log.Error("error getting last message from backet", "error", err, "backet", bucketID)
 			return nil, err
 		}
 
@@ -124,17 +155,40 @@ func (r *RepositoryMessenger) SelectLastMessageByChatID(ctx context.Context, cha
 }
 
 func (r *RepositoryMessenger) DeleteMessagesByChatID(ctx context.Context, chatID gocql.UUID) error {
-	query := r.Session.ContextQuery(
+	var backets []int64
+	bucketQuery := r.Session.ContextQuery(
 		ctx,
-		`DELETE FROM messenger_keyspace.messages WHERE chat_id=?`,
-		[]string{":chat_id"}).
-		BindMap(map[string]interface{}{
-			":chat_id": chatID,
+		`SELECT backet_id FROM messenger_keyspace.messages WHERE chat_id=? ALLOW FILTERING`,
+		[]string{":chat_id"},
+	).BindMap(map[string]interface{}{
+		":chat_id": chatID,
+	})
+
+	if err := bucketQuery.SelectRelease(&backets); err != nil {
+		r.Log.Error("error getting backets for delete: ", "error", err)
+		return err
+	}
+
+	seen := make(map[int64]struct{}, len(backets))
+	for _, b := range backets {
+		if _, ok := seen[b]; ok {
+			continue
+		}
+		seen[b] = struct{}{}
+
+		del := r.Session.ContextQuery(
+			ctx,
+			`DELETE FROM messenger_keyspace.messages WHERE chat_id=? AND backet_id=?`,
+			[]string{":chat_id", ":backet_id"},
+		).BindMap(map[string]interface{}{
+			":chat_id":   chatID,
+			":backet_id": b,
 		})
 
-	if err := query.ExecRelease(); err != nil {
-		r.Log.Error("error with clearing messages from chat: ", "error", err)
-		return err
+		if err := del.ExecRelease(); err != nil {
+			r.Log.Error("error with deleting messages bucket: ", "error", err, "backet", b)
+			return err
+		}
 	}
 
 	return nil
@@ -152,6 +206,7 @@ func (r *RepositoryMessenger) ReadMessage(ctx context.Context, rm dto.ReadMessag
 			":last_read_time",
 		}).BindMap(
 		map[string]interface{}{
+			":user_id":              rm.UserID,
 			":chat_id":              rm.ChatID,
 			":last_read_message_id": rm.MessageID,
 			":last_read_time":       rm.At,
@@ -168,7 +223,7 @@ func (r *RepositoryMessenger) ReadMessage(ctx context.Context, rm dto.ReadMessag
 func (r *RepositoryMessenger) InsertMessage(ctx context.Context, message dto.Message) error {
 	addMessage := r.Session.ContextQuery(
 		ctx,
-		`INSERT INTO messenger_keyspace.messages (id, chat_id, sender_id, message, message_type, attachments, created_at)
+		`INSERT INTO messenger_keyspace.messages (id, chat_id, backet_id, sender_id, message, reply_to_id, created_at)
 		VALUES (?,?,?,?,?,?,?)`,
 		[]string{
 			":id",
@@ -196,8 +251,13 @@ func (r *RepositoryMessenger) InsertMessage(ctx context.Context, message dto.Mes
 	return nil
 }
 
-func (r *RepositoryMessenger) SelectMessagesByChatID(ctx context.Context, chatID uuid.UUID) ([]dto.Message, error) {
-	q := r.Session.ContextQuery(ctx, `SELECT * FROM messenger_keyspace.messages WHERE chat_id=?`, []string{":chat_id"}).
+func (r *RepositoryMessenger) SelectMessagesByChatID(ctx context.Context, chatID gocql.UUID) ([]dto.Message, error) {
+	q := r.Session.ContextQuery(
+		ctx,
+		`SELECT id, chat_id, backet_id, sender_id, message, reply_to_id, created_at, updated_at
+         FROM messenger_keyspace.messages
+         WHERE chat_id=? ALLOW FILTERING`,
+		[]string{":chat_id"}).
 		BindMap(map[string]interface{}{
 			":chat_id": chatID,
 		})
@@ -216,19 +276,19 @@ func (r *RepositoryMessenger) UpdateMessage(ctx context.Context, message dto.Mes
 		ctx,
 		`UPDATE messenger_keyspace.messages
 		SET message=?, updated_at=?
-		WHERE id=? AND chat_id=? AND sender_id=?`,
+		WHERE chat_id=? AND backet_id=? AND id=?`,
 		[]string{
 			":message",
 			":updated_at",
-			":id",
 			":chat_id",
-			":sender_id",
+			":backet_id",
+			":id",
 		}).BindMap(map[string]interface{}{
 		":message":    message.Message,
 		":updated_at": message.UpdatedAt,
-		":id":         message.ID,
 		":chat_id":    message.ChatID,
-		":sender_id":  message.SenderID,
+		":backet_id":  message.ID / 10000,
+		":id":         message.ID,
 	})
 
 	if err := updateMessage.ExecRelease(); err != nil {
@@ -278,15 +338,15 @@ func (r *RepositoryMessenger) SelectPersonalChatUsers(ctx context.Context, chatI
 func (r *RepositoryMessenger) DeleteMessage(ctx context.Context, messageID snowflake.ID, chatID, senderID gocql.UUID) error {
 	deleteMessage := r.Session.ContextQuery(
 		ctx,
-		`DELETE FROM messenger_keyspace.messages WHERE id=? AND chat_id=? AND sender_id=?`,
+		`DELETE FROM messenger_keyspace.messages WHERE chat_id=? AND backet_id=? AND id=?`,
 		[]string{
-			":id",
 			":chat_id",
-			":sender_id",
+			":backet_id",
+			":id",
 		}).BindMap(map[string]interface{}{
-		":id":        messageID,
 		":chat_id":   chatID,
-		":sender_id": senderID,
+		":backet_id": messageID / 10000,
+		":id":        messageID,
 	})
 
 	if err := deleteMessage.ExecRelease(); err != nil {

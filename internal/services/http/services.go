@@ -56,6 +56,7 @@ func NewMessengerService(s *ServiceMessenger) *ServiceMessenger {
 		Log:          s.Log,
 		MessengerHub: s.MessengerHub,
 		Repository:   s.Repository,
+		Client:       s.Client,
 	}
 }
 

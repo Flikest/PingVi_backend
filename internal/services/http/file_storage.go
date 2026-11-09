@@ -112,9 +112,11 @@ func (s *ServiceFileStorage) UploadToFileStorage(ctx *gin.Context) {
 
 		results = append(results, dto.FileStatus{
 			Filename: file.Filename,
+			Url:      fmt.Sprintf("http://192.168.0.110:9000/%s/%s", bucketName, objectName),
 			Status:   "success",
 			Bucket:   path,
 		})
+		fmt.Println(results)
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{

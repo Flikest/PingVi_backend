@@ -41,34 +41,38 @@ func (r *RepositoryMessenger) CreatePersonalChat(ctx context.Context, personalCh
 }
 
 func (r *RepositoryMessenger) SelectPersonalChatMemberIdsByUserId(ctx context.Context, userID gocql.UUID) ([]gocql.UUID, error) {
-	query := r.Session.ContextQuery(
-		ctx,
-		`SELECT user1_id, user2_id WHERE user1_id=? OR user2_id=?`,
-		[]string{
-			":user1_id",
-			":user2_id",
-		}).
-		BindMap(map[string]interface{}{
-			":user1_id": userID,
-			":user2_id": userID,
-		})
+	var chats1, chats2 []dto.PersonalChat
 
-	userIDs := []struct {
-		user1ID gocql.UUID
-		user2ID gocql.UUID
-	}{}
-	if err := query.SelectRelease(&userIDs); err != nil {
-		r.Log.Error("error with selectiing user1id and user2id from personal chat: ", "error", err)
+	// Пользователь как user1
+	q1 := r.Session.ContextQuery(
+		ctx,
+		`SELECT * FROM messenger_keyspace.personal_chats WHERE user1_id = :uid`,
+		[]string{":uid"},
+	).BindMap(map[string]interface{}{":uid": userID})
+	if err := q1.SelectRelease(&chats1); err != nil {
+		r.Log.Error("error with selecting personal chats (user1): ", "error", err)
 		return nil, err
 	}
 
-	var result []gocql.UUID
+	// Пользователь как user2
+	q2 := r.Session.ContextQuery(
+		ctx,
+		`SELECT * FROM messenger_keyspace.personal_chats WHERE user2_id = :uid`,
+		[]string{":uid"},
+	).BindMap(map[string]interface{}{":uid": userID})
+	if err := q2.SelectRelease(&chats2); err != nil {
+		r.Log.Error("error with selecting personal chats (user2): ", "error", err)
+		return nil, err
+	}
 
-	for _, ids := range userIDs {
-		if ids.user1ID == userID {
-			result = append(result, ids.user2ID)
+	chats := append(chats1, chats2...)
+
+	result := make([]gocql.UUID, 0, len(chats))
+	for _, chat := range chats {
+		if chat.User1ID == userID {
+			result = append(result, chat.User2ID)
 		} else {
-			result = append(result, ids.user1ID)
+			result = append(result, chat.User1ID)
 		}
 	}
 
@@ -138,27 +142,23 @@ func (r *RepositoryMessenger) DeletePersonalChat(ctx context.Context, personalCh
 }
 
 func (r *RepositoryMessenger) IsBelongsToChat(ctx context.Context, userID, chatID gocql.UUID) (bool, error) {
-	selectUsersFromPersonalChat := r.Session.ContextQuery(
+	query := r.Session.ContextQuery(
 		ctx,
-		`SELECT user1_id, user2_id FROM messenger_keyspace.personal_chats WHERE id=?`,
-		[]string{
-			":id",
-		}).
-		BindMap(map[string]interface{}{
-			":id": chatID,
-		})
+		`SELECT user1_id, user2_id FROM messenger_keyspace.personal_chats WHERE id = :id`,
+		[]string{":id"},
+	).BindMap(map[string]interface{}{":id": chatID})
 
-	selectResponse := struct {
-		user1ID gocql.UUID
-		user2ID gocql.UUID
-	}{}
+	var row struct {
+		User1ID gocql.UUID `cql:"user1_id"`
+		User2ID gocql.UUID `cql:"user2_id"`
+	}
 
-	if err := selectUsersFromPersonalChat.SelectRelease(selectResponse); err != nil {
-		r.Log.Error("error with selecting user1 and user2 from perosnal chat", "error", err)
+	if err := query.SelectRelease(&row); err != nil {
+		r.Log.Error("error with selecting user1 and user2 from personal chat", "error", err)
 		return false, err
 	}
 
-	if userID != selectResponse.user1ID || userID != selectResponse.user2ID {
+	if userID != row.User1ID && userID != row.User2ID {
 		r.Log.Warn("not enough rights")
 		return false, errors.New("not enough rights")
 	}

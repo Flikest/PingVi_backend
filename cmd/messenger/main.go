@@ -14,6 +14,7 @@ import (
 	servicehttp "github.com/Flikest/PingVi_backend/internal/services/http"
 	"github.com/Flikest/PingVi_backend/pkg/logger"
 	"github.com/bwmarrin/snowflake"
+	"github.com/joho/godotenv"
 	rkboot "github.com/rookie-ninja/rk-boot/v2"
 	rkgin "github.com/rookie-ninja/rk-gin/v2/boot"
 )
@@ -44,11 +45,18 @@ func main() {
 		panic(fmt.Errorf("not parse config: %w", err))
 	}
 
+	if err := godotenv.Load("./messenger.local.env"); err != nil {
+		log.Error("error with loading enviroments: ", "error", err)
+		panic("Failed to load enviroment 😭😭😭")
+	}
+
 	boot := rkboot.NewBoot(rkboot.WithBootConfigPath("./configs/messenger/messenger.yaml", nil))
 
-	entry := rkgin.GetGinEntry("messenger")
-
 	ctx := context.Background()
+
+	boot.Bootstrap(ctx)
+
+	entry := rkgin.GetGinEntry("messenger")
 
 	scyllaSession := scylla.MustScyllaDBOpen()
 
@@ -97,7 +105,6 @@ func main() {
 			redisClient.Close()
 		}
 	})
-	boot.Bootstrap(ctx)
 
 	boot.WaitForShutdownSig(ctx)
 }

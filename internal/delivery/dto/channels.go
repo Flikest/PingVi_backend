@@ -7,21 +7,21 @@ import (
 )
 
 type Channel struct {
-	ID          gocql.UUID `json:"id"`
-	Name        string     `json:"name"`
-	Description string     `json:"description"`
-	OwnerID     gocql.UUID `json:"owner_id"`
-	IconURL     string     `json:"icon_url"`
-	IsPublic    bool       `json:"is_public"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
+	ID          gocql.UUID `json:"id"          db:"id"`
+	Name        string     `json:"name"        db:"name"`
+	Description string     `json:"description" db:"description"`
+	OwnerID     gocql.UUID `json:"owner_id"    db:"owner_id"`
+	IconURLs    []string   `json:"icon_urls"   db:"icon_urls"`
+	IsPublic    bool       `json:"is_public"   db:"is_public"`
+	CreatedAt   time.Time  `json:"created_at"  db:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"  db:"updated_at"`
 }
 
 type CreateChannelRequest struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	IconURL     string `json:"icon_url"`
-	IsPublic    bool   `json:"is_public"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	IconURLs    []string `json:"icon_urls"`
+	IsPublic    bool     `json:"is_public"`
 }
 
 type ChannelMember struct {
@@ -40,7 +40,7 @@ type CreateChannelInput struct {
 	Name        string     `json:"name"`
 	Description string     `json:"description"`
 	OwnerID     gocql.UUID `json:"owner_id"`
-	IconURL     string     `json:"icon_url"`
+	IconURLs    []string   `json:"icon_urls"`
 	IsPublic    bool       `json:"is_public"`
 }
 
@@ -49,7 +49,7 @@ type UpdateChannelRequest struct {
 	Name        string     `json:"name"`
 	Description string     `json:"description"`
 	OwnerID     gocql.UUID `json:"owner_id"`
-	IconURL     string     `json:"icon_url"`
+	IconURLs    []string   `json:"icon_urls"`
 	IsPublic    bool       `json:"is_public"`
 	CreatedAt   time.Time  `json:"created_at"`
 }
@@ -60,7 +60,7 @@ type UpdateChannelInput struct {
 	Name        string     `json:"name"`
 	Description string     `json:"description"`
 	OwnerID     gocql.UUID `json:"owner_id"`
-	IconURL     string     `json:"icon_url"`
+	IconURLs    []string   `json:"icon_urls"`
 	IsPublic    bool       `json:"is_public"`
 	CreatedAt   time.Time  `json:"created_at"`
 }

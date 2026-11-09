@@ -1,6 +1,7 @@
 package servicehttp
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -80,6 +81,20 @@ func (s *ServiceMessenger) CreateGroup(ctx *gin.Context) {
 		return
 	}
 
+	ownerMember := dto.GroupMember{
+		GroupID:  groupID,
+		UserID:   userID,
+		IsMuted:  false,
+		IsAdmin:  true,
+		JoinedAt: now,
+	}
+	if err := s.Repository.InsertGroupMember(ctx.Request.Context(), ownerMember); err != nil {
+		s.Log.Error("error with adding owner to group: ", "error", err)
+		// тут можно решить: откатывать группу или просто вернуть ошибку
+		ctx.JSON(http.StatusInternalServerError, err)
+		return
+	}
+
 	response, err := s.Client.GetUserNameByID(ctx.Request.Context(), &pb.GetUserNameByIdRequest{
 		UserId: userID.String(),
 	})
@@ -89,7 +104,9 @@ func (s *ServiceMessenger) CreateGroup(ctx *gin.Context) {
 		return
 	}
 
-	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
+	backgroundCtx := context.WithoutCancel(ctx.Request.Context())
+
+	s.MessengerHub.onSendMessage(backgroundCtx, dto.AddMessage{
 		ChatID:   groupID,
 		SenderID: gocql.UUID{},
 		Message:  fmt.Sprintf("User %s create this group", response.GetName()),

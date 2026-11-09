@@ -59,21 +59,25 @@ func (s *ServiceMessenger) CreateTopic(ctx *gin.Context) {
 		return
 	}
 
-	response, err := s.Client.GetUserNameByID(ctx.Request.Context(), &pb.GetUserNameByIdRequest{
-		UserId: userID.String(),
-	})
-	if err != nil {
-		s.Log.Error("error with getting user name: ", "error", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
 	var systemMessage string
-
-	if body.TopicType == "text" {
-		systemMessage = fmt.Sprintf("User %s created a text topic named %s", response.GetName(), body.Name)
+	if body.Name == "general" && body.TopicType == "text" {
+		systemMessage = "general text topic was created"
+	} else if body.Name == "general" && body.TopicType == "voice" {
+		systemMessage = "general voice topic was created"
 	} else {
-		systemMessage = fmt.Sprintf("User %s created a voice topic named %s", response.GetName(), body.Name)
+		response, err := s.Client.GetUserNameByID(ctx.Request.Context(), &pb.GetUserNameByIdRequest{
+			UserId: userID.String(),
+		})
+		if err != nil {
+			s.Log.Error("error with getting user name: ", "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if body.TopicType == "text" {
+			systemMessage = fmt.Sprintf("User %s created a text topic named %s", response.GetName(), body.Name)
+		} else {
+			systemMessage = fmt.Sprintf("User %s created a voice topic named %s", response.GetName(), body.Name)
+		}
 	}
 
 	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
@@ -178,12 +182,40 @@ func (s *ServiceMessenger) UpdateTopic(ctx *gin.Context) {
 
 	body.UserID = userID
 
+	topicName, err := s.Repository.SelectTopicName(ctx.Request.Context(), body.ID, body.ChannelId)
+	if err != nil {
+		s.Log.Error("error with getting ")
+	}
+
 	topic, err := s.Repository.UpdateTopic(ctx.Request.Context(), body)
 	if err != nil {
 		s.Log.Error("error with updating topic: ", "error", err)
 		ctx.JSON(http.StatusInternalServerError, err)
 		return
 	}
+
+	response, err := s.Client.GetUserNameByID(ctx.Request.Context(), &pb.GetUserNameByIdRequest{
+		UserId: userID.String(),
+	})
+	if err != nil {
+		s.Log.Error("error with getting user name: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var message string
+	if topicName != body.Name {
+		message = fmt.Sprintf("User %s update the topic from %s name to %s", response.GetName(), topicName, body.Name)
+	} else {
+		message = fmt.Sprintf("User %s updated the settings for topic %s", response.GetName(), body.Name)
+	}
+
+	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
+		ChatID:   body.ChannelId,
+		SenderID: gocql.UUID{},
+		Message:  message,
+		IsSystem: true,
+	})
 
 	ctx.JSON(http.StatusOK, topic)
 }

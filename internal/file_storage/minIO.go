@@ -14,9 +14,17 @@ import (
 )
 
 const (
-	BucketPrivate = "private"
-	BucketPublic  = "public"
+	BucketAvatar   = "avatar"
+	BucketEmoji    = "emoji"
+	BucketStickers = "stickers"
+	BucketMedia    = "media"
 )
+
+// PublicBuckets — все бакеты, к которым нужен публичный read.
+var PublicBuckets = []string{BucketAvatar, BucketEmoji, BucketStickers}
+
+// AllBuckets — все бакеты, которые нужно создать.
+var AllBuckets = []string{BucketAvatar, BucketEmoji, BucketStickers, BucketMedia}
 
 type MinIOConfig struct {
 	Endpoint string
@@ -46,7 +54,7 @@ func NewMinIOClient(ctx context.Context, conf MinIOConfig) (*minio.Client, error
 		return nil, err
 	}
 
-	if err := setupPublicBucket(ctx, client, conf.Logger); err != nil {
+	if err := setupPublicBuckets(ctx, client, conf.Logger); err != nil {
 		return nil, err
 	}
 
@@ -65,9 +73,7 @@ func NewMinIOClient(ctx context.Context, conf MinIOConfig) (*minio.Client, error
 }
 
 func ensureBuckets(ctx context.Context, client *minio.Client, logger *slog.Logger) error {
-	buckets := []string{BucketPrivate, BucketPublic}
-
-	for _, bucket := range buckets {
+	for _, bucket := range AllBuckets {
 		exists, err := client.BucketExists(ctx, bucket)
 		if err != nil {
 			logger.Error("❌ failed to check bucket existence", "bucket", bucket, "error", err)
@@ -91,26 +97,27 @@ func ensureBuckets(ctx context.Context, client *minio.Client, logger *slog.Logge
 	return nil
 }
 
-func setupPublicBucket(ctx context.Context, client *minio.Client, logger *slog.Logger) error {
-	publicPolicy := `{
-		"Version": "2012-10-17",
-		"Statement": [
-			{
-				"Effect": "Allow",
-				"Principal": "*",
-				"Action": ["s3:GetObject"],
-				"Resource": ["arn:aws:s3:::` + BucketPublic + `/*"]
-			}
-		]
-	}`
+func setupPublicBuckets(ctx context.Context, client *minio.Client, logger *slog.Logger) error {
+	for _, bucket := range PublicBuckets {
+		policy := fmt.Sprintf(`{
+			"Version": "2012-10-17",
+			"Statement": [
+				{
+					"Effect": "Allow",
+					"Principal": "*",
+					"Action": ["s3:GetObject"],
+					"Resource": ["arn:aws:s3:::%s/*"]
+				}
+			]
+		}`, bucket)
 
-	err := client.SetBucketPolicy(ctx, BucketPublic, publicPolicy)
-	if err != nil {
-		logger.Error("❌ failed to set public bucket policy", "bucket", BucketPublic, "error", err)
-		return fmt.Errorf("❌ set bucket policy: %w", err)
+		if err := client.SetBucketPolicy(ctx, bucket, policy); err != nil {
+			logger.Error("❌ failed to set public bucket policy", "bucket", bucket, "error", err)
+			return fmt.Errorf("❌ set bucket policy for %s: %w", bucket, err)
+		}
+		logger.Info("Public bucket configured successfully", "bucket", bucket)
 	}
 
-	logger.Info("Public bucket configured successfully", "bucket", BucketPublic)
 	return nil
 }
 
@@ -119,8 +126,8 @@ func GetBucketPolicy(ctx context.Context, client *minio.Client, bucketName strin
 }
 
 func uploadLottieEmojisIfNotExists(ctx context.Context, client *minio.Client) (bool, error) {
-	bucketName := "public"
-	objectPrefix := "emoji/standart"
+	bucketName := BucketEmoji
+	objectPrefix := "standart"
 	rootPath := "./emoji_assets"
 
 	manifestPath := fmt.Sprintf("%s/manifest.json", objectPrefix)
@@ -131,49 +138,59 @@ func uploadLottieEmojisIfNotExists(ctx context.Context, client *minio.Client) (b
 	}
 
 	var errResponse minio.ErrorResponse
-	if errors.As(err, &errResponse) && (errResponse.Code == "NoSuchKey" || errResponse.Code == "ResourceNotFound") {
-
-		errWalk := filepath.WalkDir(rootPath, func(path string, d os.DirEntry, err error) error {
-			if err != nil {
-				return err
-			}
-			if d.IsDir() {
-				return nil
-			}
-
-			fileName := d.Name()
-			if fileName == "q1manifest.json" || fileName == "reform_manifest.py" {
-				return nil
-			}
-
-			relPath, err := filepath.Rel(rootPath, path)
-			if err != nil {
-				return fmt.Errorf("❌ error calculating relative path for %s: %w", path, err)
-			}
-
-			parts := strings.Split(filepath.ToSlash(relPath), "/")
-			isNested := len(parts) > 1
-			isRootManifest := len(parts) == 1 && fileName == "manifest.json"
-
-			if isNested || isRootManifest {
-				finalObjectName := objectPrefix + "/" + filepath.ToSlash(relPath)
-
-				_, err = client.FPutObject(ctx, bucketName, finalObjectName, path, minio.PutObjectOptions{
-					ContentType: "application/json",
-				})
-				if err != nil {
-					return fmt.Errorf("❌ failed to load %s in %s: %w", path, finalObjectName, err)
-				}
-			}
-			return nil
-		})
-
-		if errWalk != nil {
-			return false, fmt.Errorf("❌ error while traversing the directory: %w", errWalk)
-		}
-
-		return true, nil
+	if !errors.As(err, &errResponse) ||
+		(errResponse.Code != "NoSuchKey" && errResponse.Code != "ResourceNotFound") {
+		return false, fmt.Errorf("❌ File verification error: %w", err)
 	}
 
-	return false, fmt.Errorf("❌ File verification error: %w", err)
+	errWalk := filepath.WalkDir(rootPath, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+
+		fileName := d.Name()
+		// пропускаем служебные/битые файлы
+		if fileName == "q1manifest.json" || fileName == "reform_manifest.py" {
+			return nil
+		}
+
+		relPath, err := filepath.Rel(rootPath, path)
+		if err != nil {
+			return fmt.Errorf("❌ error calculating relative path for %s: %w", path, err)
+		}
+
+		parts := strings.Split(filepath.ToSlash(relPath), "/")
+		isNested := len(parts) > 1
+		isRootManifest := len(parts) == 1 && fileName == "manifest.json"
+
+		if !isNested && !isRootManifest {
+			return nil
+		}
+
+		finalObjectName := objectPrefix + "/" + filepath.ToSlash(relPath)
+
+		contentType := "application/json"
+		if strings.HasSuffix(fileName, ".png") {
+			contentType = "image/png"
+		} else if strings.HasSuffix(fileName, ".webp") {
+			contentType = "image/webp"
+		}
+
+		_, err = client.FPutObject(ctx, bucketName, finalObjectName, path, minio.PutObjectOptions{
+			ContentType: contentType,
+		})
+		if err != nil {
+			return fmt.Errorf("❌ failed to load %s in %s: %w", path, finalObjectName, err)
+		}
+		return nil
+	})
+
+	if errWalk != nil {
+		return false, fmt.Errorf("❌ error while traversing the directory: %w", errWalk)
+	}
+
+	return true, nil
 }

@@ -75,7 +75,7 @@ func (s *ServiceMessenger) CreateChannel(ctx *gin.Context) {
 		Name:        body.Name,
 		Description: body.Description,
 		OwnerID:     userID,
-		IconURL:     body.IconURL,
+		IconURLs:    body.IconURLs,
 		IsPublic:    body.IsPublic,
 		CreatedAt:   now,
 	}
@@ -117,13 +117,6 @@ func (s *ServiceMessenger) CreateChannel(ctx *gin.Context) {
 		return
 	}
 
-	_, err = s.Client.GetUserNameByID(ctx.Request.Context(), &pb.GetUserNameByIdRequest{UserId: userID.String()})
-	if err != nil {
-		s.Log.Error("error getting user name: ", "error", err)
-	}
-
-	// TODO: создать топик и директорию general
-
 	response, err := s.Client.GetUserNameByID(ctx.Request.Context(), &pb.GetUserNameByIdRequest{
 		UserId: userID.String(),
 	})
@@ -140,19 +133,52 @@ func (s *ServiceMessenger) CreateChannel(ctx *gin.Context) {
 		IsSystem: true,
 	})
 
-	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
-		ChatID:   channelID,
-		SenderID: gocql.UUID{},
-		Message:  "General topic was created",
-		IsSystem: true,
-	})
+	directoryID, err := gocql.RandomUUID()
+	if err != nil {
+		s.Log.Error("error with creating directory id: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
-	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
-		ChatID:   channelID,
-		SenderID: gocql.UUID{},
-		Message:  "General directory was created",
-		IsSystem: true,
+	_, err = s.Repository.CreateDirectory(ctx.Request.Context(), dto.CreateDirectory{
+		UserID:    userID,
+		ID:        directoryID,
+		ChannelID: channelID,
+		Name:      "general",
 	})
+	if err != nil {
+		s.Log.Error("error with creating general directory: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	_, err = s.Repository.CreateTopic(ctx.Request.Context(), dto.CreateTopic{
+		UserID:    userID,
+		ChannelId: channelID,
+		Name:      "general",
+		TopicType: "text",
+		Position:  1,
+		IsPrivate: false,
+	})
+	if err != nil {
+		s.Log.Error("error with creting general text topic: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	_, err = s.Repository.CreateTopic(ctx.Request.Context(), dto.CreateTopic{
+		UserID:    userID,
+		ChannelId: channelID,
+		Name:      "general",
+		TopicType: "voice",
+		Position:  1,
+		IsPrivate: false,
+	})
+	if err != nil {
+		s.Log.Error("error with creting general voice topic: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
 	ctx.JSON(http.StatusCreated, channel)
 }
@@ -604,7 +630,7 @@ func (s *ServiceMessenger) UpdateChannel(ctx *gin.Context) {
 		Name:        body.Name,
 		Description: body.Description,
 		OwnerID:     body.OwnerID,
-		IconURL:     body.IconURL,
+		IconURLs:    body.IconURLs,
 		IsPublic:    body.IsPublic,
 		CreatedAt:   body.CreatedAt,
 		UpdatedAt:   now,

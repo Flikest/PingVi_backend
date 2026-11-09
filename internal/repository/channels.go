@@ -8,22 +8,33 @@ import (
 
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
 	"github.com/gocql/gocql"
-	"github.com/google/uuid"
 )
+
+func toInterfaces(ids []gocql.UUID) []interface{} {
+	out := make([]interface{}, len(ids))
+	for i, id := range ids {
+		out[i] = id
+	}
+	return out
+}
 
 func (r *RepositoryMessenger) IsChannelMuted(ctx context.Context, channelID, userID gocql.UUID) (bool, error) {
 	selectMuted := r.Session.ContextQuery(
 		ctx,
 		`SELECT is_muted FROM messenger_keyspace.channel_members WHERE channel_id=? AND user_id=?`,
-		[]string{":group_id", ":user_id"}).
+		[]string{":channel_id", ":user_id"}).
 		BindMap(map[string]interface{}{
-			":group_id": channelID,
-			":user_id":  userID,
+			":channel_id": channelID,
+			":user_id":    userID,
 		})
 
 	var isMuted bool
-	if err := selectMuted.SelectRelease(&isMuted); err != nil {
-		r.Log.Error("error with selecting owner id: ", "error", err)
+	if err := selectMuted.Scan(&isMuted); err != nil {
+		if errors.Is(err, gocql.ErrNotFound) {
+			return false, nil
+		}
+		r.Log.Error("error with selecting is_muted from channel members", "error", err,
+			"channel_id", channelID, "user_id", userID)
 		return false, err
 	}
 
@@ -31,7 +42,7 @@ func (r *RepositoryMessenger) IsChannelMuted(ctx context.Context, channelID, use
 }
 
 func (r *RepositoryMessenger) SelectChannelOwnerID(ctx context.Context, channelID gocql.UUID) (gocql.UUID, error) {
-	SelectOwnerID := r.Session.ContextQuery(
+	query := r.Session.ContextQuery(
 		ctx,
 		`SELECT owner_id FROM messenger_keyspace.channels WHERE id=?`,
 		[]string{":id"}).
@@ -40,8 +51,12 @@ func (r *RepositoryMessenger) SelectChannelOwnerID(ctx context.Context, channelI
 		})
 
 	var ownerID gocql.UUID
-	if err := SelectOwnerID.SelectRelease(&ownerID); err != nil {
-		r.Log.Error("error with selecting owner id from channel: ", "error", err)
+	if err := query.Scan(&ownerID); err != nil {
+		if errors.Is(err, gocql.ErrNotFound) {
+			return gocql.UUID{}, err
+		}
+		r.Log.Error("error with selecting owner id from channel", "error", err,
+			"channel_id", channelID)
 		return gocql.UUID{}, err
 	}
 
@@ -86,7 +101,8 @@ func (r *RepositoryMessenger) SelectChannelMemberIds(ctx context.Context, id goc
 
 func (r *RepositoryMessenger) SelectChannelMembers(ctx context.Context, channelID gocql.UUID) ([]dto.ChannelMember, error) {
 	query := r.Session.ContextQuery(ctx,
-		`SELECT * FROM messenger_keyspace.channel_members WHERE channel_id = $1`,
+		`SELECT channel_id, user_id, role_id, joined_at, is_muted
+		 FROM messenger_keyspace.channel_members WHERE channel_id = ?`,
 		[]string{":channel_id"}).
 		BindMap(map[string]interface{}{
 			":channel_id": channelID,
@@ -94,7 +110,8 @@ func (r *RepositoryMessenger) SelectChannelMembers(ctx context.Context, channelI
 
 	var members []dto.ChannelMember
 	if err := query.SelectRelease(&members); err != nil {
-		r.Log.Error("error with selecting channel members: ", "error", err)
+		r.Log.Error("error with selecting channel members", "error", err,
+			"channel_id", channelID)
 		return nil, err
 	}
 	return members, nil
@@ -104,15 +121,15 @@ func (r *RepositoryMessenger) InsertChannel(ctx context.Context, channel dto.Cha
 	createChannel := r.Session.ContextQuery(
 		ctx,
 		`
-		INSERT INTO messenger_keyspace.channels(id, name, description, owner_id, icon_url, is_public, created_at)
-		VALUE (?,?,?,?,?,?,?)
+		INSERT INTO messenger_keyspace.channels(id, name, description, owner_id, icon_urls, is_public, created_at)
+		VALUES (?,?,?,?,?,?,?)
 		`,
 		[]string{
 			":id",
 			":name",
 			":description",
 			":owner_id",
-			":icon_url",
+			":icon_urls",
 			":is_public",
 			":created_at",
 		}).BindMap(map[string]interface{}{
@@ -120,7 +137,7 @@ func (r *RepositoryMessenger) InsertChannel(ctx context.Context, channel dto.Cha
 		":name":        channel.Name,
 		":description": channel.Description,
 		":owner_id":    channel.OwnerID,
-		":icon_url":    channel.IconURL,
+		":icon_urls":   channel.IconURLs,
 		":is_public":   channel.IsPublic,
 		":created_at":  channel.CreatedAt,
 	})
@@ -165,19 +182,19 @@ func (r *RepositoryMessenger) IsBelongChannel(ctx context.Context, channelID, us
 	query := r.Session.ContextQuery(
 		ctx,
 		`SELECT user_id FROM messenger_keyspace.channel_members WHERE channel_id = ? AND user_id = ? LIMIT 1`,
-		[]string{":group_id", ":user_id"}).
+		[]string{":channel_id", ":user_id"}).
 		BindMap(map[string]interface{}{
 			":channel_id": channelID,
 			":user_id":    userID,
 		})
 
-	var scanUserID uuid.UUID
-	if err := query.SelectRelease(&scanUserID); err != nil {
+	var scanUserID gocql.UUID
+	if err := query.Scan(&scanUserID); err != nil {
 		if errors.Is(err, gocql.ErrNotFound) {
 			return false, nil
 		}
-
-		r.Log.Error("error with checking belonging to channel: ", "error", err)
+		r.Log.Error("error with checking belonging to channel", "error", err,
+			"channel_id", channelID, "user_id", userID)
 		return false, err
 	}
 
@@ -194,8 +211,12 @@ func (r *RepositoryMessenger) SelectChannelNameByID(ctx context.Context, channel
 		})
 
 	var name string
-	if err := query.SelectRelease(&name); err != nil {
-		r.Log.Error("error with selecting channel name: ", "error", err)
+	if err := query.Scan(&name); err != nil {
+		if errors.Is(err, gocql.ErrNotFound) {
+			return "", err
+		}
+		r.Log.Error("error with selecting channel name", "error", err,
+			"channel_id", channelID)
 		return "", err
 	}
 
@@ -203,7 +224,6 @@ func (r *RepositoryMessenger) SelectChannelNameByID(ctx context.Context, channel
 }
 
 func (r *RepositoryMessenger) SelectChannels(ctx context.Context, userID gocql.UUID) ([]dto.Channel, error) {
-	// 1. Получаем ID каналов, в которых состоит пользователь
 	selectMembers := r.Session.ContextQuery(
 		ctx,
 		`SELECT channel_id FROM messenger_keyspace.channel_members WHERE user_id = ?`,
@@ -212,16 +232,17 @@ func (r *RepositoryMessenger) SelectChannels(ctx context.Context, userID gocql.U
 
 	var channelIDs []gocql.UUID
 	if err := selectMembers.SelectRelease(&channelIDs); err != nil {
-		r.Log.Error("error with selecting members by id: ", "error", err)
+		r.Log.Error("error with selecting channel members by user id",
+			"error", err,
+			"user_id", userID,
+		)
 		return nil, err
 	}
 
-	// Если каналов нет — возвращаем пустой срез
 	if len(channelIDs) == 0 {
 		return []dto.Channel{}, nil
 	}
 
-	// 2. Строим плейсхолдеры: ?, ?, ?, ...
 	placeholders := make([]string, len(channelIDs))
 	args := make([]interface{}, len(channelIDs))
 	for i, id := range channelIDs {
@@ -230,16 +251,21 @@ func (r *RepositoryMessenger) SelectChannels(ctx context.Context, userID gocql.U
 	}
 
 	queryStr := fmt.Sprintf(
-		`SELECT * FROM messenger_keyspace.channels WHERE id IN (%s)`,
+		`SELECT id, name, description, owner_id, icon_urls, is_public, created_at, updated_at
+		 FROM messenger_keyspace.channels
+		 WHERE id IN (%s)`,
 		strings.Join(placeholders, ", "),
 	)
 
-	// 3. Получаем сами каналы по списку ID
 	query := r.Session.ContextQuery(ctx, queryStr, nil).Bind(args...)
 
 	var channels []dto.Channel
 	if err := query.SelectRelease(&channels); err != nil {
-		r.Log.Error("error with select channels from db: ", "error", err)
+		r.Log.Error("error with selecting channels by ids",
+			"error", err,
+			"user_id", userID,
+			"channel_ids_count", len(channelIDs),
+		)
 		return nil, err
 	}
 
@@ -251,19 +277,19 @@ func (r *RepositoryMessenger) UpdateChannel(ctx context.Context, channel dto.Cha
 		ctx,
 		`
 		UPDATE messenger_keyspace.channels
-		SET name=?, description=?, icon_url=?, is_public=?, updated_at=?
+		SET name=?, description=?, icon_urls=?, is_public=?, updated_at=?
 		WHERE id=?
 		`, []string{
 			":name",
 			":description",
-			":icon_url",
+			":icon_urls",
 			":is_public",
 			":updated_at",
 			":id"}).
 		BindMap(map[string]interface{}{
 			":name":        channel.Name,
 			":description": channel.Description,
-			":icon_url":    channel.IconURL,
+			":icon_urls":   channel.IconURLs,
 			":is_public":   channel.IsPublic,
 			":updated_at":  channel.UpdatedAt,
 			":id":          channel.ID,

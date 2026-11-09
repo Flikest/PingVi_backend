@@ -1,9 +1,11 @@
 package servicehttp
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 
+	pb "github.com/Flikest/PingVi_backend/gen/go/user_info"
 	"github.com/Flikest/PingVi_backend/internal/delivery/dto"
 	"github.com/Flikest/PingVi_backend/pkg/tokens"
 	"github.com/gin-gonic/gin"
@@ -69,6 +71,29 @@ func (s *ServiceMessenger) CreateDirectory(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	var message string
+	if body.Name == "general" {
+		message = "general directory was created"
+	} else {
+		response, err := s.Client.GetUserNameByID(ctx.Request.Context(), &pb.GetUserNameByIdRequest{
+			UserId: userID.String(),
+		})
+		if err != nil {
+			s.Log.Error("error with getting user name: ", "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		message = fmt.Sprintf("The user %s created a directory named %s", response.GetName(), body.Name)
+	}
+
+	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
+		ChatID:   body.ChannelID,
+		SenderID: gocql.UUID{},
+		Message:  message,
+		IsSystem: true,
+	})
 
 	ctx.JSON(http.StatusCreated, directory)
 }
@@ -164,6 +189,31 @@ func (s *ServiceMessenger) UpdateDirectory(ctx *gin.Context) {
 		return
 	}
 
+	response, err := s.Client.GetUserNameByID(ctx.Request.Context(), &pb.GetUserNameByIdRequest{
+		UserId: userID.String(),
+	})
+	if err != nil {
+		s.Log.Error("error with getting user name: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	directoryName, err := s.Repository.SelectDirectoryName(ctx.Request.Context(), uuid.UUID(body.ChannelID), uuid.UUID(body.ID))
+
+	var message string
+	if directoryName != body.Name {
+		message = fmt.Sprintf("User %s update the directory from %s name to %s", response.GetName(), directoryName, body.Name)
+	} else {
+		message = fmt.Sprintf("User %s updated the settings for directory %s", response.GetName(), body.Name)
+	}
+
+	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
+		ChatID:   body.ChannelID,
+		SenderID: gocql.UUID{},
+		Message:  message,
+		IsSystem: true,
+	})
+
 	ctx.JSON(http.StatusOK, directory)
 }
 
@@ -219,11 +269,34 @@ func (s *ServiceMessenger) DeleteDirectory(ctx *gin.Context) {
 		return
 	}
 
+	directoryName, err := s.Repository.SelectDirectoryName(ctx.Request.Context(), uuid.UUID(body.ChannelID), uuid.UUID(body.ID))
+	if err != nil {
+		s.Log.Error("error with getting directory name: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	if err := s.Repository.DeleteDirectory(ctx.Request.Context(), body.ID); err != nil {
 		s.Log.Error("error with updating directory: ", "error", err)
 		ctx.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	response, err := s.Client.GetUserNameByID(ctx.Request.Context(), &pb.GetUserNameByIdRequest{
+		UserId: userID.String(),
+	})
+	if err != nil {
+		s.Log.Error("error with getting user name: ", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	s.MessengerHub.onSendMessage(ctx.Request.Context(), dto.AddMessage{
+		ChatID:   body.ChannelID,
+		SenderID: gocql.UUID{},
+		Message:  fmt.Sprintf("%s deleted the directory %s", response.GetName(), directoryName),
+		IsSystem: true,
+	})
 
 	ctx.JSON(http.StatusOK, body.ID)
 }

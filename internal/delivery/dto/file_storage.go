@@ -3,6 +3,7 @@ package dto
 type FileStatus struct {
 	Filename string `json:"filename"`
 	Status   string `json:"status"`
+	Url      string `json:"url"`
 	Bucket   string `json:"bucket,omitempty"`
 	Error    string `json:"error,omitempty"`
 }

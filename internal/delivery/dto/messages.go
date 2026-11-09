@@ -12,6 +12,7 @@ type Message struct {
 	ChatID    gocql.UUID   `json:"chat_id"`
 	SenderID  gocql.UUID   `json:"sender_id"`
 	Message   string       `json:"message"`
+	BacketID  int64        `json:"-"`
 	IsMy      bool         `json:"is_my"`
 	IsSystem  bool         `json:"is_system"`
 	ReplyToID snowflake.ID `json:"reply_to_id"`

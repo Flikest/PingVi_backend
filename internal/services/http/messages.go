@@ -18,7 +18,6 @@ import (
 	"github.com/bwmarrin/snowflake"
 	"github.com/gin-gonic/gin"
 	"github.com/gocql/gocql"
-	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/redis/go-redis/v9"
 )
@@ -370,21 +369,12 @@ func (h *MessengerHub) sendInitialStatuses(ctx context.Context, userID gocql.UUI
 }
 
 func (s *ServiceMessenger) ReadMessageFromClient(ctx context.Context, client *Client) {
-	readCtx, cancel := context.WithCancel(ctx)
-	defer func() {
-		cancel()
-		s.MessengerHub.onDisconnect(ctx, client.ID)
-	}()
-
-	go func() {
-		<-readCtx.Done()
-		client.Conn.Close()
-	}()
+	defer s.MessengerHub.onDisconnect(ctx, client.ID)
 
 	for {
 		var msg Message
 		if err := client.Conn.ReadJSON(&msg); err != nil {
-			if readCtx.Err() != nil {
+			if ctx.Err() != nil {
 				return
 			}
 			s.Log.Error("error with reading message", "error", err)
@@ -399,22 +389,22 @@ func (s *ServiceMessenger) ReadMessageFromClient(ctx context.Context, client *Cl
 
 		switch msg.Operation {
 		case "switch_community":
-			s.MessengerHub.onSwitchChat(readCtx, msg.Message.SenderID, msg.Message.ChatID)
+			s.MessengerHub.onSwitchChat(ctx, msg.Message.SenderID, msg.Message.ChatID)
 		case "read":
-			s.MessengerHub.onRead(readCtx, dto.ReadMessage{
+			s.MessengerHub.onRead(ctx, dto.ReadMessage{
 				ChatID:    msg.Message.ChatID,
 				UserID:    clientID,
 				MessageID: msg.Message.ID,
 				At:        time.Now(),
 			})
 		case "send":
-			s.MessengerHub.onSendMessage(readCtx, dto.AddMessage{
+			s.MessengerHub.onSendMessage(ctx, dto.AddMessage{
 				ChatID:   msg.Message.ChatID,
 				SenderID: clientID,
 				Message:  msg.Message.Message,
 			})
 		case "update":
-			s.MessengerHub.onUpdateMesage(readCtx, dto.UpdateMessage{
+			s.MessengerHub.onUpdateMesage(ctx, dto.UpdateMessage{
 				ID:        msg.Message.ID,
 				ChatID:    msg.Message.ChatID,
 				SenderID:  clientID,
@@ -423,13 +413,13 @@ func (s *ServiceMessenger) ReadMessageFromClient(ctx context.Context, client *Cl
 				CreatedAt: msg.Message.CreatedAt,
 			})
 		case "delete":
-			s.MessengerHub.onDeleteMessage(readCtx, dto.DeleteMessage{
+			s.MessengerHub.onDeleteMessage(ctx, dto.DeleteMessage{
 				ID:       msg.Message.ID,
 				ChatID:   msg.Message.ChatID,
 				SenderID: clientID,
 			})
 		case "send_reaction":
-			s.MessengerHub.onSendReaction(readCtx, dto.Reaction{
+			s.MessengerHub.onSendReaction(ctx, dto.Reaction{
 				ChatID:    msg.Message.ChatID,
 				MessageID: msg.Message.ID,
 				UserID:    clientID,
@@ -437,15 +427,15 @@ func (s *ServiceMessenger) ReadMessageFromClient(ctx context.Context, client *Cl
 				SendedAt:  time.Now(),
 			})
 		case "delete_reaction":
-			s.MessengerHub.onDeleteReaction(readCtx, msg.Reaction.ID, msg.Message.ChatID, clientID, msg.Message.ID)
+			s.MessengerHub.onDeleteReaction(ctx, msg.Reaction.ID, msg.Message.ChatID, clientID, msg.Message.ID)
 		case "typing_start":
 			if s.MessengerHub.Redis != nil {
-				s.MessengerHub.setUserTyping(readCtx, clientID, msg.Message.ChatID)
-				go s.MessengerHub.notifySubscribers(readCtx, msg.Message.SenderID, "typing", msg.Message.ChatID)
+				s.MessengerHub.setUserTyping(ctx, clientID, msg.Message.ChatID)
+				go s.MessengerHub.notifySubscribers(ctx, clientID, "typing", msg.Message.ChatID)
 			}
 		case "typing_stop":
 			if s.MessengerHub.Redis != nil {
-				s.MessengerHub.clearUserTyping(readCtx, clientID)
+				s.MessengerHub.clearUserTyping(ctx, clientID)
 			}
 		}
 	}
@@ -620,7 +610,7 @@ func (s *ServiceMessenger) LinkPreview(ctx *gin.Context) {
 //	@Failure		500				{object}	map[string]interface{}	"Internal server error"	example({"error":"failed to get messages"})
 //	@Router			/ws/messages/{chat_id} [get]
 func (s *ServiceMessenger) GetAllMessageFromChat(ctx *gin.Context) {
-	chatID, err := uuid.Parse(ctx.Param("chat_id"))
+	chatID, err := gocql.ParseUUID(ctx.Param("chat_id"))
 	if err != nil {
 		s.Log.Error("error with parsing chat id uuid: ", "error", err)
 		ctx.JSON(http.StatusBadRequest, err)
