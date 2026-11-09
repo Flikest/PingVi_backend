@@ -1,6 +1,7 @@
 sso.local.env
 messenger.local.env
 minIO.local.env
+infisical.local.env
 
 pgdata
 redis.conf
